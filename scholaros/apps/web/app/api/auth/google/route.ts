@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { env } from "@/lib/env";
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google/callback`;
+const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID;
+const GOOGLE_REDIRECT_URI = env.GOOGLE_REDIRECT_URI || `${env.NEXT_PUBLIC_APP_URL}/api/auth/google/callback`;
 
 // Scopes needed for calendar read access
 const SCOPES = [
@@ -13,6 +14,11 @@ const SCOPES = [
 // GET /api/auth/google - Initiate Google OAuth flow
 export async function GET() {
   try {
+    // Validate required OAuth configuration
+    if (!GOOGLE_CLIENT_ID) {
+      return NextResponse.json({ error: "Google OAuth not configured" }, { status: 503 });
+    }
+
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 

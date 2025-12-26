@@ -1,5 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { z } from "zod";
+
+const UpdateConnectionSchema = z.object({
+  sync_enabled: z.boolean().optional(),
+  selected_calendars: z.array(z.string()).optional(),
+}).refine(data => data.sync_enabled !== undefined || data.selected_calendars !== undefined, {
+  message: "At least one field (sync_enabled or selected_calendars) is required",
+});
 
 // GET /api/calendar/connection - Get current calendar connection status
 export async function GET() {
@@ -53,18 +61,23 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { sync_enabled, selected_calendars } = body;
 
+    // Validate request body
+    const validationResult = UpdateConnectionSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: validationResult.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { sync_enabled, selected_calendars } = validationResult.data;
     const updates: Record<string, unknown> = {};
-    if (typeof sync_enabled === "boolean") {
+    if (sync_enabled !== undefined) {
       updates.sync_enabled = sync_enabled;
     }
-    if (Array.isArray(selected_calendars)) {
+    if (selected_calendars !== undefined) {
       updates.selected_calendars = selected_calendars;
-    }
-
-    if (Object.keys(updates).length === 0) {
-      return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
     }
 
     const { data, error } = await supabase

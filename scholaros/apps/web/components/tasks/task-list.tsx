@@ -5,7 +5,10 @@ import { Check, Loader2 } from "lucide-react";
 import { useTasks, useToggleTaskComplete, useDeleteTask, type TaskFromAPI } from "@/lib/hooks/use-tasks";
 import { useTaskStore, filterTasks, sortTasks } from "@/lib/stores/task-store";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
+import { usePagination } from "@/lib/hooks/use-pagination";
+import { Pagination } from "@/components/ui/pagination";
 import { TaskCard } from "./task-card";
+import { MESSAGES } from "@/lib/constants";
 
 // Mock data for development when not connected to database
 const mockTasks: TaskFromAPI[] = [
@@ -65,6 +68,8 @@ interface TaskListProps {
   useMockData?: boolean;
   useStoreFilters?: boolean;
   workspaceId?: string | null;
+  paginate?: boolean;
+  pageSize?: number;
 }
 
 export function TaskList({
@@ -73,24 +78,34 @@ export function TaskList({
   useMockData = false,
   useStoreFilters = false,
   workspaceId: propWorkspaceId,
+  paginate = false,
+  pageSize: initialPageSize = 20,
 }: TaskListProps) {
   const { currentWorkspaceId } = useWorkspaceStore();
 
   // Use prop if provided, otherwise use store value
   const workspaceId = propWorkspaceId !== undefined ? propWorkspaceId : currentWorkspaceId;
 
-  // Use the hook to fetch tasks, but only if not using mock data
+  // Build filters for the query
+  const taskFilters = filter === "today"
+    ? { due: "today" as const, workspace_id: workspaceId }
+    : filter === "upcoming"
+    ? { due: "upcoming" as const, workspace_id: workspaceId }
+    : { workspace_id: workspaceId };
+
+  // Only fetch if we don't have initialTasks - prevents double-fetching
+  // When initialTasks is provided, we use it as the data source
+  const shouldFetch = !initialTasks?.length && !useMockData;
+
   const { data: fetchedTasks, isLoading, error } = useTasks(
-    filter === "today" ? { due: "today", workspace_id: workspaceId } :
-    filter === "upcoming" ? { due: "upcoming", workspace_id: workspaceId } :
-    { workspace_id: workspaceId }
+    shouldFetch ? taskFilters : undefined
   );
 
   const toggleComplete = useToggleTaskComplete();
   const deleteTask = useDeleteTask();
   const { filters, sortBy, sortDirection, openTaskDetail, setEditingTask } = useTaskStore();
 
-  // Determine which tasks to display
+  // Determine which tasks to display - prioritize initialTasks for SSR hydration
   const rawTasks: TaskFromAPI[] = useMockData
     ? mockTasks
     : initialTasks?.length
@@ -124,9 +139,20 @@ export function TaskList({
     return sortTasks(filtered, sortBy, sortDirection);
   }, [dateFilteredTasks, useStoreFilters, filters, sortBy, sortDirection]);
 
+  // Pagination
+  const pagination = usePagination<TaskFromAPI>({
+    initialPageSize,
+    totalItems: processedTasks.length,
+  });
+
+  // Apply pagination to tasks
+  const displayedTasks = paginate
+    ? pagination.paginateData(processedTasks)
+    : processedTasks;
+
   const handleToggleComplete = (task: TaskFromAPI) => {
     if (useMockData) {
-      console.log("Toggle complete:", task.id);
+      // Mock mode - no action needed
       return;
     }
     toggleComplete.mutate(task);
@@ -139,15 +165,15 @@ export function TaskList({
 
   const handleDelete = (task: TaskFromAPI) => {
     if (useMockData) {
-      console.log("Delete:", task.id);
+      // Mock mode - no action needed
       return;
     }
-    if (confirm("Are you sure you want to delete this task?")) {
+    if (confirm(MESSAGES.confirmations.deleteTask)) {
       deleteTask.mutate(task.id);
     }
   };
 
-  if (isLoading && !useMockData && !initialTasks) {
+  if (isLoading && shouldFetch) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -155,7 +181,7 @@ export function TaskList({
     );
   }
 
-  if (error && !useMockData && !initialTasks) {
+  if (error && shouldFetch) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
         <p className="text-lg font-medium">Failed to load tasks</p>
@@ -168,23 +194,40 @@ export function TaskList({
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
         <Check className="mb-4 h-12 w-12 text-green-500" />
-        <p className="text-lg font-medium">All caught up!</p>
-        <p className="text-sm">No tasks to show for this view.</p>
+        <p className="text-lg font-medium">{MESSAGES.empty.allCaughtUp}</p>
+        <p className="text-sm">{MESSAGES.empty.tasks}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
-      {processedTasks.map((task) => (
-        <TaskCard
-          key={task.id}
-          task={task}
-          onToggleComplete={handleToggleComplete}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+    <div className="space-y-4">
+      <div className="space-y-2">
+        {displayedTasks.map((task) => (
+          <TaskCard
+            key={task.id}
+            task={task}
+            onToggleComplete={handleToggleComplete}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        ))}
+      </div>
+
+      {/* Pagination */}
+      {paginate && processedTasks.length > initialPageSize && (
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          totalItems={pagination.totalItems}
+          pageSize={pagination.pageSize}
+          startIndex={pagination.startIndex}
+          endIndex={pagination.endIndex}
+          onPageChange={pagination.setPage}
+          onPageSizeChange={pagination.setPageSize}
+          pageSizeOptions={[10, 20, 50]}
         />
-      ))}
+      )}
     </div>
   );
 }

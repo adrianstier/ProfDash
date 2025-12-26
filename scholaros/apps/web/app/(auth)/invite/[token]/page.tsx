@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { CheckCircle, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
@@ -16,6 +16,25 @@ export default function AcceptInvitePage() {
   const { setCurrentWorkspace } = useWorkspaceStore();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
+  const hasAccepted = useRef(false);
+
+  const accept = useCallback(async () => {
+    if (hasAccepted.current) return;
+    hasAccepted.current = true;
+
+    try {
+      const result = await acceptInvite.mutateAsync(token);
+      setCurrentWorkspace(result.workspace_id, result.role);
+      setStatus("success");
+      // Redirect after a short delay
+      setTimeout(() => {
+        router.push("/today");
+      }, 2000);
+    } catch (err) {
+      setStatus("error");
+      setError(err instanceof Error ? err.message : "Failed to accept invite");
+    }
+  }, [acceptInvite, token, setCurrentWorkspace, router]);
 
   useEffect(() => {
     if (!token) {
@@ -24,23 +43,8 @@ export default function AcceptInvitePage() {
       return;
     }
 
-    const accept = async () => {
-      try {
-        const result = await acceptInvite.mutateAsync(token);
-        setCurrentWorkspace(result.workspace_id, result.role);
-        setStatus("success");
-        // Redirect after a short delay
-        setTimeout(() => {
-          router.push("/today");
-        }, 2000);
-      } catch (err) {
-        setStatus("error");
-        setError(err instanceof Error ? err.message : "Failed to accept invite");
-      }
-    };
-
     accept();
-  }, [token]);
+  }, [token, accept]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">

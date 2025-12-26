@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Calendar, CheckCircle2, FileText, DollarSign, Folder, MoreHorizontal, Trash2, Edit } from "lucide-react";
+import { Calendar, CheckCircle2, FileText, DollarSign, Folder, Trash2, Edit } from "lucide-react";
 import { PROJECT_TYPE_CONFIG, getStageLabel, getStageColor, PROJECT_STATUS_CONFIG } from "@scholaros/shared";
 import type { ProjectFromAPI } from "@/lib/hooks/use-projects";
 

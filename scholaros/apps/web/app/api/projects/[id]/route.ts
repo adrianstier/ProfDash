@@ -109,6 +109,21 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Verify ownership before deletion (defense in depth - RLS also protects)
+    const { data: project, error: fetchError } = await supabase
+      .from("projects")
+      .select("id, user_id")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    if (project.user_id !== user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const { error } = await supabase
       .from("projects")
       .delete()

@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { env } from "@/lib/env";
+import { encryptToken } from "@/lib/crypto";
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google/callback`;
+const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = env.GOOGLE_CLIENT_SECRET;
+const GOOGLE_REDIRECT_URI = env.GOOGLE_REDIRECT_URI || `${env.NEXT_PUBLIC_APP_URL}/api/auth/google/callback`;
 
 interface GoogleTokenResponse {
   access_token: string;
@@ -16,6 +18,13 @@ interface GoogleTokenResponse {
 // GET /api/auth/google/callback - Handle OAuth callback
 export async function GET(request: Request) {
   try {
+    // Validate required OAuth configuration
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+      return NextResponse.redirect(
+        new URL("/settings/integrations?error=oauth_not_configured", request.url)
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
     const state = searchParams.get("state");
@@ -89,15 +98,20 @@ export async function GET(request: Request) {
     // Calculate token expiration
     const tokenExpiresAt = new Date(Date.now() + tokens.expires_in * 1000);
 
-    // Store connection in database
-    // Note: In production, tokens should be encrypted before storage
+    // Encrypt tokens before storage
+    const encryptedAccessToken = encryptToken(tokens.access_token);
+    const encryptedRefreshToken = tokens.refresh_token
+      ? encryptToken(tokens.refresh_token)
+      : null;
+
+    // Store connection in database with encrypted tokens
     const { error: dbError } = await supabase
       .from("calendar_connections")
       .upsert({
         user_id: user.id,
         provider: "google",
-        access_token_encrypted: tokens.access_token, // Should encrypt in production
-        refresh_token_encrypted: tokens.refresh_token, // Should encrypt in production
+        access_token_encrypted: encryptedAccessToken,
+        refresh_token_encrypted: encryptedRefreshToken,
         token_expires_at: tokenExpiresAt.toISOString(),
         sync_enabled: true,
         selected_calendars: ["primary"],

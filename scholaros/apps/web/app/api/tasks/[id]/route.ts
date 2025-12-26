@@ -62,27 +62,18 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       );
     }
 
-    // First verify the task belongs to the user
-    const { data: existingTask, error: fetchError } = await supabase
-      .from("tasks")
-      .select("id")
-      .eq("id", id)
-      .eq("user_id", user.id)
-      .single();
-
-    if (fetchError || !existingTask) {
-      return NextResponse.json({ error: "Task not found" }, { status: 404 });
-    }
-
+    // RLS policy enforces ownership - no need for separate check
     const { data, error } = await supabase
       .from("tasks")
       .update(validationResult.data)
       .eq("id", id)
-      .eq("user_id", user.id)
       .select()
       .single();
 
     if (error) {
+      if (error.code === "PGRST116") {
+        return NextResponse.json({ error: "Task not found" }, { status: 404 });
+      }
       console.error("Error updating task:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -105,27 +96,20 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // First verify the task belongs to the user
-    const { data: existingTask, error: fetchError } = await supabase
+    // RLS policy enforces ownership - delete will fail silently if user doesn't own the task
+    // We need to check count to determine if task existed
+    const { error, count } = await supabase
       .from("tasks")
-      .select("id")
-      .eq("id", id)
-      .eq("user_id", user.id)
-      .single();
-
-    if (fetchError || !existingTask) {
-      return NextResponse.json({ error: "Task not found" }, { status: 404 });
-    }
-
-    const { error } = await supabase
-      .from("tasks")
-      .delete()
-      .eq("id", id)
-      .eq("user_id", user.id);
+      .delete({ count: "exact" })
+      .eq("id", id);
 
     if (error) {
       console.error("Error deleting task:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    if (count === 0) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
     return NextResponse.json({ success: true }, { status: 200 });

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Plus, Check, Link2, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useTasks, useUpdateTask, type TaskFromAPI } from "@/lib/hooks/use-tasks";

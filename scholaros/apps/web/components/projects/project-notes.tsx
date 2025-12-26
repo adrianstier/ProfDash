@@ -10,6 +10,7 @@ import {
   useToggleNotePin,
   type ProjectNoteFromAPI,
 } from "@/lib/hooks/use-projects";
+import { VoiceInputInline } from "@/components/voice";
 
 interface ProjectNotesProps {
   projectId: string;
@@ -87,14 +88,19 @@ export function ProjectNotes({ projectId }: ProjectNotesProps) {
       {/* Add note form */}
       {isAdding && (
         <div className="rounded-lg border bg-card p-3">
-          <textarea
-            value={newNoteContent}
-            onChange={(e) => setNewNoteContent(e.target.value)}
-            placeholder="Write a note..."
-            className="w-full resize-none bg-transparent text-sm outline-none"
-            rows={3}
-            autoFocus
-          />
+          <div className="flex items-start gap-2">
+            <textarea
+              value={newNoteContent}
+              onChange={(e) => setNewNoteContent(e.target.value)}
+              placeholder="Write a note or click mic to dictate..."
+              className="flex-1 resize-none bg-transparent text-sm outline-none"
+              rows={3}
+              autoFocus
+            />
+            <VoiceInputInline
+              onTranscription={(text) => setNewNoteContent((prev) => prev ? `${prev} ${text}` : text)}
+            />
+          </div>
           <div className="mt-2 flex justify-end gap-2">
             <button
               onClick={() => {

@@ -5,7 +5,6 @@ import { Plus, Check, Calendar, Trash2, GripVertical } from "lucide-react";
 import {
   useMilestones,
   useCreateMilestone,
-  useUpdateMilestone,
   useDeleteMilestone,
   useToggleMilestoneComplete,
   type ProjectMilestoneFromAPI,

@@ -1,4 +1,4 @@
-import type { TaskCategory, TaskPriority } from "../types";
+import type { TaskCategory, TaskPriority, PublicationStatus, PublicationType, AuthorRole } from "../types";
 
 // Quick add parser - ports existing functionality from ProfDash v1
 export interface ParsedQuickAdd {
@@ -252,3 +252,74 @@ export const CATEGORY_COLORS: Record<TaskCategory, string> = {
   admin: "text-gray-600 bg-gray-100",
   misc: "text-gray-500 bg-gray-50",
 };
+
+// Publication status utilities
+export const PUBLICATION_STATUS_LABELS: Record<PublicationStatus, string> = {
+  idea: "Idea",
+  drafting: "Drafting",
+  "internal-review": "Internal Review",
+  submitted: "Submitted",
+  "under-review": "Under Review",
+  revision: "Revision",
+  accepted: "Accepted",
+  "in-press": "In Press",
+  published: "Published",
+};
+
+export const PUBLICATION_STATUS_COLORS: Record<PublicationStatus, string> = {
+  idea: "text-gray-600 bg-gray-100 dark:bg-gray-800 dark:text-gray-300",
+  drafting: "text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300",
+  "internal-review": "text-purple-600 bg-purple-100 dark:bg-purple-900 dark:text-purple-300",
+  submitted: "text-orange-600 bg-orange-100 dark:bg-orange-900 dark:text-orange-300",
+  "under-review": "text-yellow-600 bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-300",
+  revision: "text-pink-600 bg-pink-100 dark:bg-pink-900 dark:text-pink-300",
+  accepted: "text-teal-600 bg-teal-100 dark:bg-teal-900 dark:text-teal-300",
+  "in-press": "text-indigo-600 bg-indigo-100 dark:bg-indigo-900 dark:text-indigo-300",
+  published: "text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-300",
+};
+
+// Publication type utilities
+export const PUBLICATION_TYPE_LABELS: Record<PublicationType, string> = {
+  "journal-article": "Journal Article",
+  "conference-paper": "Conference Paper",
+  "book-chapter": "Book Chapter",
+  book: "Book",
+  preprint: "Preprint",
+  thesis: "Thesis",
+  report: "Report",
+  other: "Other",
+};
+
+export const PUBLICATION_TYPE_COLORS: Record<PublicationType, string> = {
+  "journal-article": "text-blue-600 bg-blue-100",
+  "conference-paper": "text-purple-600 bg-purple-100",
+  "book-chapter": "text-orange-600 bg-orange-100",
+  book: "text-red-600 bg-red-100",
+  preprint: "text-gray-600 bg-gray-100",
+  thesis: "text-green-600 bg-green-100",
+  report: "text-yellow-600 bg-yellow-100",
+  other: "text-gray-500 bg-gray-50",
+};
+
+// Author role utilities
+export const AUTHOR_ROLE_LABELS: Record<AuthorRole, string> = {
+  first: "First Author",
+  corresponding: "Corresponding",
+  "co-first": "Co-First",
+  middle: "Co-Author",
+  last: "Last Author",
+  senior: "Senior Author",
+};
+
+// Pipeline stages for publication tracking (ordered)
+export const PUBLICATION_PIPELINE_STAGES: PublicationStatus[] = [
+  "idea",
+  "drafting",
+  "internal-review",
+  "submitted",
+  "under-review",
+  "revision",
+  "accepted",
+  "in-press",
+  "published",
+];

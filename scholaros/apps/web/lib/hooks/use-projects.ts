@@ -2,10 +2,6 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
-  Project,
-  ProjectWithDetails,
-  ProjectMilestone,
-  ProjectNote,
   ProjectType,
   ProjectStatus,
 } from "@scholaros/shared";
@@ -161,7 +157,7 @@ export function useCreateProject() {
 
   return useMutation({
     mutationFn: createProject,
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });

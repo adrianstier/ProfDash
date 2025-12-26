@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { CalendarEvent, GoogleCalendarListItem } from "@scholaros/shared";
+import type { GoogleCalendarListItem } from "@scholaros/shared";
 
 // API response types
 export interface CalendarConnectionStatus {

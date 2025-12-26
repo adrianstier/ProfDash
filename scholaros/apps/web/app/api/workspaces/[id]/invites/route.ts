@@ -41,7 +41,7 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     const { data: invites, error } = await supabase
       .from("workspace_invites")
-      .select("*")
+      .select("id, workspace_id, email, role, invited_by, expires_at, created_at")
       .eq("workspace_id", id)
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false });
@@ -51,6 +51,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Never expose tokens in list response
     return NextResponse.json(invites);
   } catch (error) {
     console.error("Unexpected error:", error);
@@ -158,11 +159,17 @@ export async function POST(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // TODO: Send email with invite link
-    // For now, just return the invite with the token
-    // In production, you'd send an email here and not expose the token directly
+    // TODO: Send email with invite link using a service like Resend or SendGrid
+    // Example: await sendInviteEmail(email, token, workspace.name);
 
-    return NextResponse.json(invite, { status: 201 });
+    // Return invite without exposing the token for security
+    // The token is stored in DB and used when recipient clicks the invite link
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { token: _token, ...safeInvite } = invite;
+    return NextResponse.json({
+      ...safeInvite,
+      message: "Invite created. Email sending is pending implementation.",
+    }, { status: 201 });
   } catch (error) {
     console.error("Unexpected error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

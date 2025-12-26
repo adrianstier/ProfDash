@@ -1,26 +1,11 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Task, TaskCategory, TaskPriority, TaskStatus } from "@scholaros/shared";
+import type { TaskCategory, TaskPriority, TaskStatus, TaskFromAPI } from "@scholaros/shared";
+import { queryKeys } from "@/app/providers";
 
-// Types for API responses (with string dates from JSON)
-export interface TaskFromAPI {
-  id: string;
-  user_id: string;
-  workspace_id?: string | null;
-  title: string;
-  description?: string | null;
-  category: TaskCategory;
-  priority: TaskPriority;
-  status: TaskStatus;
-  due?: string | null;
-  project_id?: string | null;
-  assignees?: string[];
-  tags?: string[];
-  completed_at?: string | null;
-  created_at: string;
-  updated_at: string;
-}
+// Re-export TaskFromAPI for components that import from this file
+export type { TaskFromAPI } from "@scholaros/shared";
 
 interface TaskFilters {
   status?: TaskStatus;
@@ -29,10 +14,25 @@ interface TaskFilters {
   due?: "today" | "upcoming" | string;
   project_id?: string;
   workspace_id?: string | null;
+  page?: number;
+  limit?: number;
 }
 
-// Fetch tasks with optional filters
-async function fetchTasks(filters?: TaskFilters): Promise<TaskFromAPI[]> {
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+export interface TasksResponse {
+  data: TaskFromAPI[];
+  pagination: PaginationInfo;
+}
+
+// Fetch tasks with optional filters and pagination
+async function fetchTasks(filters?: TaskFilters): Promise<TasksResponse> {
   const params = new URLSearchParams();
 
   if (filters?.status) params.set("status", filters.status);
@@ -42,6 +42,8 @@ async function fetchTasks(filters?: TaskFilters): Promise<TaskFromAPI[]> {
   if (filters?.project_id) params.set("project_id", filters.project_id);
   if (filters?.workspace_id) params.set("workspace_id", filters.workspace_id);
   if (filters?.workspace_id === null) params.set("workspace_id", "personal");
+  if (filters?.page) params.set("page", String(filters.page));
+  if (filters?.limit) params.set("limit", String(filters.limit));
 
   const response = await fetch(`/api/tasks?${params.toString()}`);
 
@@ -96,10 +98,19 @@ async function deleteTask(id: string): Promise<void> {
   }
 }
 
-// Hook: Fetch tasks
+// Hook: Fetch tasks with pagination
 export function useTasks(filters?: TaskFilters) {
   return useQuery({
-    queryKey: ["tasks", filters],
+    queryKey: queryKeys.tasks.list((filters ?? {}) as Record<string, unknown>),
+    queryFn: () => fetchTasks(filters),
+    select: (response) => response.data, // Extract just the data array for backward compatibility
+  });
+}
+
+// Hook: Fetch tasks with full pagination info
+export function useTasksWithPagination(filters?: TaskFilters) {
+  return useQuery({
+    queryKey: queryKeys.tasks.list((filters ?? {}) as Record<string, unknown>),
     queryFn: () => fetchTasks(filters),
   });
 }
@@ -122,7 +133,7 @@ export function useCreateTask() {
     mutationFn: createTask,
     onSuccess: () => {
       // Invalidate all task queries to refetch
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
     },
   });
 }
@@ -134,31 +145,39 @@ export function useUpdateTask() {
   return useMutation({
     mutationFn: updateTask,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
     },
     // Optimistic update
     onMutate: async (updatedTask) => {
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ["tasks"] });
+      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.all });
 
-      // Snapshot the previous value
-      const previousTasks = queryClient.getQueryData(["tasks"]);
+      // Snapshot the previous value (handle paginated response structure)
+      const previousData = queryClient.getQueriesData({ queryKey: queryKeys.tasks.all });
 
-      // Optimistically update to the new value
-      queryClient.setQueriesData({ queryKey: ["tasks"] }, (old: TaskFromAPI[] | undefined) => {
-        if (!old) return old;
-        return old.map((task) =>
-          task.id === updatedTask.id ? { ...task, ...updatedTask } : task
-        );
-      });
+      // Optimistically update to the new value (handle paginated response)
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.tasks.all },
+        (old: TasksResponse | undefined) => {
+          if (!old?.data) return old;
+          return {
+            ...old,
+            data: old.data.map((task) =>
+              task.id === updatedTask.id ? { ...task, ...updatedTask } : task
+            ),
+          };
+        }
+      );
 
       // Return a context object with the snapshotted value
-      return { previousTasks };
+      return { previousData };
     },
-    onError: (err, updatedTask, context) => {
+    onError: (_err, _updatedTask, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
-      if (context?.previousTasks) {
-        queryClient.setQueryData(["tasks"], context.previousTasks);
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
       }
     },
   });
@@ -171,7 +190,7 @@ export function useDeleteTask() {
   return useMutation({
     mutationFn: deleteTask,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
     },
   });
 }

@@ -215,6 +215,124 @@ export const UpdateProfileSchema = z.object({
   avatar_url: z.string().url().nullable().optional(),
 });
 
+// Publication schemas
+export const PublicationStatusSchema = z.enum([
+  "idea",
+  "drafting",
+  "internal-review",
+  "submitted",
+  "under-review",
+  "revision",
+  "accepted",
+  "in-press",
+  "published",
+]);
+
+export const PublicationTypeSchema = z.enum([
+  "journal-article",
+  "conference-paper",
+  "book-chapter",
+  "book",
+  "preprint",
+  "thesis",
+  "report",
+  "other",
+]);
+
+export const AuthorRoleSchema = z.enum([
+  "first",
+  "corresponding",
+  "co-first",
+  "middle",
+  "last",
+  "senior",
+]);
+
+export const PublicationSchema = z.object({
+  id: z.string().uuid(),
+  workspace_id: z.string().uuid().nullable().optional(),
+  user_id: z.string().uuid(),
+  title: z.string().min(1).max(1000),
+  abstract: z.string().nullable().optional(),
+  publication_type: PublicationTypeSchema.default("journal-article"),
+  status: PublicationStatusSchema.default("idea"),
+  journal: z.string().nullable().optional(),
+  volume: z.string().nullable().optional(),
+  issue: z.string().nullable().optional(),
+  pages: z.string().nullable().optional(),
+  year: z.number().int().min(1900).max(2100).nullable().optional(),
+  doi: z.string().nullable().optional(),
+  url: z.string().url().nullable().optional(),
+  pmid: z.string().nullable().optional(),
+  arxiv_id: z.string().nullable().optional(),
+  orcid_work_id: z.string().nullable().optional(),
+  submitted_at: z.coerce.date().nullable().optional(),
+  accepted_at: z.coerce.date().nullable().optional(),
+  published_at: z.coerce.date().nullable().optional(),
+  target_journal: z.string().nullable().optional(),
+  target_deadline: z.coerce.date().nullable().optional(),
+  keywords: z.array(z.string()).default([]),
+  citation_count: z.number().int().default(0),
+  citation_data: z.record(z.unknown()).default({}),
+  bibtex: z.string().nullable().optional(),
+  bibtex_key: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  metadata: z.record(z.unknown()).default({}),
+  created_at: z.coerce.date(),
+  updated_at: z.coerce.date(),
+});
+
+export const CreatePublicationSchema = z.object({
+  workspace_id: z.string().uuid().nullable().optional(),
+  title: z.string().min(1).max(1000),
+  abstract: z.string().nullable().optional(),
+  publication_type: PublicationTypeSchema.default("journal-article"),
+  status: PublicationStatusSchema.default("idea"),
+  journal: z.string().nullable().optional(),
+  volume: z.string().nullable().optional(),
+  issue: z.string().nullable().optional(),
+  pages: z.string().nullable().optional(),
+  year: z.number().int().min(1900).max(2100).nullable().optional(),
+  doi: z.string().nullable().optional(),
+  url: z.string().url().nullable().optional(),
+  pmid: z.string().nullable().optional(),
+  arxiv_id: z.string().nullable().optional(),
+  target_journal: z.string().nullable().optional(),
+  target_deadline: z.coerce.date().nullable().optional(),
+  keywords: z.array(z.string()).default([]),
+  bibtex: z.string().nullable().optional(),
+  bibtex_key: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+});
+
+export const UpdatePublicationSchema = CreatePublicationSchema.partial();
+
+export const PublicationAuthorSchema = z.object({
+  id: z.string().uuid(),
+  publication_id: z.string().uuid(),
+  personnel_id: z.string().uuid().nullable().optional(),
+  name: z.string().min(1).max(200),
+  email: z.string().email().nullable().optional(),
+  affiliation: z.string().nullable().optional(),
+  orcid: z.string().nullable().optional(),
+  author_order: z.number().int().min(1).default(1),
+  author_role: AuthorRoleSchema.default("middle"),
+  is_corresponding: z.boolean().default(false),
+  created_at: z.coerce.date(),
+});
+
+export const CreatePublicationAuthorSchema = z.object({
+  publication_id: z.string().uuid(),
+  personnel_id: z.string().uuid().nullable().optional(),
+  name: z.string().min(1).max(200),
+  email: z.string().email().nullable().optional(),
+  affiliation: z.string().nullable().optional(),
+  orcid: z.string().nullable().optional(),
+  author_order: z.number().int().min(1).default(1),
+  author_role: AuthorRoleSchema.default("middle"),
+  is_corresponding: z.boolean().default(false),
+});
+
 // Export inferred types
 export type TaskSchemaType = z.infer<typeof TaskSchema>;
 export type CreateTaskSchemaType = z.infer<typeof CreateTaskSchema>;
@@ -234,3 +352,8 @@ export type WorkspaceSchemaType = z.infer<typeof WorkspaceSchema>;
 export type CreateWorkspaceSchemaType = z.infer<typeof CreateWorkspaceSchema>;
 export type ProfileSchemaType = z.infer<typeof ProfileSchema>;
 export type UpdateProfileSchemaType = z.infer<typeof UpdateProfileSchema>;
+export type PublicationSchemaType = z.infer<typeof PublicationSchema>;
+export type CreatePublicationSchemaType = z.infer<typeof CreatePublicationSchema>;
+export type UpdatePublicationSchemaType = z.infer<typeof UpdatePublicationSchema>;
+export type PublicationAuthorSchemaType = z.infer<typeof PublicationAuthorSchema>;
+export type CreatePublicationAuthorSchemaType = z.infer<typeof CreatePublicationAuthorSchema>;

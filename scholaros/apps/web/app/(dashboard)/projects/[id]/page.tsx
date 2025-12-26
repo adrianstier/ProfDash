@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
+  Bot,
   Calendar,
   Edit2,
   FileText,
@@ -12,8 +13,10 @@ import {
   Folder,
   Loader2,
   MoreHorizontal,
+  Sparkles,
   Trash2,
 } from "lucide-react";
+import { useAgentStore } from "@/lib/stores/agent-store";
 import { PROJECT_TYPE_CONFIG, PROJECT_STATUS_CONFIG } from "@scholaros/shared";
 import {
   useProject,
@@ -24,6 +27,7 @@ import { ProjectStageProgress, ProjectStageSelect } from "@/components/projects/
 import { MilestoneList } from "@/components/projects/milestone-list";
 import { ProjectNotes } from "@/components/projects/project-notes";
 import { LinkedTasks } from "@/components/projects/linked-tasks";
+import { ProjectSummary } from "@/components/ai";
 
 const typeIcons = {
   manuscript: FileText,
@@ -181,14 +185,19 @@ export default function ProjectDetailPage() {
           </div>
         </div>
 
-        {/* Actions menu */}
-        <div className="relative">
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="rounded p-2 hover:bg-muted"
-          >
-            <MoreHorizontal className="h-5 w-5" />
-          </button>
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          {/* AI Help Button */}
+          <ProjectAgentButton project={project} />
+
+          {/* More menu */}
+          <div className="relative">
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="rounded p-2 hover:bg-muted"
+            >
+              <MoreHorizontal className="h-5 w-5" />
+            </button>
 
           {showMenu && (
             <>
@@ -235,6 +244,7 @@ export default function ProjectDetailPage() {
               </div>
             </>
           )}
+          </div>
         </div>
       </div>
 
@@ -302,6 +312,18 @@ export default function ProjectDetailPage() {
         )}
       </div>
 
+      {/* AI Summary */}
+      <ProjectSummary
+        project={{
+          id: project.id,
+          title: project.title,
+          type: project.type,
+          status: project.status,
+          stage: project.stage ?? undefined,
+          summary: project.summary ?? undefined,
+        }}
+      />
+
       {/* Three-column layout for milestones, tasks, and notes */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Milestones */}
@@ -319,6 +341,105 @@ export default function ProjectDetailPage() {
           <ProjectNotes projectId={projectId} />
         </div>
       </div>
+    </div>
+  );
+}
+
+// Project Agent Button Component
+interface ProjectAgentButtonProps {
+  project: {
+    id: string;
+    title: string;
+    type: string;
+    status: string;
+    stage?: string | null;
+    summary?: string | null;
+  };
+}
+
+function ProjectAgentButton({ project }: ProjectAgentButtonProps) {
+  const { openChat, selectAgent, setContext } = useAgentStore();
+  const [showQuickActions, setShowQuickActions] = useState(false);
+
+  const handleOpenProjectAgent = (initialMessage?: string) => {
+    // Set project context for the agent
+    setContext({
+      projectId: project.id,
+      projectTitle: project.title,
+      projectType: project.type,
+      projectStatus: project.status,
+      projectStage: project.stage,
+    });
+
+    // Select the project agent
+    selectAgent("project");
+
+    // Open chat
+    openChat(initialMessage);
+    setShowQuickActions(false);
+  };
+
+  const quickActions = [
+    {
+      label: "Suggest next steps",
+      icon: Sparkles,
+      message: `What should I focus on next for my ${project.type} project "${project.title}"? Current stage: ${project.stage || "not set"}.`,
+    },
+    {
+      label: "Generate milestones",
+      icon: Calendar,
+      message: `Help me create milestones for my ${project.type} project "${project.title}".`,
+    },
+    {
+      label: "Draft summary",
+      icon: FileText,
+      message: `Help me write a compelling summary for my ${project.type} project "${project.title}".`,
+    },
+    {
+      label: "Review progress",
+      icon: Bot,
+      message: `Review my progress on "${project.title}" and identify any potential blockers or risks.`,
+    },
+  ];
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setShowQuickActions(!showQuickActions)}
+        className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-primary to-purple-500 px-3 py-2 text-sm font-medium text-white shadow-sm hover:opacity-90 transition-opacity"
+      >
+        <Sparkles className="h-4 w-4" />
+        AI Help
+      </button>
+
+      {showQuickActions && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setShowQuickActions(false)} />
+          <div className="absolute right-0 top-full mt-2 z-20 w-64 rounded-lg border bg-card p-2 shadow-lg">
+            <div className="mb-2 px-2 py-1">
+              <p className="text-xs font-medium text-muted-foreground">Quick Actions</p>
+            </div>
+            {quickActions.map((action) => (
+              <button
+                key={action.label}
+                onClick={() => handleOpenProjectAgent(action.message)}
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted transition-colors"
+              >
+                <action.icon className="h-4 w-4 text-muted-foreground" />
+                {action.label}
+              </button>
+            ))}
+            <hr className="my-2" />
+            <button
+              onClick={() => handleOpenProjectAgent()}
+              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-primary hover:bg-muted transition-colors"
+            >
+              <Bot className="h-4 w-4" />
+              Open AI Chat
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

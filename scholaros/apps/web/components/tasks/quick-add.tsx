@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Sparkles, Command } from "lucide-react";
 import { parseQuickAdd } from "@scholaros/shared";
 import { useCreateTask } from "@/lib/hooks/use-tasks";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
 import type { TaskCategory, TaskPriority } from "@scholaros/shared";
+import { PLACEHOLDERS, KEYBOARD_SHORTCUTS } from "@/lib/constants";
+import { VoiceInputInline } from "@/components/voice";
+import { cn } from "@/lib/utils";
 
 interface QuickAddProps {
   onAdd?: (task: ReturnType<typeof parseQuickAdd>) => void;
@@ -47,7 +50,6 @@ export function QuickAdd({ onAdd, workspaceId: propWorkspaceId }: QuickAddProps)
     if (!value.trim() || createTask.isPending) return;
 
     const parsed = parseQuickAdd(value);
-    console.log("Parsed task:", parsed);
 
     // Call the callback if provided (for parent component updates)
     onAdd?.(parsed);
@@ -94,17 +96,32 @@ export function QuickAdd({ onAdd, workspaceId: propWorkspaceId }: QuickAddProps)
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} role="search" aria-label="Quick add task">
       <div
-        className={`flex items-center gap-2 rounded-lg border bg-card px-3 py-2 transition-shadow ${
-          isFocused ? "ring-2 ring-primary ring-offset-2" : ""
-        } ${createTask.isPending ? "opacity-70" : ""}`}
-      >
-        {createTask.isPending ? (
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        ) : (
-          <Plus className="h-5 w-5 text-muted-foreground" />
+        className={cn(
+          "group relative flex items-center gap-3 rounded-2xl border bg-card px-4 py-3.5 transition-all duration-200",
+          isFocused
+            ? "border-primary shadow-lg shadow-primary/10 ring-2 ring-primary/20"
+            : "hover:border-border hover:shadow-md",
+          createTask.isPending && "opacity-70"
         )}
+      >
+        {/* Icon */}
+        <div className={cn(
+          "flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200",
+          isFocused ? "bg-primary/10" : "bg-muted"
+        )}>
+          {createTask.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
+          ) : (
+            <Plus className={cn(
+              "h-4 w-4 transition-colors",
+              isFocused ? "text-primary" : "text-muted-foreground"
+            )} aria-hidden="true" />
+          )}
+        </div>
+
+        {/* Input */}
         <input
           ref={inputRef}
           type="text"
@@ -112,24 +129,55 @@ export function QuickAdd({ onAdd, workspaceId: propWorkspaceId }: QuickAddProps)
           onChange={(e) => setValue(e.target.value)}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          placeholder="Add task... (e.g., 'NSF report fri #grants p1')"
+          placeholder={PLACEHOLDERS.quickAdd}
           className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           disabled={createTask.isPending}
+          aria-label="Quick add task input. Press Q to focus."
+          aria-describedby="quick-add-hint"
+          aria-busy={createTask.isPending}
         />
-        <kbd className="hidden rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground sm:inline-block">
-          Q
+
+        {/* Voice Input */}
+        <VoiceInputInline
+          onTranscription={(text) => setValue((prev) => prev ? `${prev} ${text}` : text)}
+          disabled={createTask.isPending}
+        />
+
+        {/* Keyboard Shortcut */}
+        <kbd className="hidden items-center gap-0.5 rounded-lg border bg-muted/50 px-2 py-1 text-[10px] font-medium text-muted-foreground sm:inline-flex" aria-hidden="true">
+          {KEYBOARD_SHORTCUTS.quickAdd}
         </kbd>
       </div>
+
+      {/* Error Message */}
       {createTask.isError && (
-        <p className="mt-2 text-xs text-red-500">
+        <div className="mt-3 flex items-center gap-2 rounded-xl bg-destructive/10 px-4 py-2.5 text-sm text-destructive" role="alert" aria-live="polite">
+          <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
           Failed to create task. Please try again.
-        </p>
+        </div>
       )}
-      <p className="mt-2 text-xs text-muted-foreground">
-        Tip: Use <code className="rounded bg-muted px-1">p1-p4</code> for
-        priority, <code className="rounded bg-muted px-1">#category</code> for
-        category, and day names for due dates.
-      </p>
+
+      {/* Hint */}
+      <div id="quick-add-hint" className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <Sparkles className="h-3 w-3" />
+          <span>Smart parsing:</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5">
+            <code className="font-mono text-[10px]">p1-p4</code>
+            <span className="text-muted-foreground/70">priority</span>
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5">
+            <code className="font-mono text-[10px]">#category</code>
+            <span className="text-muted-foreground/70">tag</span>
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5">
+            <code className="font-mono text-[10px]">tomorrow</code>
+            <span className="text-muted-foreground/70">due date</span>
+          </span>
+        </div>
+      </div>
     </form>
   );
 }

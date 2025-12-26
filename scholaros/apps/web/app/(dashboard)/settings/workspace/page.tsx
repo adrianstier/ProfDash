@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Plus, Settings, Trash2, Users, X } from "lucide-react";
 import Link from "next/link";
 import {
-  useWorkspaces,
   useWorkspace,
   useUpdateWorkspace,
   useWorkspaceMembers,
@@ -26,11 +24,10 @@ const roleLabels: Record<WorkspaceRole, string> = {
 };
 
 export default function WorkspaceSettingsPage() {
-  const router = useRouter();
   const { currentWorkspaceId, currentWorkspaceRole } = useWorkspaceStore();
   const { data: workspace, isLoading: workspaceLoading } = useWorkspace(currentWorkspaceId);
   const { data: members = [], isLoading: membersLoading } = useWorkspaceMembers(currentWorkspaceId);
-  const { data: invites = [], isLoading: invitesLoading } = useWorkspaceInvites(currentWorkspaceId);
+  const { data: invites = [] } = useWorkspaceInvites(currentWorkspaceId);
 
   const updateWorkspace = useUpdateWorkspace();
   const inviteMember = useInviteMember();

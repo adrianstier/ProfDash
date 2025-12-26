@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Check, ChevronsUpDown, Plus, Settings } from "lucide-react";
 import { useWorkspaces } from "@/lib/hooks/use-workspaces";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
@@ -15,9 +15,11 @@ export function WorkspaceSwitcher() {
   const currentWorkspace = workspaces.find((w) => w.id === currentWorkspaceId) || workspaces[0];
 
   // Auto-select first workspace if none selected
-  if (workspaces.length > 0 && !currentWorkspaceId && currentWorkspace) {
-    setCurrentWorkspace(currentWorkspace.id, currentWorkspace.role);
-  }
+  useEffect(() => {
+    if (workspaces.length > 0 && !currentWorkspaceId && workspaces[0]) {
+      setCurrentWorkspace(workspaces[0].id, workspaces[0].role);
+    }
+  }, [workspaces, currentWorkspaceId, setCurrentWorkspace]);
 
   if (isLoading) {
     return (
