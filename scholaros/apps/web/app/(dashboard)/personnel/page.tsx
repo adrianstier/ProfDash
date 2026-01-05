@@ -8,7 +8,6 @@ import {
   Mail,
   Calendar,
   Loader2,
-  X,
   Trash2,
   Edit,
   CheckCircle,

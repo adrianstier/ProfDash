@@ -12,6 +12,7 @@ import {
   Pencil,
   Trash2,
   Clock,
+  Sparkles,
 } from "lucide-react";
 import type { TaskPriority, TaskCategory } from "@scholaros/shared";
 import type { TaskFromAPI } from "@/lib/hooks/use-tasks";
@@ -111,10 +112,20 @@ export function TaskCard({
   isCompact = false,
 }: TaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const [justCompleted, setJustCompleted] = useState(false);
   const { openTaskDetail } = useTaskStore();
   const menuRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const firstMenuItemRef = useRef<HTMLButtonElement>(null);
+
+  // Handle completion with animation
+  const handleToggleComplete = useCallback((taskToComplete: TaskFromAPI) => {
+    if (taskToComplete.status !== "done") {
+      setJustCompleted(true);
+      setTimeout(() => setJustCompleted(false), 600);
+    }
+    onToggleComplete?.(taskToComplete);
+  }, [onToggleComplete]);
 
   // Focus trap and keyboard navigation for dropdown menu
   useEffect(() => {
@@ -206,13 +217,15 @@ export function TaskCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group relative rounded-xl border-l-[3px] border bg-card transition-all duration-200",
-        priorityStyle.border,
+        "group relative rounded-xl border bg-card transition-all duration-200",
+        // Only show border-left accent for P1 tasks to reduce visual noise
+        task.priority === "p1" && "border-l-[3px] border-l-priority-p1",
         task.priority === "p1" && priorityStyle.bg,
         isDragging
           ? "opacity-50 shadow-xl ring-2 ring-primary scale-[1.02]"
-          : "hover:shadow-md hover:border-border",
+          : "hover:shadow-md hover:border-border hover-glow",
         isDone && "opacity-60",
+        justCompleted && "animate-success glow-success",
         isCompact ? "p-3" : "p-4"
       )}
     >
@@ -232,14 +245,15 @@ export function TaskCard({
           </button>
         )}
 
-        {/* Checkbox */}
+        {/* Checkbox with celebration animation */}
         <button
-          onClick={() => onToggleComplete?.(task)}
+          onClick={() => handleToggleComplete(task)}
           className={cn(
             "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200",
             isDone
               ? "border-success bg-success text-white scale-100"
-              : "border-muted-foreground/30 hover:border-primary hover:scale-110"
+              : "border-muted-foreground/30 hover:border-primary hover:scale-110 hover:bg-primary/5",
+            justCompleted && "animate-success"
           )}
           aria-label={
             isDone
@@ -257,6 +271,13 @@ export function TaskCard({
             aria-hidden="true"
           />
         </button>
+
+        {/* Completion sparkle effect */}
+        {justCompleted && (
+          <div className="absolute left-6 top-3 pointer-events-none">
+            <Sparkles className="h-4 w-4 text-amber-500 animate-fade-in" />
+          </div>
+        )}
 
         {/* Content */}
         <div
@@ -289,31 +310,31 @@ export function TaskCard({
             </p>
           )}
 
-          {/* Metadata */}
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {/* Priority badge */}
+          {/* Metadata - Improved density */}
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {/* Priority badge - Icon only for compact */}
             {task.priority && task.priority !== "p4" && (
               <span
                 className={cn(
-                  "inline-flex items-center gap-1 text-xs font-semibold",
+                  "inline-flex items-center gap-1 text-xs font-medium",
                   priorityStyle.icon
                 )}
+                title={`Priority ${task.priority.toUpperCase()}`}
               >
                 <Flag className="h-3 w-3" />
                 {!isCompact && (
-                  <span className="uppercase">{task.priority}</span>
+                  <span className="uppercase text-[10px]">{task.priority}</span>
                 )}
               </span>
             )}
 
-            {/* Category badge */}
+            {/* Category badge - More subtle */}
             {categoryStyle && !isCompact && (
               <span
                 className={cn(
-                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border",
+                  "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
                   categoryStyle.bg,
-                  categoryStyle.text,
-                  categoryStyle.border
+                  categoryStyle.text
                 )}
               >
                 <Hash className="h-2.5 w-2.5" />
@@ -325,9 +346,9 @@ export function TaskCard({
             {task.due && (
               <span
                 className={cn(
-                  "inline-flex items-center gap-1 text-xs font-medium",
+                  "inline-flex items-center gap-1 text-[11px]",
                   isOverdue
-                    ? "text-priority-p1"
+                    ? "text-priority-p1 font-medium"
                     : "text-muted-foreground"
                 )}
               >

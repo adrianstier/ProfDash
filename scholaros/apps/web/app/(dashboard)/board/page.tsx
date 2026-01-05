@@ -419,11 +419,9 @@ export default function BoardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500/5 via-primary/5 to-green-500/5 border border-border/50 p-6 animate-fade-in">
-        <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-
-        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header - Clean, minimal approach */}
+      <header className="rounded-2xl border border-border/50 bg-card/50 p-6 animate-fade-in">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
               <Kanban className="h-5 w-5 text-primary" />
@@ -459,64 +457,69 @@ export default function BoardPage() {
         </div>
       </header>
 
-      {/* Filters */}
+      {/* Filters - Improved spacing and scroll behavior */}
       {showFilters && (
-        <section className="flex flex-wrap items-center gap-4 rounded-xl border bg-card p-4 animate-slide-down">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-muted-foreground">
-              Category:
-            </span>
-            <div className="flex gap-1.5">
-              {categoryFilters.map((filter) => (
-                <button
-                  key={filter.id}
-                  onClick={() => setCategoryFilter(filter.id)}
-                  className={cn(
-                    "rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
-                    categoryFilter === filter.id
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  {filter.label}
-                </button>
-              ))}
+        <section className="rounded-xl border bg-card p-4 animate-slide-down">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            {/* Category filters */}
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-sm font-medium text-muted-foreground shrink-0">
+                Category:
+              </span>
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mb-1">
+                {categoryFilters.map((filter) => (
+                  <button
+                    key={filter.id}
+                    onClick={() => setCategoryFilter(filter.id)}
+                    className={cn(
+                      "rounded-md px-3 py-1.5 text-xs font-medium transition-all shrink-0",
+                      categoryFilter === filter.id
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="hidden sm:block h-6 w-px bg-border" />
+            <div className="hidden sm:block h-6 w-px bg-border shrink-0" />
 
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-muted-foreground">
-              Priority:
-            </span>
-            <div className="flex gap-1.5">
-              {priorityFilters.map((filter) => (
-                <button
-                  key={filter.id}
-                  onClick={() => setPriorityFilter(filter.id)}
-                  className={cn(
-                    "rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
-                    priorityFilter === filter.id
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  {filter.label}
-                </button>
-              ))}
+            {/* Priority filters */}
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-sm font-medium text-muted-foreground shrink-0">
+                Priority:
+              </span>
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mb-1">
+                {priorityFilters.map((filter) => (
+                  <button
+                    key={filter.id}
+                    onClick={() => setPriorityFilter(filter.id)}
+                    className={cn(
+                      "rounded-md px-3 py-1.5 text-xs font-medium transition-all shrink-0",
+                      priorityFilter === filter.id
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="ml-auto flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <X className="h-3.5 w-3.5" />
-              Clear
-            </button>
-          )}
+            {/* Clear button */}
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="sm:ml-auto flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              >
+                <X className="h-3.5 w-3.5" />
+                Clear all
+              </button>
+            )}
+          </div>
         </section>
       )}
 

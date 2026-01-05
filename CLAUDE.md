@@ -1,385 +1,294 @@
-# CLAUDE.md - ProfDash/ScholarOS
+# CLAUDE.md - Project Context for AI Assistants
 
-This document provides context for Claude Code when working on the ProfDash/ScholarOS codebase.
+This file provides context for AI assistants (Claude, Cursor, GitHub Copilot, etc.) working on the ScholarOS codebase.
 
 ## Project Overview
 
-**ProfDash/ScholarOS** is an academic productivity platform designed for professors and researchers. It provides task management, project tracking (manuscripts, grants), grant discovery, calendar integration, and AI-powered features.
+**ScholarOS** (evolved from ProfDash) is a multi-tenant, AI-native academic operations platform for professors, lab managers, and research teams. It provides task management, manuscript/grant project tracking, personnel management, Google Calendar integration, and grant discovery.
 
-### Architecture
+**Live Site:** https://scholaros-ashen.vercel.app
 
-- **Monorepo**: Turborepo with pnpm workspaces
-- **Frontend**: Next.js 15 (App Router) with React 19
-- **Backend**: Next.js API Routes + Supabase (PostgreSQL)
-- **AI Service**: Python FastAPI microservice (Claude/OpenAI)
-- **Auth**: Supabase Auth with Google OAuth support
+## Repository Structure
 
-## Quick Reference
+```
+ProfDash/
+├── scholaros/                    # Main v2.0 monorepo (Turborepo + pnpm)
+│   ├── apps/web/                 # Next.js 15 frontend application
+│   ├── packages/shared/          # Shared TypeScript types & Zod schemas
+│   ├── services/ai/              # Python FastAPI AI microservice
+│   └── supabase/                 # Database migrations & config
+├── docs/                         # Documentation
+│   ├── ARCHITECTURE.md           # System architecture
+│   ├── API.md                    # REST API reference
+│   ├── DEPLOYMENT.md             # Deployment guide
+│   ├── PRD.md                    # Product requirements
+│   └── PROGRESS.md               # Implementation status
+├── public/                       # Legacy v1.0 static assets (vanilla JS)
+└── server/                       # Legacy v1.0 Express server
+```
 
-### Development Commands
+## Technology Stack
+
+### Frontend (`scholaros/apps/web/`)
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Next.js | 15.1.0 | App Router, Server Components, API routes |
+| React | 19.x | UI components with RSC support |
+| TypeScript | 5.9.3 | Type safety |
+| Tailwind CSS | 3.4.16 | Styling |
+| shadcn/ui | Latest | Radix-based accessible components |
+| TanStack Query | 5.90.12 | Server state caching |
+| Zustand | 5.0.0 | Client state management |
+| Zod | 3.23.0 | Runtime validation |
+| @dnd-kit | 6.3.1 | Drag-and-drop for Kanban |
+
+### Backend & Database
+| Technology | Purpose |
+|------------|---------|
+| Supabase | PostgreSQL database, Auth, RLS, Storage, Realtime |
+| Next.js API Routes | REST API endpoints |
+| FastAPI (Python) | AI microservice for task extraction, summaries, grant scoring |
+
+### Infrastructure
+| Tool | Purpose |
+|------|---------|
+| Turborepo | Monorepo build orchestration |
+| pnpm | Package manager (workspaces) |
+| Vercel | Hosting & deployment |
+| GitHub Actions | CI/CD pipeline |
+| Vitest | Unit testing |
+| Playwright | E2E testing |
+
+## Key Directories
+
+### `scholaros/apps/web/app/`
+Next.js App Router structure:
+- `(auth)/` - Authentication routes (login, signup, invite)
+- `(dashboard)/` - Protected dashboard routes
+  - `today/`, `upcoming/`, `board/`, `list/`, `calendar/` - Task views
+  - `projects/` - Manuscript & grant projects
+  - `publications/` - Publication management
+  - `grants/` - Grant discovery & tracking
+  - `personnel/` - Team management
+  - `teaching/` - Teaching dashboard
+  - `settings/` - User & workspace settings
+- `api/` - REST API route handlers
+
+### `scholaros/apps/web/components/`
+React components organized by feature:
+- `ui/` - shadcn/ui base components
+- `tasks/` - Task cards, lists, Kanban, quick-add
+- `projects/` - Project cards, milestones, stages
+- `grants/` - Grant search, watchlist
+- `publications/` - Publication import, cards
+- `layout/` - Sidebar, navigation, workspace switcher
+
+### `scholaros/apps/web/lib/`
+- `supabase/` - Client/server Supabase instances
+- `hooks/` - TanStack Query data-fetching hooks
+- `stores/` - Zustand stores (workspace, task, agent)
+- `utils.ts` - Utility functions (cn, formatDate, etc.)
+- `constants.ts` - Application constants
+
+### `scholaros/packages/shared/src/`
+Shared across frontend & backend:
+- `types/` - TypeScript interfaces (Task, Project, Workspace)
+- `schemas/` - Zod validation schemas
+- `utils/` - Quick-add parser, shared utilities
+- `config/project-stages.ts` - Project type stage definitions
+
+### `scholaros/services/ai/`
+Python FastAPI microservice:
+- `app/main.py` - FastAPI application
+- `app/agents/` - Multi-agent framework (task, grant, project agents)
+- `app/routers/` - API endpoints (extract, summarize, grants)
+- `app/services/llm.py` - LLM service abstraction (Anthropic)
+
+### `scholaros/supabase/migrations/`
+Database migrations applied in order:
+1. `20241217000000_initial_schema.sql` - Profiles, workspaces, tasks
+2. `20241217000001_workspace_invites.sql` - Invite system, RLS
+3. `20241217000002_project_milestones_notes.sql` - Projects hierarchy
+4. `20241217000003_calendar_integrations.sql` - Google Calendar
+5. `20241217000004_funding_opportunities.sql` - Grant discovery
+6. `20241221000000_documents_and_ai.sql` - Documents, embeddings
+7. `20241221000001_publications.sql` - Publication tracking
+
+## Development Commands
 
 ```bash
 # Install dependencies (from scholaros/)
 pnpm install
 
-# Build shared package first (required before dev)
-pnpm build
-
-# Run development server
+# Start development server
 pnpm dev
 
-# Run all checks
-pnpm lint && pnpm typecheck && pnpm test
+# Build all packages
+pnpm build
 
-# Run specific workspace
+# Run type checking
+pnpm typecheck
+
+# Run linting
+pnpm lint
+
+# Run unit tests
+pnpm test
+
+# Run E2E tests
+pnpm test:e2e
+
+# Start specific package
 pnpm --filter @scholaros/web dev
-pnpm --filter @scholaros/shared build
-
-# AI Service (from services/ai/)
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
 ```
 
-### Key Directories
+## Architecture Patterns
 
-```
-ProfDash/
-├── scholaros/                    # Main monorepo (active development)
-│   ├── apps/web/                 # Next.js 15 application
-│   │   ├── app/                  # App Router pages & API routes
-│   │   │   ├── (auth)/           # Login, signup, invite pages
-│   │   │   ├── (dashboard)/      # Protected dashboard pages
-│   │   │   └── api/              # API route handlers
-│   │   ├── components/           # React components
-│   │   └── lib/                  # Utilities, hooks, stores
-│   ├── packages/shared/          # Shared types, schemas, utils
-│   ├── services/ai/              # Python FastAPI microservice
-│   └── supabase/migrations/      # Database migrations
-└── docs/                         # Documentation
-```
+### Multi-Tenancy
+- Workspace-based isolation using PostgreSQL Row Level Security (RLS)
+- Every table has `workspace_id` column
+- RLS policies check `workspace_members` for access
 
-## Coding Conventions
+### Authentication
+- Supabase Auth (Email/Password + Google OAuth)
+- Session management via HTTP-only cookies
+- Middleware refreshes tokens on each request
 
-### TypeScript
+### Authorization (RBAC)
+- Roles: `owner`, `admin`, `member`, `limited`
+- Permission helpers in `stores/workspace-store.ts`
 
-- **Strict mode** enabled (`tsconfig.json`)
-- Use `interface` for object shapes, `type` for unions/aliases
-- Separate API types (`TaskFromAPI`) from client types (`Task`) - API types use ISO strings for dates
-- Path aliases: `@/*` for web app imports, `@scholaros/shared/*` for shared package
+### Data Flow
+1. React Query hooks fetch data via API routes
+2. API routes validate with Zod schemas
+3. Supabase client executes query with RLS
+4. Results cached by React Query
+5. Optimistic updates for mutations
 
+### API Pattern
 ```typescript
-// Types pattern - separate client vs API types
-export interface Task {
-  id: string;
-  due?: Date | null;  // Client-side uses Date
-  created_at: Date;
-}
+// API route structure
+export async function GET(request: Request) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-export interface TaskFromAPI {
-  id: string;
-  due?: string | null;  // API returns ISO strings
-  created_at: string;
+  // Query with RLS
+  const { data, error } = await supabase.from('tasks').select('*');
+  return NextResponse.json(data);
 }
 ```
 
-### React Components
+## Database Schema (Key Tables)
 
-- Use `"use client"` directive for client components
-- Functional components with TypeScript interfaces for props
-- Use `cn()` utility from `@/lib/utils` for conditional classNames
-- Lucide React for icons
-- Component file naming: `kebab-case.tsx` (e.g., `task-card.tsx`)
-
-```typescript
-"use client";
-
-import { cn } from "@/lib/utils";
-import { Check } from "lucide-react";
-
-interface TaskCardProps {
-  task: TaskFromAPI;
-  onToggleComplete?: (task: TaskFromAPI) => void;
-  isCompact?: boolean;
-}
-
-export function TaskCard({ task, onToggleComplete, isCompact = false }: TaskCardProps) {
-  return (
-    <div className={cn("p-4", isCompact && "p-2")}>
-      {/* ... */}
-    </div>
-  );
-}
-```
-
-### Hooks Pattern (TanStack Query)
-
-- Custom hooks in `lib/hooks/use-*.ts`
-- Use `queryKeys` factory from `@/app/providers` for cache consistency
-- Implement optimistic updates for mutations
-- Re-export types that components need
-
-```typescript
-"use client";
-
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/app/providers";
-
-export function useTasks(filters?: TaskFilters) {
-  return useQuery({
-    queryKey: queryKeys.tasks.list(filters ?? {}),
-    queryFn: () => fetchTasks(filters),
-  });
-}
-
-export function useUpdateTask() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: updateTask,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
-    },
-    // Include optimistic updates for better UX
-    onMutate: async (updatedTask) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.all });
-      // ... optimistic update logic
-    },
-  });
-}
-```
-
-### API Routes Pattern
-
-- Use `createClient` from `@/lib/supabase/server` for server-side Supabase
-- Validate requests with Zod schemas from `@scholaros/shared`
-- Apply rate limiting for all endpoints
-- Return proper HTTP status codes and error messages
-
-```typescript
-import { createClient } from "@/lib/supabase/server";
-import { NextResponse } from "next/server";
-import { CreateTaskSchema } from "@scholaros/shared";
-
-export async function POST(request: Request) {
-  try {
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const validationResult = CreateTaskSchema.safeParse(body);
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: "Validation failed", details: validationResult.error.flatten() },
-        { status: 400 }
-      );
-    }
-
-    const { data, error } = await supabase
-      .from("tasks")
-      .insert({ ...validationResult.data, user_id: user.id })
-      .select()
-      .single();
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json(data, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
-```
-
-### State Management
-
-- **Server state**: TanStack Query (data fetching, caching)
-- **Client state**: Zustand stores in `lib/stores/`
-- **Form state**: React useState + Zod validation
-
-```typescript
-// Zustand store pattern
-import { create } from "zustand";
-
-interface WorkspaceStore {
-  currentWorkspaceId: string | null;
-  setCurrentWorkspace: (id: string | null) => void;
-}
-
-export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
-  currentWorkspaceId: null,
-  setCurrentWorkspace: (id) => set({ currentWorkspaceId: id }),
-}));
-```
-
-### Styling
-
-- Tailwind CSS with custom design tokens
-- CVA (Class Variance Authority) for component variants
-- Custom colors defined in `tailwind.config.ts`:
-  - Priority colors: `priority-p1`, `priority-p2`, etc.
-  - Category colors: `category-research`, `category-teaching`, etc.
-  - Semantic colors: `success`, `destructive`, etc.
-
-### Accessibility (WCAG 2.1 AA)
-
-- Use ARIA labels from `@/lib/constants` (ARIA_LABELS)
-- Implement keyboard navigation (arrow keys for menus)
-- Focus management with refs
-- Skip links for main content
-- `role`, `aria-*` attributes on interactive elements
-
-## Database
-
-### Supabase + Row Level Security (RLS)
-
-- All tables have RLS policies enabled
-- Use security definer functions to prevent infinite recursion:
-  - `get_user_workspace_ids()`
-  - `user_has_workspace_role()`
-  - `user_can_access_project()`
-
-### Key Tables
-
-| Table | Description |
-|-------|-------------|
-| `profiles` | User profiles |
-| `tasks` | Task items (workspace-scoped) |
-| `workspaces` | Workspace/team containers |
-| `workspace_members` | User-workspace relationships with roles |
-| `projects` | Manuscripts, grants, general projects |
-| `project_milestones` | Project milestones |
-| `project_notes` | Project notes |
-| `calendar_connections` | Google Calendar OAuth tokens |
-| `funding_opportunities` | Grant opportunities |
-| `opportunity_watchlist` | Tracked grants |
-
-### Migrations
-
-Located in `scholaros/supabase/migrations/`. Run in order by timestamp.
-
-## API Endpoints
-
-### Tasks
-- `GET /api/tasks` - List tasks (supports pagination, filters)
-- `POST /api/tasks` - Create task
-- `GET /api/tasks/[id]` - Get task
-- `PATCH /api/tasks/[id]` - Update task
-- `DELETE /api/tasks/[id]` - Delete task
-
-### Projects
-- `GET/POST /api/projects` - List/create projects
-- `GET/PATCH/DELETE /api/projects/[id]` - Project operations
-- `GET/POST /api/projects/[id]/milestones` - Milestones
-- `GET/POST /api/projects/[id]/notes` - Notes
-
-### Workspaces
-- `GET/POST /api/workspaces` - List/create workspaces
-- `GET/PATCH/DELETE /api/workspaces/[id]` - Workspace operations
-- `GET/POST /api/workspaces/[id]/members` - Member management
-- `GET/POST /api/workspaces/[id]/invites` - Invite management
-
-### AI Features
-- `POST /api/ai/extract-tasks` - Extract tasks from text
-- `POST /api/ai/project-summary` - Generate project summary
-- `POST /api/ai/fit-score` - Score grant fit
+### Core Tables
+- `profiles` - User profiles (links to auth.users)
+- `workspaces` - Multi-tenant workspaces
+- `workspace_members` - User-workspace associations with roles
+- `tasks` - Task management with categories, priorities, assignees
+- `projects` - Unified manuscripts, grants, general projects
+- `project_milestones` - Project milestone tracking
+- `project_notes` - Project notes
 
 ### Integrations
-- `GET /api/auth/google` - Start Google OAuth
-- `GET /api/auth/google/callback` - OAuth callback
-- `GET /api/calendar/events` - Fetch calendar events
-- `GET /api/grants/search` - Search funding opportunities
+- `calendar_connections` - Google Calendar OAuth tokens
+- `calendar_events_cache` - Cached calendar events
+- `funding_opportunities` - Grant opportunities from APIs
+- `opportunity_watchlist` - User grant watchlists
+- `saved_searches` - Saved grant search queries
+
+### AI Features
+- `documents` - Uploaded documents
+- `document_chunks` - Document chunks with embeddings
+- `ai_actions_log` - AI action history and feedback
+- `agent_executions` - Agent framework logs
+
+## Quick Add Syntax
+
+The quick-add parser supports natural language task entry:
+```
+NSF report fri #grants p1 @craig +project-123
+```
+- `fri` - Due date (relative or absolute)
+- `#grants` - Category (research, teaching, grants, etc.)
+- `p1` - Priority (p1-p4)
+- `@craig` - Assignee
+- `+project-123` - Link to project
+
+## Environment Variables
+
+Required variables (see `.env.example`):
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+ANTHROPIC_API_KEY=
+AI_SERVICE_URL=
+```
 
 ## Testing
 
 ### Unit Tests (Vitest)
-```bash
-pnpm test           # Run once
-pnpm test:watch     # Watch mode
-```
+Located in `*.test.ts` files alongside source code.
 
 ### E2E Tests (Playwright)
-```bash
-pnpm test:e2e
-```
-
-### Test Files
-- Unit tests: `*.test.ts` alongside source files
-- E2E tests: `apps/web/e2e/`
-
-## Environment Variables
-
-Required in `scholaros/.env.local`:
-
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-
-# Google OAuth (for calendar)
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
-
-# AI Service
-AI_SERVICE_URL=http://localhost:8000
-AI_SERVICE_API_KEY=your_internal_api_key
-
-# LLM Provider (services/ai/.env)
-LLM_PROVIDER=anthropic
-ANTHROPIC_API_KEY=your_anthropic_key
-```
+Located in `tests/e2e/`. Run with `pnpm test:e2e`.
 
 ## Common Tasks
 
-### Adding a New Feature
+### Adding a New API Endpoint
+1. Create route in `apps/web/app/api/[resource]/route.ts`
+2. Add Zod schema in `packages/shared/src/schemas/`
+3. Create React Query hook in `apps/web/lib/hooks/`
+4. Add RLS policy if new table
 
-1. **Database**: Add migration in `supabase/migrations/`
-2. **Types**: Add to `packages/shared/src/types/index.ts`
-3. **Schemas**: Add Zod schema to `packages/shared/src/schemas/index.ts`
-4. **API**: Create route in `apps/web/app/api/`
-5. **Hooks**: Create hook in `apps/web/lib/hooks/`
-6. **UI**: Create components in `apps/web/components/`
-7. **Page**: Create page in `apps/web/app/(dashboard)/`
+### Adding a New Component
+1. Create in `apps/web/components/[feature]/`
+2. Use shadcn/ui primitives from `components/ui/`
+3. Follow existing naming conventions
 
-### Adding an API Endpoint
+### Adding a Database Migration
+1. Create SQL file in `supabase/migrations/` with timestamp prefix
+2. Run `supabase db push` or apply in Supabase dashboard
+3. Regenerate types if needed
 
-1. Create route file in `apps/web/app/api/[resource]/route.ts`
-2. Import Supabase client: `import { createClient } from "@/lib/supabase/server"`
-3. Authenticate user with `supabase.auth.getUser()`
-4. Validate input with Zod schemas
-5. Apply rate limiting
-6. Return proper status codes
+## Code Style
 
-### Adding a React Component
+- TypeScript strict mode enabled
+- ESLint + Prettier for formatting
+- Prefer functional components with hooks
+- Use `cn()` utility for conditional classes
+- Zod for all API validation
+- TanStack Query for all data fetching
+- Zustand for client-only state
 
-1. Create file in `apps/web/components/[feature]/[component].tsx`
-2. Add `"use client"` if using hooks/interactivity
-3. Define props interface
-4. Export named function component
-5. Use `cn()` for conditional classes
-6. Add ARIA attributes for accessibility
+## Important Files
 
-## Known Patterns & Gotchas
+| File | Purpose |
+|------|---------|
+| `apps/web/middleware.ts` | Auth middleware, session refresh |
+| `apps/web/lib/supabase/client.ts` | Browser Supabase client |
+| `apps/web/lib/supabase/server.ts` | Server Supabase client |
+| `packages/shared/src/schemas/index.ts` | All Zod schemas |
+| `packages/shared/src/types/index.ts` | All TypeScript types |
+| `services/ai/app/main.py` | AI service entry point |
 
-### RLS Infinite Recursion
-When writing RLS policies, never directly query `workspace_members` from another table's policy. Use the security definer functions instead.
+## Notes for AI Assistants
 
-### Date Handling
-- API returns ISO strings, client uses Date objects
-- Use `TaskFromAPI` type for data from API responses
-- Convert with `new Date(isoString)` when needed
+1. **Always check existing patterns** - Look at similar files before creating new ones
+2. **Use the shared package** - Types and schemas live in `packages/shared/`
+3. **RLS is mandatory** - Every table needs proper RLS policies
+4. **Workspace context required** - Most queries filter by `workspace_id`
+5. **Validate with Zod** - Use schemas for all API request/response validation
+6. **Use React Query** - Don't fetch data directly; use hooks in `lib/hooks/`
+7. **Prefer shadcn/ui** - Use existing UI primitives from `components/ui/`
+8. **Check migrations** - Database schema is in `supabase/migrations/`
 
-### Query Invalidation
-Always use `queryKeys` factory for cache keys to ensure consistent invalidation:
-```typescript
-queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
-```
+## Links
 
-### Workspace Context
-Many features are workspace-scoped. Always check for `workspace_id` in queries and mutations.
+- [Architecture Documentation](docs/ARCHITECTURE.md)
+- [API Reference](docs/API.md)
+- [Deployment Guide](docs/DEPLOYMENT.md)
+- [Product Requirements](docs/PRD.md)

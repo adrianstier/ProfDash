@@ -9,7 +9,6 @@ import {
   FileText,
   BookOpen,
   Layers,
-  ChevronDown,
   Edit3,
   Clock,
   Send,
@@ -41,10 +40,13 @@ type ViewMode = "pipeline" | "grid" | "list";
 
 const statusConfig: Record<PublicationStatus, { icon: typeof FileText; color: string; bgColor: string }> = {
   idea: { icon: Edit3, color: "text-slate-600 dark:text-slate-400", bgColor: "bg-slate-100 dark:bg-slate-900/30" },
-  draft: { icon: FileText, color: "text-blue-600 dark:text-blue-400", bgColor: "bg-blue-100 dark:bg-blue-900/30" },
-  "in-review": { icon: Clock, color: "text-amber-600 dark:text-amber-400", bgColor: "bg-amber-100 dark:bg-amber-900/30" },
+  drafting: { icon: FileText, color: "text-blue-600 dark:text-blue-400", bgColor: "bg-blue-100 dark:bg-blue-900/30" },
+  "internal-review": { icon: Users, color: "text-cyan-600 dark:text-cyan-400", bgColor: "bg-cyan-100 dark:bg-cyan-900/30" },
+  submitted: { icon: Send, color: "text-indigo-600 dark:text-indigo-400", bgColor: "bg-indigo-100 dark:bg-indigo-900/30" },
+  "under-review": { icon: Clock, color: "text-amber-600 dark:text-amber-400", bgColor: "bg-amber-100 dark:bg-amber-900/30" },
   revision: { icon: Edit3, color: "text-purple-600 dark:text-purple-400", bgColor: "bg-purple-100 dark:bg-purple-900/30" },
   accepted: { icon: CheckCircle2, color: "text-green-600 dark:text-green-400", bgColor: "bg-green-100 dark:bg-green-900/30" },
+  "in-press": { icon: BookOpen, color: "text-teal-600 dark:text-teal-400", bgColor: "bg-teal-100 dark:bg-teal-900/30" },
   published: { icon: BookMarked, color: "text-primary", bgColor: "bg-primary/10" },
 };
 
@@ -53,8 +55,10 @@ export default function PublicationsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("pipeline");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [_selectedPublication, setSelectedPublication] =
+  const [selectedPublication, setSelectedPublication] =
     useState<PublicationWithAuthors | null>(null);
+  // TODO: Use selectedPublication to display view/edit modal
+  void selectedPublication;
   const [statusFilter, setStatusFilter] = useState<PublicationStatus | "all">(
     "all"
   );
@@ -68,14 +72,14 @@ export default function PublicationsPage() {
 
   const deletePublication = useDeletePublication();
 
-  const publications = data?.data ?? [];
+  const publications = useMemo(() => data?.data ?? [], [data?.data]);
 
   // Stats
   const stats = useMemo(() => {
     const total = publications.length;
-    const inProgress = publications.filter((p) => ["draft", "in-review", "revision"].includes(p.status)).length;
+    const inProgress = publications.filter((p) => ["drafting", "internal-review", "submitted", "under-review", "revision"].includes(p.status)).length;
     const published = publications.filter((p) => p.status === "published").length;
-    const accepted = publications.filter((p) => p.status === "accepted").length;
+    const accepted = publications.filter((p) => ["accepted", "in-press"].includes(p.status)).length;
     return { total, inProgress, published, accepted };
   }, [publications]);
 

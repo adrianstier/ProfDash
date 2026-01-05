@@ -40,10 +40,13 @@ export function GrantDocumentModal({
   onGrantDataExtracted,
 }: GrantDocumentModalProps) {
   const [step, setStep] = useState<Step>("upload");
-  const [_documentId, setDocumentId] = useState<string | null>(null);
-  const [_extractedData, setExtractedData] = useState<GrantEntryData | null>(
+  const [documentId, setDocumentId] = useState<string | null>(null);
+  const [extractedData, setExtractedData] = useState<GrantEntryData | null>(
     null
   );
+  // Used for future feature: re-processing document or showing raw vs edited
+  void documentId;
+  void extractedData;
   const [editedData, setEditedData] = useState<GrantEntryData | null>(null);
 
   const processDocument = useProcessDocument();

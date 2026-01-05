@@ -52,10 +52,13 @@ export function CVImportModal({
   onPersonnelDataExtracted,
 }: CVImportModalProps) {
   const [step, setStep] = useState<Step>("upload");
-  const [_documentId, setDocumentId] = useState<string | null>(null);
-  const [_extractedData, setExtractedData] = useState<PersonnelData | null>(
+  const [documentId, setDocumentId] = useState<string | null>(null);
+  const [extractedData, setExtractedData] = useState<PersonnelData | null>(
     null
   );
+  // Used for future feature: re-processing document or showing raw vs edited
+  void documentId;
+  void extractedData;
   const [editedData, setEditedData] = useState<PersonnelData | null>(null);
 
   const processDocument = useProcessDocument();

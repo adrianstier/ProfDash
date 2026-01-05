@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import {
   Plus,
   FileText,
-  Loader2,
   BookOpen,
   Wallet,
   Activity,

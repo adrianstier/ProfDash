@@ -12,7 +12,6 @@ import {
   BookOpen,
   Calendar,
   ChevronDown,
-  ChevronLeft,
   Clock,
   FileText,
   GraduationCap,
@@ -269,18 +268,21 @@ export function Sidebar({ user }: SidebarProps) {
                       <Link
                         href={item.href}
                         className={cn(
-                          "group relative flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-all duration-150",
+                          "group relative flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-all duration-200",
                           isActive
-                            ? "bg-primary/10 text-primary font-medium shadow-sm"
+                            ? "nav-active-glow text-primary font-medium shadow-sm"
                             : "text-muted-foreground hover:bg-muted hover:text-foreground",
                           isCollapsed && "justify-center px-0"
                         )}
                         aria-current={isActive ? "page" : undefined}
                         style={{ animationDelay: `${(sectionIndex * 50) + (itemIndex * 30)}ms` }}
                       >
-                        {/* Active indicator */}
+                        {/* Active indicator with glow */}
                         {isActive && (
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-primary" />
+                          <>
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-primary shadow-sm" style={{ boxShadow: '2px 0 8px hsl(var(--primary) / 0.3)' }} />
+                            <div className="absolute inset-0 rounded-xl bg-primary/5 pointer-events-none" />
+                          </>
                         )}
 
                         <Icon
@@ -309,20 +311,25 @@ export function Sidebar({ user }: SidebarProps) {
                           </>
                         )}
 
-                        {/* Tooltip for collapsed state */}
+                        {/* Tooltip for collapsed state - improved with animation */}
                         {isCollapsed && (
-                          <div className="absolute left-full ml-2 px-2.5 py-1.5 rounded-lg bg-popover border shadow-lg text-sm font-medium opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
-                            {item.label}
-                            {badgeCount > 0 && (
-                              <span className={cn(
-                                "ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-semibold",
-                                hasOverdue
-                                  ? "bg-priority-p1-light text-priority-p1"
-                                  : "bg-muted text-muted-foreground"
-                              )}>
-                                {badgeCount}
-                              </span>
-                            )}
+                          <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150 z-50">
+                            {/* Arrow */}
+                            <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-popover border-l border-b border-border rotate-45" />
+                            {/* Tooltip content with entrance animation */}
+                            <div className="relative px-3 py-2 rounded-lg bg-popover border shadow-lg text-sm font-medium whitespace-nowrap animate-tooltip">
+                              {item.label}
+                              {badgeCount > 0 && (
+                                <span className={cn(
+                                  "ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-semibold",
+                                  hasOverdue
+                                    ? "bg-priority-p1-light text-priority-p1"
+                                    : "bg-muted text-muted-foreground"
+                                )}>
+                                  {badgeCount}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         )}
                       </Link>

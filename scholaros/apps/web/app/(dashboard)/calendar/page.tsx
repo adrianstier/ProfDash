@@ -8,7 +8,6 @@ import {
   CheckSquare,
   Loader2,
   Settings,
-  ExternalLink,
   Plus,
   X,
   ChevronDown,

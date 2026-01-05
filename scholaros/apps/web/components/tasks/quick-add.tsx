@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Plus, Loader2, Sparkles, Command } from "lucide-react";
+import { Plus, Loader2, Sparkles } from "lucide-react";
 import { parseQuickAdd } from "@scholaros/shared";
 import { useCreateTask } from "@/lib/hooks/use-tasks";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";

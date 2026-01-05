@@ -49,7 +49,8 @@ export function ExtractTasksFromDocumentModal({
   onClose,
 }: ExtractTasksFromDocumentModalProps) {
   const [step, setStep] = useState<Step>("upload");
-  const [_documentId, setDocumentId] = useState<string | null>(null);
+  const [documentId, setDocumentId] = useState<string | null>(null);
+  void documentId; // Used for future feature: editing extracted tasks
   const [extractedTasks, setExtractedTasks] = useState<ExtractedTask[]>([]);
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
   const [importedCount, setImportedCount] = useState(0);

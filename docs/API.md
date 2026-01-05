@@ -2,17 +2,165 @@
 
 This document describes the REST API endpoints available in ScholarOS.
 
-## Base URL
+## Table of Contents
 
-- **Development:** `http://localhost:3000/api`
-- **Production:** `https://your-domain.com/api`
+1. [Overview](#overview)
+2. [Authentication](#authentication)
+3. [Error Handling](#error-handling)
+4. [Rate Limiting](#rate-limiting)
+5. [Tasks API](#tasks-api)
+6. [Projects API](#projects-api)
+7. [Workspaces API](#workspaces-api)
+8. [Grants API](#grants-api)
+9. [Calendar API](#calendar-api)
+10. [Publications API](#publications-api)
+11. [Personnel API](#personnel-api)
+12. [AI API](#ai-api)
+13. [Agents API](#agents-api)
+
+---
+
+## Overview
+
+### Base URLs
+
+| Environment | URL |
+|-------------|-----|
+| Development | `http://localhost:3000/api` |
+| Production | `https://your-domain.com/api` |
+
+### Content Type
+
+All requests and responses use JSON:
+
+```
+Content-Type: application/json
+```
+
+### Pagination
+
+List endpoints support pagination with the following query parameters:
+
+| Parameter | Type | Default | Max | Description |
+|-----------|------|---------|-----|-------------|
+| `page` | number | 1 | - | Page number (1-indexed) |
+| `limit` | number | 50 | 100 | Items per page |
+
+**Paginated Response Format:**
+
+```json
+{
+  "data": [...],
+  "pagination": {
+    "page": 1,
+    "limit": 50,
+    "total": 234,
+    "totalPages": 5,
+    "hasMore": true
+  }
+}
+```
+
+---
 
 ## Authentication
 
-All API endpoints require authentication via Supabase. The authentication token is automatically handled through cookies when using the web application. For external API access, include the Supabase access token in the Authorization header:
+All API endpoints require authentication via Supabase Auth.
 
-```
+### Web Application
+
+Authentication is handled automatically through HTTP-only cookies when using the web application.
+
+### External API Access
+
+Include the Supabase access token in the Authorization header:
+
+```http
 Authorization: Bearer <access_token>
+```
+
+### Getting an Access Token
+
+```typescript
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Sign in
+const { data: { session } } = await supabase.auth.signInWithPassword({
+  email: 'user@example.com',
+  password: 'password'
+});
+
+// Use the access token
+const token = session.access_token;
+```
+
+---
+
+## Error Handling
+
+### Error Response Format
+
+```json
+{
+  "error": "Human-readable error message",
+  "code": "ERROR_CODE",
+  "details": {}
+}
+```
+
+### HTTP Status Codes
+
+| Code | Description | When Used |
+|------|-------------|-----------|
+| `200` | Success | GET, PATCH requests |
+| `201` | Created | POST requests that create resources |
+| `204` | No Content | DELETE requests |
+| `400` | Bad Request | Validation errors |
+| `401` | Unauthorized | Missing or invalid authentication |
+| `403` | Forbidden | Insufficient permissions |
+| `404` | Not Found | Resource doesn't exist |
+| `429` | Too Many Requests | Rate limit exceeded |
+| `500` | Internal Server Error | Unexpected errors |
+
+### Validation Errors
+
+Validation errors include details about which fields failed:
+
+```json
+{
+  "error": "Validation failed",
+  "code": "VALIDATION_ERROR",
+  "details": {
+    "formErrors": [],
+    "fieldErrors": {
+      "title": ["String must contain at least 1 character"],
+      "priority": ["Invalid enum value. Expected 'p1' | 'p2' | 'p3' | 'p4'"]
+    }
+  }
+}
+```
+
+---
+
+## Rate Limiting
+
+API requests are rate limited to prevent abuse:
+
+| Endpoint Type | Limit | Window |
+|--------------|-------|--------|
+| Read endpoints | 200 requests | 1 minute |
+| Write endpoints | 100 requests | 1 minute |
+| AI endpoints | 20 requests | 1 minute |
+| Search endpoints | 30 requests | 1 minute |
+
+### Rate Limit Headers
+
+```http
+X-RateLimit-Limit: 200
+X-RateLimit-Remaining: 195
+X-RateLimit-Reset: 1702656000
 ```
 
 ---
@@ -21,7 +169,7 @@ Authorization: Bearer <access_token>
 
 ### List Tasks
 
-Retrieves all tasks for the current user, optionally filtered by workspace.
+Retrieves tasks with optional filtering and pagination.
 
 ```http
 GET /api/tasks
@@ -31,29 +179,46 @@ GET /api/tasks
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `workspace_id` | string | Filter tasks by workspace ID |
+| `workspace_id` | UUID | Filter by workspace |
+| `status` | string | Filter by status: `todo`, `progress`, `done` |
+| `category` | string | Filter by category |
+| `priority` | string | Filter by priority: `p1`, `p2`, `p3`, `p4` |
+| `due` | string | Filter by due date: `today`, `upcoming`, `overdue`, or ISO date |
+| `project_id` | UUID | Filter by project |
+| `assignee_id` | UUID | Filter by assignee |
+| `page` | number | Page number (default: 1) |
+| `limit` | number | Items per page (default: 50, max: 100) |
 
 **Response:**
 
 ```json
 {
-  "tasks": [
+  "data": [
     {
-      "id": "uuid",
-      "user_id": "uuid",
-      "workspace_id": "uuid",
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "user_id": "550e8400-e29b-41d4-a716-446655440001",
+      "workspace_id": "550e8400-e29b-41d4-a716-446655440002",
       "title": "Review NSF proposal",
-      "description": "Check methodology section",
+      "description": "Check methodology section and budget justification",
       "category": "grants",
       "priority": "p1",
       "status": "todo",
-      "due": "2024-12-20",
-      "project_id": "uuid",
-      "tags": ["important"],
-      "created_at": "2024-12-15T10:00:00Z",
-      "updated_at": "2024-12-15T10:00:00Z"
+      "due": "2025-01-15",
+      "project_id": "550e8400-e29b-41d4-a716-446655440003",
+      "assignees": ["550e8400-e29b-41d4-a716-446655440004"],
+      "tags": ["urgent", "review"],
+      "completed_at": null,
+      "created_at": "2025-01-01T10:00:00Z",
+      "updated_at": "2025-01-01T10:00:00Z"
     }
-  ]
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 50,
+    "total": 123,
+    "totalPages": 3,
+    "hasMore": true
+  }
 }
 ```
 
@@ -69,20 +234,30 @@ POST /api/tasks
 
 ```json
 {
-  "title": "Review manuscript",
-  "description": "Check citations and methodology",
+  "title": "Review manuscript draft",
+  "description": "Check citations and methodology section",
   "category": "research",
   "priority": "p2",
   "status": "todo",
-  "due": "2024-12-25",
-  "project_id": "uuid",
-  "workspace_id": "uuid",
-  "tags": ["manuscript"],
-  "assignees": []
+  "due": "2025-01-20",
+  "project_id": "550e8400-e29b-41d4-a716-446655440003",
+  "workspace_id": "550e8400-e29b-41d4-a716-446655440002",
+  "assignees": ["550e8400-e29b-41d4-a716-446655440004"],
+  "tags": ["manuscript", "review"]
 }
 ```
 
-**Response:** Returns the created task object.
+**Required Fields:** `title`, `workspace_id`
+
+**Response:** `201 Created`
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440005",
+  "title": "Review manuscript draft",
+  // ... full task object
+}
+```
 
 ### Get Task
 
@@ -92,19 +267,26 @@ Retrieves a single task by ID.
 GET /api/tasks/{id}
 ```
 
-**Response:** Returns the task object.
+**Response:** `200 OK` with task object
 
 ### Update Task
 
-Updates an existing task.
+Updates an existing task (partial update).
 
 ```http
 PATCH /api/tasks/{id}
 ```
 
-**Request Body:** Partial task object with fields to update.
+**Request Body:** Partial task object with fields to update
 
-**Response:** Returns the updated task object.
+```json
+{
+  "status": "progress",
+  "priority": "p1"
+}
+```
+
+**Response:** `200 OK` with updated task object
 
 ### Delete Task
 
@@ -122,8 +304,6 @@ DELETE /api/tasks/{id}
 
 ### List Projects
 
-Retrieves all projects for the current user.
-
 ```http
 GET /api/projects
 ```
@@ -132,34 +312,39 @@ GET /api/projects
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `workspace_id` | string | Filter by workspace |
+| `workspace_id` | UUID | Filter by workspace (required) |
 | `type` | string | Filter by type: `manuscript`, `grant`, `general` |
 | `status` | string | Filter by status: `active`, `completed`, `archived` |
+| `stage` | string | Filter by stage |
 
 **Response:**
 
 ```json
 {
-  "projects": [
+  "data": [
     {
-      "id": "uuid",
-      "workspace_id": "uuid",
-      "title": "Machine Learning Paper",
+      "id": "550e8400-e29b-41d4-a716-446655440003",
+      "workspace_id": "550e8400-e29b-41d4-a716-446655440002",
       "type": "manuscript",
+      "title": "Machine Learning for Climate Prediction",
+      "summary": "A paper exploring ML applications in climate science",
       "status": "active",
       "stage": "drafting",
-      "summary": "A paper on ML applications",
-      "due_date": "2024-12-31",
-      "created_at": "2024-12-01T10:00:00Z",
-      "updated_at": "2024-12-15T10:00:00Z"
+      "due_date": "2025-03-15",
+      "owner_id": "550e8400-e29b-41d4-a716-446655440001",
+      "metadata": {
+        "journal_target": "Nature Climate Change",
+        "coauthors": ["Dr. Smith", "Dr. Johnson"]
+      },
+      "created_at": "2025-01-01T10:00:00Z",
+      "updated_at": "2025-01-05T14:30:00Z"
     }
-  ]
+  ],
+  "pagination": { ... }
 }
 ```
 
 ### Create Project
-
-Creates a new project.
 
 ```http
 POST /api/projects
@@ -169,27 +354,58 @@ POST /api/projects
 
 ```json
 {
-  "title": "New Grant Proposal",
+  "title": "NSF CAREER Grant",
   "type": "grant",
   "status": "active",
   "stage": "discovery",
-  "summary": "NSF proposal for AI research",
-  "due_date": "2025-03-15",
-  "workspace_id": "uuid"
+  "summary": "CAREER proposal for AI research funding",
+  "due_date": "2025-06-15",
+  "workspace_id": "550e8400-e29b-41d4-a716-446655440002",
+  "metadata": {
+    "agency": "NSF",
+    "mechanism": "CAREER",
+    "amount": 500000
+  }
 }
 ```
 
 ### Get Project
 
-Retrieves a single project with milestones and notes.
-
 ```http
 GET /api/projects/{id}
 ```
 
-### Update Project
+Returns project with milestones, notes, and collaborators.
 
-Updates an existing project.
+**Response:**
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440003",
+  "title": "Machine Learning for Climate Prediction",
+  // ... project fields
+  "milestones": [
+    {
+      "id": "...",
+      "title": "Complete literature review",
+      "due_date": "2025-01-31",
+      "status": "done",
+      "order": 1
+    }
+  ],
+  "notes": [
+    {
+      "id": "...",
+      "content": "Met with Dr. Smith to discuss methodology",
+      "author_id": "...",
+      "created_at": "2025-01-05T10:00:00Z"
+    }
+  ],
+  "collaborators": [...]
+}
+```
+
+### Update Project
 
 ```http
 PATCH /api/projects/{id}
@@ -197,24 +413,39 @@ PATCH /api/projects/{id}
 
 ### Delete Project
 
-Deletes a project and all associated data.
-
 ```http
 DELETE /api/projects/{id}
 ```
 
+Deletes project and all associated milestones, notes, and tasks.
+
 ### Project Milestones
 
 ```http
-GET /api/projects/{id}/milestones
-POST /api/projects/{id}/milestones
+GET    /api/projects/{id}/milestones
+POST   /api/projects/{id}/milestones
+PATCH  /api/projects/{id}/milestones/{milestoneId}
+DELETE /api/projects/{id}/milestones/{milestoneId}
+```
+
+**Create Milestone Request:**
+
+```json
+{
+  "title": "Submit first draft",
+  "description": "Submit complete draft to co-authors",
+  "due_date": "2025-02-15",
+  "status": "todo"
+}
 ```
 
 ### Project Notes
 
 ```http
-GET /api/projects/{id}/notes
-POST /api/projects/{id}/notes
+GET    /api/projects/{id}/notes
+POST   /api/projects/{id}/notes
+PATCH  /api/projects/{id}/notes/{noteId}
+DELETE /api/projects/{id}/notes/{noteId}
 ```
 
 ---
@@ -223,7 +454,7 @@ POST /api/projects/{id}/notes
 
 ### List Workspaces
 
-Retrieves all workspaces the user belongs to.
+Returns all workspaces the user belongs to.
 
 ```http
 GET /api/workspaces
@@ -233,12 +464,12 @@ GET /api/workspaces
 
 ```json
 {
-  "workspaces": [
+  "data": [
     {
-      "id": "uuid",
-      "name": "My Lab",
-      "slug": "my-lab",
-      "description": "Research lab workspace",
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "name": "Smith Research Lab",
+      "slug": "smith-lab",
+      "description": "Machine learning research group",
       "settings": {},
       "created_at": "2024-01-01T00:00:00Z",
       "role": "owner"
@@ -249,8 +480,6 @@ GET /api/workspaces
 
 ### Create Workspace
 
-Creates a new workspace.
-
 ```http
 POST /api/workspaces
 ```
@@ -259,8 +488,8 @@ POST /api/workspaces
 
 ```json
 {
-  "name": "New Workspace",
-  "description": "Description here"
+  "name": "New Research Group",
+  "description": "AI and robotics research"
 }
 ```
 
@@ -276,34 +505,77 @@ GET /api/workspaces/{id}
 PATCH /api/workspaces/{id}
 ```
 
+Requires `owner` or `admin` role.
+
 ### Delete Workspace
 
 ```http
 DELETE /api/workspaces/{id}
 ```
 
+Requires `owner` role. Deletes all workspace data.
+
 ### Workspace Members
 
 ```http
-GET /api/workspaces/{id}/members
+GET  /api/workspaces/{id}/members
 POST /api/workspaces/{id}/members
+```
+
+**Add Member Request:**
+
+```json
+{
+  "user_id": "550e8400-e29b-41d4-a716-446655440004",
+  "role": "member"
+}
 ```
 
 **Roles:** `owner`, `admin`, `member`, `limited`
 
-### Workspace Invites
+### Update Member Role
 
 ```http
-GET /api/workspaces/{id}/invites
-POST /api/workspaces/{id}/invites
+PATCH /api/workspaces/{id}/members/{memberId}
 ```
-
-**Request Body for POST:**
 
 ```json
 {
-  "email": "user@example.com",
+  "role": "admin"
+}
+```
+
+### Remove Member
+
+```http
+DELETE /api/workspaces/{id}/members/{memberId}
+```
+
+### Workspace Invites
+
+```http
+GET  /api/workspaces/{id}/invites
+POST /api/workspaces/{id}/invites
+```
+
+**Send Invite Request:**
+
+```json
+{
+  "email": "researcher@university.edu",
   "role": "member"
+}
+```
+
+**Response:**
+
+```json
+{
+  "id": "...",
+  "email": "researcher@university.edu",
+  "role": "member",
+  "token": "abc123...",
+  "expires_at": "2025-01-15T00:00:00Z"
 }
 ```
 
@@ -313,13 +585,121 @@ POST /api/workspaces/{id}/invites
 POST /api/workspaces/accept-invite
 ```
 
-**Request Body:**
+```json
+{
+  "token": "abc123..."
+}
+```
+
+---
+
+## Grants API
+
+### Search Funding Opportunities
+
+Searches funding opportunities from Grants.gov, NIH, and NSF.
+
+```http
+GET /api/grants/search
+```
+
+**Query Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `keywords` | string | Search keywords |
+| `agency` | string | Filter by agency: `NSF`, `NIH`, `DOE`, etc. |
+| `amount_min` | number | Minimum award amount |
+| `amount_max` | number | Maximum award amount |
+| `deadline_from` | string | Deadline after date (ISO) |
+| `deadline_to` | string | Deadline before date (ISO) |
+| `source` | string | Data source: `grants.gov`, `nih`, `nsf` |
+
+**Response:**
 
 ```json
 {
-  "token": "invite-token-here"
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440010",
+      "external_id": "NSF-24-001",
+      "source": "nsf",
+      "title": "Computer and Information Science and Engineering Research Initiation Initiative",
+      "agency": "NSF",
+      "description": "Funding for junior faculty in CISE fields...",
+      "award_floor": 175000,
+      "award_ceiling": 200000,
+      "deadline": "2025-03-15",
+      "url": "https://www.nsf.gov/...",
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  ],
+  "pagination": { ... }
 }
 ```
+
+### Watchlist
+
+```http
+GET  /api/grants/watchlist
+POST /api/grants/watchlist
+```
+
+**Add to Watchlist:**
+
+```json
+{
+  "workspace_id": "550e8400-e29b-41d4-a716-446655440002",
+  "opportunity_id": "550e8400-e29b-41d4-a716-446655440010"
+}
+```
+
+### Update Watchlist Item
+
+```http
+PATCH /api/grants/watchlist/{id}
+```
+
+```json
+{
+  "status": "applying",
+  "priority": "high",
+  "notes": "Started working on LOI. Deadline for internal review is 2/1."
+}
+```
+
+**Status Values:** `watching`, `interested`, `applying`, `submitted`, `awarded`, `rejected`, `declined`
+
+### Remove from Watchlist
+
+```http
+DELETE /api/grants/watchlist/{id}
+```
+
+### Saved Searches
+
+```http
+GET    /api/grants/saved-searches
+POST   /api/grants/saved-searches
+DELETE /api/grants/saved-searches/{id}
+```
+
+**Create Saved Search:**
+
+```json
+{
+  "workspace_id": "550e8400-e29b-41d4-a716-446655440002",
+  "name": "NSF AI Grants",
+  "query": {
+    "keywords": "artificial intelligence machine learning",
+    "agency": "NSF",
+    "amount_min": 100000
+  },
+  "alert_frequency": "weekly"
+}
+```
+
+**Alert Frequencies:** `daily`, `weekly`, `none`
 
 ---
 
@@ -339,9 +719,25 @@ GET /api/calendar/connection
   "provider": "google",
   "syncEnabled": true,
   "selectedCalendars": ["primary", "work"],
-  "lastSync": "2024-12-15T10:00:00Z"
+  "lastSync": "2025-01-05T10:00:00Z"
 }
 ```
+
+### Create Connection (Initiate OAuth)
+
+```http
+GET /api/auth/google
+```
+
+Redirects to Google OAuth consent screen.
+
+### OAuth Callback
+
+```http
+GET /api/auth/google/callback
+```
+
+Handles OAuth callback from Google.
 
 ### Update Connection Settings
 
@@ -349,26 +745,22 @@ GET /api/calendar/connection
 PATCH /api/calendar/connection
 ```
 
-**Request Body:**
-
 ```json
 {
   "syncEnabled": true,
-  "selectedCalendars": ["primary"]
+  "selectedCalendars": ["primary", "work-calendar"]
 }
 ```
 
-### Get Calendars
-
-Lists available calendars from connected provider.
+### List Calendars
 
 ```http
 GET /api/calendar/calendars
 ```
 
-### Get Events
+Returns available calendars from connected provider.
 
-Retrieves calendar events for a date range.
+### Get Events
 
 ```http
 GET /api/calendar/events
@@ -380,143 +772,170 @@ GET /api/calendar/events
 |-----------|------|-------------|
 | `start` | string | Start date (ISO 8601) |
 | `end` | string | End date (ISO 8601) |
+| `calendar_ids` | string | Comma-separated calendar IDs |
 
----
+**Response:**
 
-## Google OAuth
-
-### Initiate OAuth
-
-Redirects to Google OAuth consent screen.
-
-```http
-GET /api/auth/google
+```json
+{
+  "data": [
+    {
+      "id": "...",
+      "external_id": "abc123",
+      "summary": "Lab Meeting",
+      "description": "Weekly lab meeting",
+      "start_time": "2025-01-10T14:00:00Z",
+      "end_time": "2025-01-10T15:00:00Z",
+      "all_day": false,
+      "location": "Room 301"
+    }
+  ]
+}
 ```
 
-### OAuth Callback
-
-Handles the OAuth callback from Google.
-
-```http
-GET /api/auth/google/callback
-```
-
-### Disconnect Google
-
-Removes Google calendar connection.
+### Disconnect Calendar
 
 ```http
 DELETE /api/auth/google
 ```
 
+Removes Google Calendar connection.
+
 ---
 
-## Grants API
+## Publications API
 
-### Search Grants
-
-Searches funding opportunities.
+### List Publications
 
 ```http
-GET /api/grants/search
+GET /api/publications
 ```
 
 **Query Parameters:**
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `keywords` | string | Search keywords |
-| `agency` | string | Filter by agency (e.g., "NSF", "NIH") |
-| `amount_min` | number | Minimum award amount |
-| `amount_max` | number | Maximum award amount |
-| `deadline_from` | string | Deadline after date |
-| `deadline_to` | string | Deadline before date |
+| `workspace_id` | UUID | Filter by workspace |
+| `year` | number | Filter by publication year |
+| `type` | string | Filter by type |
 
-**Response:**
+### Create Publication
+
+```http
+POST /api/publications
+```
 
 ```json
 {
-  "opportunities": [
-    {
-      "id": "uuid",
-      "opportunity_number": "NSF-24-001",
-      "title": "AI Research Grant",
-      "agency": "NSF",
-      "description": "Funding for AI research...",
-      "award_ceiling": 500000,
-      "deadline": "2025-03-15",
-      "url": "https://grants.gov/..."
-    }
-  ],
-  "total": 25
+  "workspace_id": "...",
+  "title": "Deep Learning for Climate Prediction",
+  "doi": "10.1038/s41586-021-03819-2",
+  "authors": ["Smith, J.", "Johnson, A."],
+  "journal": "Nature",
+  "year": 2024,
+  "abstract": "...",
+  "url": "https://doi.org/..."
 }
 ```
 
-### Watchlist
+### Import from DOI
 
 ```http
-GET /api/grants/watchlist
-POST /api/grants/watchlist
+POST /api/publications/import
 ```
-
-**POST Request Body:**
 
 ```json
 {
-  "workspace_id": "uuid",
-  "opportunity_id": "uuid"
+  "workspace_id": "...",
+  "doi": "10.1038/s41586-021-03819-2"
 }
 ```
 
-### Update Watchlist Item
+Fetches metadata from CrossRef/DOI and creates publication.
+
+### Get Publication
 
 ```http
-PATCH /api/grants/watchlist/{id}
+GET /api/publications/{id}
 ```
 
-**Request Body:**
+### Update Publication
+
+```http
+PATCH /api/publications/{id}
+```
+
+### Delete Publication
+
+```http
+DELETE /api/publications/{id}
+```
+
+---
+
+## Personnel API
+
+### List Personnel
+
+```http
+GET /api/personnel
+```
+
+**Query Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `workspace_id` | UUID | Filter by workspace (required) |
+| `role` | string | Filter by role |
+| `status` | string | Filter by status: `active`, `alumni` |
+
+### Create Personnel
+
+```http
+POST /api/personnel
+```
 
 ```json
 {
-  "status": "applying",
-  "priority": "high",
-  "notes": "Started working on LOI"
+  "workspace_id": "...",
+  "name": "Jane Researcher",
+  "email": "jane@university.edu",
+  "title": "PhD Candidate",
+  "role": "grad-student",
+  "status": "active",
+  "metadata": {
+    "start_date": "2023-09-01",
+    "expected_graduation": "2027-05-01",
+    "funding_source": "NSF Fellowship"
+  }
 }
 ```
 
-### Remove from Watchlist
+**Roles:** `postdoc`, `grad-student`, `undergrad`, `staff`
+
+### Get Personnel
 
 ```http
-DELETE /api/grants/watchlist/{id}
+GET /api/personnel/{id}
 ```
 
-### Saved Searches
+### Update Personnel
 
 ```http
-GET /api/grants/saved-searches
-POST /api/grants/saved-searches
-DELETE /api/grants/saved-searches/{id}
+PATCH /api/personnel/{id}
 ```
 
-**POST Request Body:**
+### Delete Personnel
 
-```json
-{
-  "workspace_id": "uuid",
-  "name": "NSF AI Grants",
-  "query": {
-    "keywords": "artificial intelligence",
-    "agency": "NSF"
-  },
-  "alert_frequency": "weekly"
-}
+```http
+DELETE /api/personnel/{id}
 ```
 
 ---
 
 ## AI API
 
-These endpoints proxy to the Python FastAPI AI service.
+AI endpoints proxy to the Python FastAPI AI service.
 
 ### Extract Tasks
 
@@ -530,10 +949,12 @@ POST /api/ai/extract-tasks
 
 ```json
 {
-  "text": "Meeting notes: Need to review the grant proposal by Friday. Also schedule a meeting with the team for next week.",
+  "text": "Meeting notes: Need to review the grant proposal by Friday. Also schedule a meeting with the team for next week to discuss the results.",
   "context": {
     "categories": ["research", "grants", "teaching"],
-    "projects": [{"id": "uuid", "title": "NSF Grant"}]
+    "projects": [
+      {"id": "...", "title": "NSF Grant"}
+    ]
   }
 }
 ```
@@ -545,18 +966,19 @@ POST /api/ai/extract-tasks
   "tasks": [
     {
       "title": "Review grant proposal",
-      "description": "Review the grant proposal",
+      "description": "Review the grant proposal from meeting notes",
       "priority": "p2",
       "category": "grants",
-      "due": "2024-12-20",
+      "due": "2025-01-10",
+      "project_id": "...",
       "confidence": 0.95
     },
     {
       "title": "Schedule team meeting",
-      "description": "Schedule a meeting with the team",
+      "description": "Schedule meeting to discuss results",
       "priority": "p3",
       "category": "admin",
-      "due": "2024-12-27",
+      "due": "2025-01-17",
       "confidence": 0.88
     }
   ]
@@ -576,11 +998,11 @@ POST /api/ai/project-summary
 ```json
 {
   "project": {
-    "id": "uuid",
+    "id": "...",
     "title": "Machine Learning Paper",
     "type": "manuscript",
     "stage": "drafting",
-    "summary": "Paper on ML applications"
+    "summary": "Paper on ML applications in climate science"
   },
   "milestones": [...],
   "tasks": [...],
@@ -594,16 +1016,21 @@ POST /api/ai/project-summary
 {
   "health_score": 75,
   "status": "On Track",
+  "summary": "The project is progressing well with 3 of 5 milestones completed.",
   "accomplishments": [
     "Completed literature review",
-    "Drafted methodology section"
+    "Drafted methodology section",
+    "Collected preliminary data"
   ],
   "blockers": [
-    "Waiting for data from collaborator"
+    "Waiting for co-author feedback on introduction"
   ],
   "next_actions": [
-    "Follow up on data request",
-    "Begin results section"
+    "Follow up with Dr. Smith on introduction review",
+    "Begin results section draft"
+  ],
+  "risk_factors": [
+    "Deadline approaching with significant work remaining"
   ]
 }
 ```
@@ -621,16 +1048,18 @@ POST /api/ai/fit-score
 ```json
 {
   "opportunity": {
-    "id": "uuid",
+    "id": "...",
     "title": "AI Research Grant",
     "agency": "NSF",
-    "description": "Funding for AI research...",
-    "funding_amount": "$500,000",
-    "deadline": "2025-03-15"
+    "description": "Funding for fundamental AI research...",
+    "award_ceiling": 500000,
+    "deadline": "2025-03-15",
+    "eligibility": "Junior faculty within 5 years of PhD"
   },
   "profile": {
-    "keywords": ["machine learning", "computer vision"],
+    "keywords": ["machine learning", "computer vision", "deep learning"],
     "recent_projects": [...],
+    "publications": [...],
     "funding_history": [...]
   }
 }
@@ -641,70 +1070,117 @@ POST /api/ai/fit-score
 ```json
 {
   "fit_score": 82,
+  "rating": "Strong Fit",
   "reasons": [
-    "Strong alignment with AI focus area",
-    "Previous NSF funding experience"
+    "Strong alignment with AI and ML focus area",
+    "Previous NSF funding demonstrates track record",
+    "Recent publications in relevant venues"
   ],
   "gaps": [
-    "Limited publication record in specific subfield"
+    "Limited publication record in specific subfield mentioned in RFP",
+    "No prior collaboration with industry partners"
   ],
   "suggestions": [
-    "Emphasize interdisciplinary aspects",
-    "Include preliminary data from recent project"
+    "Emphasize interdisciplinary aspects of your research",
+    "Include preliminary data from your recent Nature paper",
+    "Consider reaching out to industry partners for collaboration letter"
   ]
 }
 ```
 
 ---
 
-## Error Responses
+## Agents API
 
-All endpoints return standard error responses:
+The agents API provides access to the multi-agent AI framework.
+
+### Chat with Agents
+
+```http
+POST /api/agents/chat
+```
+
+**Request Body:**
 
 ```json
 {
-  "error": "Error message here",
-  "code": "ERROR_CODE",
-  "details": {}
+  "message": "Summarize the status of my NSF CAREER proposal",
+  "context": {
+    "workspace_id": "...",
+    "project_id": "..."
+  },
+  "conversation_id": "..."
 }
 ```
 
-**Common HTTP Status Codes:**
+**Response:**
 
-| Code | Description |
-|------|-------------|
-| 200 | Success |
-| 201 | Created |
-| 204 | No Content (successful deletion) |
-| 400 | Bad Request (validation error) |
-| 401 | Unauthorized (not authenticated) |
-| 403 | Forbidden (insufficient permissions) |
-| 404 | Not Found |
-| 500 | Internal Server Error |
-
----
-
-## Rate Limiting
-
-API requests are rate limited to prevent abuse:
-
-- **Standard endpoints:** 100 requests per minute
-- **AI endpoints:** 20 requests per minute
-- **Search endpoints:** 30 requests per minute
-
-Rate limit headers are included in responses:
-
-```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1702656000
+```json
+{
+  "message": "Based on my analysis of your NSF CAREER proposal...",
+  "agent": "project_agent",
+  "conversation_id": "...",
+  "suggestions": [
+    {
+      "type": "action",
+      "label": "Create task for budget review",
+      "action": "create_task",
+      "payload": {...}
+    }
+  ]
+}
 ```
 
----
+### Execute Agent Action
 
-## Webhooks (Future)
+```http
+POST /api/agents/execute
+```
 
-Webhook support for external integrations is planned for a future release.
+```json
+{
+  "action": "create_task",
+  "payload": {
+    "title": "Review budget justification",
+    "project_id": "...",
+    "priority": "p2"
+  },
+  "execution_id": "..."
+}
+```
+
+### Provide Feedback
+
+```http
+POST /api/agents/feedback
+```
+
+```json
+{
+  "execution_id": "...",
+  "accepted": true,
+  "feedback": "This was helpful, but the priority should be p1"
+}
+```
+
+### Orchestrate Multi-Agent Workflow
+
+```http
+POST /api/agents/orchestrate
+```
+
+```json
+{
+  "workflow": "weekly_review",
+  "context": {
+    "workspace_id": "...",
+    "date_range": {
+      "start": "2025-01-01",
+      "end": "2025-01-07"
+    }
+  }
+}
+```
 
 ---
 
@@ -717,24 +1193,33 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Sign in
+const { data: { session } } = await supabase.auth.signInWithPassword({
+  email: 'user@example.com',
+  password: 'password'
+});
+
 // Get tasks
-const { data: tasks, error } = await fetch('/api/tasks', {
+const response = await fetch('/api/tasks?workspace_id=...', {
   headers: {
-    'Authorization': `Bearer ${session.access_token}`
+    'Authorization': `Bearer ${session.access_token}`,
+    'Content-Type': 'application/json'
   }
-}).then(r => r.json());
+});
+const { data: tasks } = await response.json();
 
 // Create task
 const newTask = await fetch('/api/tasks', {
   method: 'POST',
   headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${session.access_token}`
+    'Authorization': `Bearer ${session.access_token}`,
+    'Content-Type': 'application/json'
   },
   body: JSON.stringify({
     title: 'New Task',
     priority: 'p2',
-    category: 'research'
+    category: 'research',
+    workspace_id: '...'
   })
 }).then(r => r.json());
 ```
@@ -743,12 +1228,41 @@ const newTask = await fetch('/api/tasks', {
 
 ```bash
 # Get tasks
-curl -X GET "https://your-domain.com/api/tasks" \
-  -H "Authorization: Bearer YOUR_TOKEN"
+curl -X GET "https://your-domain.com/api/tasks?workspace_id=..." \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json"
 
 # Create task
 curl -X POST "https://your-domain.com/api/tasks" \
-  -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{"title": "New Task", "priority": "p2"}'
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Review manuscript",
+    "priority": "p2",
+    "category": "research",
+    "workspace_id": "..."
+  }'
+
+# Extract tasks with AI
+curl -X POST "https://your-domain.com/api/ai/extract-tasks" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Need to submit the paper by Friday and schedule a meeting with the team"
+  }'
 ```
+
+---
+
+## Webhooks (Future)
+
+Webhook support for external integrations is planned for a future release. This will enable:
+
+- Real-time notifications to external services
+- Integration with Slack, Discord, email
+- Custom automation workflows
+
+---
+
+*API Version: 2.0*
+*Last Updated: January 2025*

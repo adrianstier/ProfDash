@@ -7,7 +7,7 @@ import {
   PartyPopper,
   FolderOpen,
   SearchX,
-  Sparkles,
+  Lightbulb,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,8 +24,11 @@ interface EmptyStateProps {
     label: string;
     onClick: () => void;
   };
-  variant?: "default" | "success" | "muted" | "primary";
+  variant?: "default" | "success" | "muted" | "primary" | "celebration";
   className?: string;
+  tips?: string[];
+  shortcutHint?: { key: string; action: string };
+  illustration?: "tasks" | "projects" | "search" | "success" | "welcome";
 }
 
 export function EmptyState({
@@ -36,6 +39,8 @@ export function EmptyState({
   secondaryAction,
   variant = "default",
   className,
+  tips,
+  shortcutHint,
 }: EmptyStateProps) {
   const variantStyles = {
     default: {
@@ -46,7 +51,7 @@ export function EmptyState({
     success: {
       iconBg: "bg-green-100 dark:bg-green-900/30",
       iconColor: "text-green-600 dark:text-green-400",
-      containerBg: "bg-green-50/50 dark:bg-green-950/20 border border-green-200/50 dark:border-green-800/30 rounded-2xl",
+      containerBg: "bg-gradient-to-br from-green-50/80 to-emerald-50/50 dark:from-green-950/30 dark:to-emerald-950/20 border border-green-200/50 dark:border-green-800/30 rounded-2xl",
     },
     muted: {
       iconBg: "bg-muted/50",
@@ -56,7 +61,12 @@ export function EmptyState({
     primary: {
       iconBg: "bg-primary/10",
       iconColor: "text-primary",
-      containerBg: "bg-primary/5 border border-primary/10 rounded-2xl",
+      containerBg: "bg-gradient-to-br from-primary/5 to-amber-500/5 border border-primary/10 rounded-2xl",
+    },
+    celebration: {
+      iconBg: "bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30",
+      iconColor: "text-amber-600 dark:text-amber-400",
+      containerBg: "bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50 dark:from-amber-950/20 dark:via-orange-950/10 dark:to-rose-950/20 border border-amber-200/50 dark:border-amber-800/30 rounded-2xl",
     },
   };
 
@@ -65,25 +75,53 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center py-16 px-6 text-center animate-fade-in",
+        "flex flex-col items-center justify-center py-12 px-6 text-center animate-fade-in",
         styles.containerBg,
         className
       )}
     >
       <div
         className={cn(
-          "flex h-16 w-16 items-center justify-center rounded-2xl mb-5 shadow-sm",
+          "flex h-14 w-14 items-center justify-center rounded-2xl mb-4 shadow-sm",
           styles.iconBg
         )}
       >
-        <Icon className={cn("h-7 w-7", styles.iconColor)} />
+        <Icon className={cn("h-6 w-6", styles.iconColor)} />
       </div>
-      <h3 className="font-display text-xl font-semibold">{title}</h3>
-      <p className="mt-2 text-sm text-muted-foreground max-w-sm leading-relaxed">
+      <h3 className="font-display text-lg font-semibold">{title}</h3>
+      <p className="mt-1.5 text-sm text-muted-foreground max-w-sm leading-relaxed">
         {description}
       </p>
+
+      {/* Quick tips section */}
+      {tips && tips.length > 0 && (
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2 max-w-md">
+          {tips.map((tip, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground animate-fade-in"
+              style={{ animationDelay: `${(i + 1) * 100}ms` }}
+            >
+              <Lightbulb className="h-3 w-3 text-amber-500" />
+              {tip}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Keyboard shortcut hint */}
+      {shortcutHint && (
+        <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+          <span>Press</span>
+          <kbd className="inline-flex h-5 items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium">
+            {shortcutHint.key}
+          </kbd>
+          <span>to {shortcutHint.action}</span>
+        </div>
+      )}
+
       {(action || secondaryAction) && (
-        <div className="mt-8 flex items-center gap-3">
+        <div className="mt-6 flex items-center gap-3">
           {action && (
             <button
               onClick={action.onClick}
@@ -119,17 +157,32 @@ export function TasksEmptyState({ onAddTask }: { onAddTask: () => void }) {
         onClick: onAddTask,
         icon: Plus,
       }}
+      tips={[
+        "Type 'p1' for high priority",
+        "Use #grants for category",
+        "Type 'tomorrow' for due date",
+      ]}
+      shortcutHint={{ key: "Q", action: "quick add" }}
     />
   );
 }
 
 export function AllDoneState() {
+  const celebrations = [
+    { emoji: "🎉", message: "Amazing work! You crushed it today!" },
+    { emoji: "🚀", message: "All done! You're on fire!" },
+    { emoji: "✨", message: "Incredible! Everything checked off!" },
+    { emoji: "🏆", message: "Champion! No tasks left standing!" },
+  ];
+  const celebration = celebrations[Math.floor(Math.random() * celebrations.length)];
+
   return (
     <EmptyState
       icon={PartyPopper}
-      title="All caught up!"
-      description="Great job! You've completed all your tasks for today. Time for a well-deserved break."
-      variant="success"
+      title={`${celebration.emoji} All caught up!`}
+      description={`${celebration.message} Time for a well-deserved break.`}
+      variant="celebration"
+      tips={["Enjoy a coffee break", "Stretch and move around", "Celebrate your productivity!"]}
     />
   );
 }
