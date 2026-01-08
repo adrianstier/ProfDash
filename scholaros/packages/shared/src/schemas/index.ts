@@ -357,3 +357,171 @@ export type CreatePublicationSchemaType = z.infer<typeof CreatePublicationSchema
 export type UpdatePublicationSchemaType = z.infer<typeof UpdatePublicationSchema>;
 export type PublicationAuthorSchemaType = z.infer<typeof PublicationAuthorSchema>;
 export type CreatePublicationAuthorSchemaType = z.infer<typeof CreatePublicationAuthorSchema>;
+
+// Chat and messaging schemas
+export const MessageReactionTypeSchema = z.enum([
+  "heart",
+  "thumbsup",
+  "thumbsdown",
+  "haha",
+  "exclamation",
+  "question",
+]);
+
+export const PresenceStatusSchema = z.enum(["online", "away", "dnd", "offline"]);
+
+export const MessageReactionSchema = z.object({
+  user_id: z.string().uuid(),
+  reaction: MessageReactionTypeSchema,
+  created_at: z.string(),
+});
+
+export const ChatMessageSchema = z.object({
+  id: z.string().uuid(),
+  workspace_id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  text: z.string().min(1).max(10000),
+  recipient_id: z.string().uuid().nullable(),
+  related_task_id: z.string().uuid().nullable(),
+  related_project_id: z.string().uuid().nullable(),
+  reply_to_id: z.string().uuid().nullable(),
+  reply_to_preview: z.string().nullable(),
+  reply_to_user_id: z.string().uuid().nullable(),
+  reactions: z.array(MessageReactionSchema).default([]),
+  read_by: z.array(z.string().uuid()).default([]),
+  mentions: z.array(z.string().uuid()).default([]),
+  edited_at: z.string().nullable(),
+  deleted_at: z.string().nullable(),
+  is_pinned: z.boolean().default(false),
+  pinned_by: z.string().uuid().nullable(),
+  pinned_at: z.string().nullable(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+export const CreateMessageSchema = z.object({
+  workspace_id: z.string().uuid(),
+  text: z.string().min(1).max(10000),
+  recipient_id: z.string().uuid().nullable().optional(),
+  related_task_id: z.string().uuid().nullable().optional(),
+  related_project_id: z.string().uuid().nullable().optional(),
+  reply_to_id: z.string().uuid().nullable().optional(),
+  mentions: z.array(z.string().uuid()).default([]),
+});
+
+export const UpdateMessageSchema = z.object({
+  text: z.string().min(1).max(10000).optional(),
+  is_pinned: z.boolean().optional(),
+});
+
+export const AddReactionSchema = z.object({
+  reaction: MessageReactionTypeSchema,
+});
+
+// Activity schemas
+export const ActivityActionSchema = z.enum([
+  "task_created",
+  "task_updated",
+  "task_deleted",
+  "task_completed",
+  "task_reopened",
+  "task_assigned",
+  "task_priority_changed",
+  "task_due_date_changed",
+  "task_status_changed",
+  "subtask_added",
+  "subtask_completed",
+  "subtask_deleted",
+  "notes_updated",
+  "project_created",
+  "project_updated",
+  "project_stage_changed",
+  "project_milestone_completed",
+  "message_sent",
+  "message_pinned",
+  "ai_tasks_extracted",
+  "ai_task_enhanced",
+  "ai_task_breakdown",
+]);
+
+export const ActivityEntrySchema = z.object({
+  id: z.string().uuid(),
+  workspace_id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  action: ActivityActionSchema,
+  task_id: z.string().uuid().nullable(),
+  project_id: z.string().uuid().nullable(),
+  message_id: z.string().uuid().nullable(),
+  entity_title: z.string().nullable(),
+  details: z.record(z.unknown()).default({}),
+  created_at: z.string(),
+});
+
+export const CreateActivitySchema = z.object({
+  workspace_id: z.string().uuid(),
+  action: ActivityActionSchema,
+  task_id: z.string().uuid().nullable().optional(),
+  project_id: z.string().uuid().nullable().optional(),
+  message_id: z.string().uuid().nullable().optional(),
+  entity_title: z.string().nullable().optional(),
+  details: z.record(z.unknown()).default({}),
+});
+
+// User presence schemas
+export const UserPresenceSchema = z.object({
+  id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  workspace_id: z.string().uuid(),
+  status: PresenceStatusSchema,
+  is_typing: z.boolean().default(false),
+  typing_in_conversation: z.string().nullable(),
+  last_seen: z.string(),
+  last_active: z.string(),
+  custom_status: z.string().nullable(),
+});
+
+export const UpdatePresenceSchema = z.object({
+  status: PresenceStatusSchema.optional(),
+  is_typing: z.boolean().optional(),
+  typing_in_conversation: z.string().nullable().optional(),
+  custom_status: z.string().nullable().optional(),
+});
+
+// AI Smart Parse schemas
+export const SmartParseSubtaskSchema = z.object({
+  text: z.string().min(1).max(500),
+  priority: TaskPrioritySchema,
+  estimated_minutes: z.number().min(5).max(480).optional(),
+});
+
+export const SmartParseResultSchema = z.object({
+  main_task: z.object({
+    title: z.string().min(1).max(500),
+    description: z.string().optional(),
+    category: TaskCategorySchema.optional(),
+    priority: TaskPrioritySchema,
+    due_date: z.string().optional(),
+    assigned_to: z.string().optional(),
+    project_id: z.string().uuid().optional(),
+  }),
+  subtasks: z.array(SmartParseSubtaskSchema).default([]),
+  summary: z.string().max(500),
+  was_complex: z.boolean(),
+  confidence: z.number().min(0).max(1),
+});
+
+export const SmartParseRequestSchema = z.object({
+  text: z.string().min(1).max(5000),
+  workspace_id: z.string().uuid(),
+});
+
+// Export inferred chat types
+export type ChatMessageSchemaType = z.infer<typeof ChatMessageSchema>;
+export type CreateMessageSchemaType = z.infer<typeof CreateMessageSchema>;
+export type UpdateMessageSchemaType = z.infer<typeof UpdateMessageSchema>;
+export type ActivityEntrySchemaType = z.infer<typeof ActivityEntrySchema>;
+export type CreateActivitySchemaType = z.infer<typeof CreateActivitySchema>;
+export type UserPresenceSchemaType = z.infer<typeof UserPresenceSchema>;
+export type UpdatePresenceSchemaType = z.infer<typeof UpdatePresenceSchema>;
+export type SmartParseResultSchemaType = z.infer<typeof SmartParseResultSchema>;
+export type SmartParseRequestSchemaType = z.infer<typeof SmartParseRequestSchema>;

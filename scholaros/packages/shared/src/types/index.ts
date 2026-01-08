@@ -1,6 +1,9 @@
 // Re-export agent types
 export * from "./agents";
 
+// Re-export chat types
+export * from "./chat";
+
 // Task types
 export type TaskPriority = "p1" | "p2" | "p3" | "p4";
 export type TaskStatus = "todo" | "progress" | "done";

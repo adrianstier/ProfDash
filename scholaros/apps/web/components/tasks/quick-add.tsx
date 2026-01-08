@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Plus, Loader2, Sparkles } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Plus, Loader2, Sparkles, HelpCircle, FileText } from "lucide-react";
 import { parseQuickAdd } from "@scholaros/shared";
 import { useCreateTask } from "@/lib/hooks/use-tasks";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
@@ -9,6 +9,8 @@ import type { TaskCategory, TaskPriority } from "@scholaros/shared";
 import { PLACEHOLDERS, KEYBOARD_SHORTCUTS } from "@/lib/constants";
 import { VoiceInputInline } from "@/components/voice";
 import { cn } from "@/lib/utils";
+import { QuickAddHelper } from "@/components/learning/quick-add-helper";
+import { SpotlightTrigger } from "@/components/learning/feature-spotlight";
 
 interface QuickAddProps {
   onAdd?: (task: ReturnType<typeof parseQuickAdd>) => void;
@@ -18,10 +20,22 @@ interface QuickAddProps {
 export function QuickAdd({ onAdd, workspaceId: propWorkspaceId }: QuickAddProps) {
   const [value, setValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const [showHelper, setShowHelper] = useState(false);
+  const [showPasteSuggestion, setShowPasteSuggestion] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { currentWorkspaceId } = useWorkspaceStore();
   const createTask = useCreateTask();
+
+  // Detect multi-line paste to suggest AI content importer
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const text = e.clipboardData.getData("text");
+    const lineCount = text.split("\n").filter((line) => line.trim()).length;
+    if (lineCount >= 3 || text.length > 200) {
+      setShowPasteSuggestion(true);
+      setTimeout(() => setShowPasteSuggestion(false), 8000);
+    }
+  }, []);
 
   // Use prop if provided, otherwise use store value
   const workspaceId = propWorkspaceId !== undefined ? propWorkspaceId : currentWorkspaceId;
@@ -128,7 +142,12 @@ export function QuickAdd({ onAdd, workspaceId: propWorkspaceId }: QuickAddProps)
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onBlur={() => {
+            setIsFocused(false);
+            // Delay hiding helper to allow clicking on it
+            setTimeout(() => setShowHelper(false), 200);
+          }}
+          onPaste={handlePaste}
           placeholder={PLACEHOLDERS.quickAdd}
           className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           disabled={createTask.isPending}
@@ -137,17 +156,65 @@ export function QuickAdd({ onAdd, workspaceId: propWorkspaceId }: QuickAddProps)
           aria-busy={createTask.isPending}
         />
 
-        {/* Voice Input */}
-        <VoiceInputInline
-          onTranscription={(text) => setValue((prev) => prev ? `${prev} ${text}` : text)}
-          disabled={createTask.isPending}
-        />
+        {/* Help button */}
+        <button
+          type="button"
+          onClick={() => setShowHelper(!showHelper)}
+          className={cn(
+            "p-1.5 rounded-lg transition-colors",
+            showHelper
+              ? "bg-purple-500/10 text-purple-500"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+          )}
+          aria-label="Show syntax help"
+        >
+          <HelpCircle className="h-4 w-4" />
+        </button>
+
+        {/* Voice Input with spotlight trigger */}
+        <SpotlightTrigger featureId="voice-input">
+          <VoiceInputInline
+            onTranscription={(text) => setValue((prev) => prev ? `${prev} ${text}` : text)}
+            disabled={createTask.isPending}
+          />
+        </SpotlightTrigger>
 
         {/* Keyboard Shortcut */}
         <kbd className="hidden items-center gap-0.5 rounded-lg border bg-muted/50 px-2 py-1 text-[10px] font-medium text-muted-foreground sm:inline-flex" aria-hidden="true">
           {KEYBOARD_SHORTCUTS.quickAdd}
         </kbd>
       </div>
+
+      {/* Quick Add Helper - Interactive syntax guide */}
+      <QuickAddHelper
+        isVisible={showHelper}
+        onClose={() => setShowHelper(false)}
+        inputValue={value}
+        onInsertSyntax={(syntax) => {
+          setValue((prev) => prev ? `${prev} ${syntax}` : syntax);
+          inputRef.current?.focus();
+        }}
+      />
+
+      {/* Paste suggestion for AI content importer */}
+      {showPasteSuggestion && (
+        <div className="mt-3 flex items-center gap-3 p-3 rounded-xl bg-purple-500/5 border border-purple-500/20 animate-fade-in">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-500/10">
+            <FileText className="h-4 w-4 text-purple-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">Looks like multiple tasks?</p>
+            <p className="text-xs text-muted-foreground">Try the AI Content Importer to extract tasks automatically</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowPasteSuggestion(false)}
+            className="text-xs text-muted-foreground hover:text-foreground"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Error Message */}
       {createTask.isError && (
