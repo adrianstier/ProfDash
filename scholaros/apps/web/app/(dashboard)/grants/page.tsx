@@ -30,6 +30,7 @@ import {
   useSavedSearches,
   useCreateSavedSearch,
   useDeleteSavedSearch,
+  useCreateOpportunity,
   type FundingOpportunityFromAPI,
   type GrantSearchFilters,
 } from "@/lib/hooks/use-grants";
@@ -212,6 +213,7 @@ export default function GrantsPage() {
   const removeFromWatchlist = useRemoveFromWatchlist();
   const createSavedSearch = useCreateSavedSearch();
   const deleteSavedSearch = useDeleteSavedSearch();
+  const createOpportunity = useCreateOpportunity();
 
   const watchlistOpportunityIds = new Set(watchlist?.map((w) => w.opportunity_id) || []);
 
@@ -853,10 +855,32 @@ export default function GrantsPage() {
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
         workspaceId={currentWorkspaceId ?? undefined}
-        onGrantDataExtracted={(data) => {
-          // TODO: Add the extracted grant to watchlist or create custom opportunity
-          console.log("Grant data extracted:", data);
-          setShowImportModal(false);
+        onGrantDataExtracted={async (data) => {
+          // Create custom opportunity and add to watchlist
+          if (!currentWorkspaceId) {
+            console.error("No workspace selected");
+            return;
+          }
+
+          try {
+            await createOpportunity.mutateAsync({
+              title: data.title,
+              agency: data.agency,
+              description: data.description,
+              deadline: data.deadline,
+              amount_min: data.amount_min,
+              amount_max: data.amount_max,
+              eligibility: data.eligibility,
+              url: data.url,
+              workspace_id: currentWorkspaceId,
+              add_to_watchlist: true,
+              priority: "medium",
+            });
+            setShowImportModal(false);
+            setActiveTab("watchlist"); // Switch to watchlist to show the new item
+          } catch (error) {
+            console.error("Failed to create opportunity:", error);
+          }
         }}
       />
     </div>

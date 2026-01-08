@@ -21,6 +21,7 @@ import {
   PublicationPipeline,
   PublicationCard,
   AddPublicationModal,
+  EditPublicationModal,
   ImportDOIModal,
 } from "@/components/publications";
 import {
@@ -57,8 +58,7 @@ export default function PublicationsPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedPublication, setSelectedPublication] =
     useState<PublicationWithAuthors | null>(null);
-  // TODO: Use selectedPublication to display view/edit modal
-  void selectedPublication;
+  const [showEditModal, setShowEditModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState<PublicationStatus | "all">(
     "all"
   );
@@ -85,6 +85,7 @@ export default function PublicationsPage() {
 
   const handleEdit = (publication: PublicationWithAuthors) => {
     setSelectedPublication(publication);
+    setShowEditModal(true);
   };
 
   const handleDelete = async (publication: PublicationWithAuthors) => {
@@ -99,6 +100,12 @@ export default function PublicationsPage() {
 
   const handleView = (publication: PublicationWithAuthors) => {
     setSelectedPublication(publication);
+    setShowEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setSelectedPublication(null);
   };
 
   const statCards = [
@@ -414,6 +421,12 @@ export default function PublicationsPage() {
       <ImportDOIModal
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
+      />
+
+      <EditPublicationModal
+        publication={selectedPublication}
+        isOpen={showEditModal}
+        onClose={handleCloseEditModal}
       />
     </div>
   );

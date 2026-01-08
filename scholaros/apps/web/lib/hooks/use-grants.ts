@@ -284,3 +284,48 @@ export function useDeleteSavedSearch() {
     },
   });
 }
+
+// Create custom opportunity (from document import or manual entry)
+interface CreateOpportunityInput {
+  title: string;
+  agency?: string | null;
+  description?: string | null;
+  deadline?: string | null;
+  amount_min?: number | null;
+  amount_max?: number | null;
+  eligibility?: Record<string, unknown> | null;
+  url?: string | null;
+  // Watchlist integration
+  workspace_id?: string;
+  add_to_watchlist?: boolean;
+  notes?: string;
+  priority?: WatchlistPriority;
+}
+
+async function createOpportunity(data: CreateOpportunityInput): Promise<FundingOpportunityFromAPI> {
+  const response = await fetch("/api/grants/opportunities", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to create opportunity");
+  }
+  return response.json();
+}
+
+export function useCreateOpportunity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createOpportunity,
+    onSuccess: (_, variables) => {
+      // Invalidate both opportunities search and watchlist
+      queryClient.invalidateQueries({ queryKey: ["grants", "search"] });
+      if (variables.workspace_id) {
+        queryClient.invalidateQueries({ queryKey: ["grants", "watchlist", variables.workspace_id] });
+      }
+    },
+  });
+}

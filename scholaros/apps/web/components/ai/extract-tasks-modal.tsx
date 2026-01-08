@@ -313,9 +313,18 @@ export function ExtractTasksModal({ isOpen, onClose }: ExtractTasksModalProps) {
               <button
                 onClick={handleImport}
                 disabled={selectedTasks.size === 0 || createTask.isPending || importedCount > 0}
-                className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                  importedCount > 0
+                    ? "bg-green-600 text-white cursor-default"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                }`}
               >
-                {createTask.isPending ? (
+                {importedCount > 0 ? (
+                  <>
+                    <CheckSquare className="h-4 w-4" />
+                    {importedCount} Task{importedCount !== 1 ? "s" : ""} Imported!
+                  </>
+                ) : createTask.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Importing...
