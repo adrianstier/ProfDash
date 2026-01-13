@@ -262,9 +262,9 @@ function InlineQuickAdd({
 
 export default function BoardPage() {
   const { currentWorkspaceId } = useWorkspaceStore();
-  const { data: tasks = [], isLoading } = useTasks({
-    workspace_id: currentWorkspaceId,
-  });
+  // Show all tasks (personal + workspace) to match Today page behavior
+  // If you want workspace-only filtering, add back: workspace_id: currentWorkspaceId
+  const { data: tasks = [], isLoading } = useTasks();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const toggleComplete = useToggleTaskComplete();
