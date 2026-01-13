@@ -6,7 +6,7 @@ import { Sparkles, Loader2, Check, X, ChevronDown, ChevronUp, Calendar, Flag, Us
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Dialog } from "@/components/ui/dialog";
+import { LegacyDialog as Dialog } from "@/components/ui/dialog";
 import { useSmartParse, parsedResultToTask } from "@/lib/hooks/use-smart-parse";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
 import { cn } from "@/lib/utils";

@@ -211,3 +211,138 @@ export function useToggleTaskComplete() {
     },
   };
 }
+
+// Bulk operation types
+interface BulkUpdatePayload {
+  taskIds: string[];
+  updates: {
+    status?: TaskStatus;
+    priority?: TaskPriority;
+    category?: TaskCategory;
+    due?: string | null;
+    project_id?: string | null;
+  };
+}
+
+interface BulkDeletePayload {
+  taskIds: string[];
+}
+
+interface BulkUpdateResponse {
+  success: boolean;
+  updated: number;
+  data: TaskFromAPI[];
+}
+
+interface BulkDeleteResponse {
+  success: boolean;
+  deleted: number;
+}
+
+// Bulk update tasks
+async function bulkUpdateTasks(payload: BulkUpdatePayload): Promise<BulkUpdateResponse> {
+  const response = await fetch("/api/tasks/bulk", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to update tasks");
+  }
+
+  return response.json();
+}
+
+// Bulk delete tasks
+async function bulkDeleteTasks(payload: BulkDeletePayload): Promise<BulkDeleteResponse> {
+  const response = await fetch("/api/tasks/bulk", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to delete tasks");
+  }
+
+  return response.json();
+}
+
+// Hook: Bulk update tasks
+export function useBulkUpdateTasks() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: bulkUpdateTasks,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+    },
+    // Optimistic update for bulk operations
+    onMutate: async ({ taskIds, updates }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.all });
+      const previousData = queryClient.getQueriesData({ queryKey: queryKeys.tasks.all });
+
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.tasks.all },
+        (old: TasksResponse | undefined) => {
+          if (!old?.data) return old;
+          return {
+            ...old,
+            data: old.data.map((task) =>
+              taskIds.includes(task.id) ? { ...task, ...updates } : task
+            ),
+          };
+        }
+      );
+
+      return { previousData };
+    },
+    onError: (_err, _payload, context) => {
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+    },
+  });
+}
+
+// Hook: Bulk delete tasks
+export function useBulkDeleteTasks() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: bulkDeleteTasks,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+    },
+    // Optimistic update for bulk delete
+    onMutate: async ({ taskIds }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.all });
+      const previousData = queryClient.getQueriesData({ queryKey: queryKeys.tasks.all });
+
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.tasks.all },
+        (old: TasksResponse | undefined) => {
+          if (!old?.data) return old;
+          return {
+            ...old,
+            data: old.data.filter((task) => !taskIds.includes(task.id)),
+          };
+        }
+      );
+
+      return { previousData };
+    },
+    onError: (_err, _payload, context) => {
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+    },
+  });
+}

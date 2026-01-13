@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
 import { useChatStore, selectTotalUnreadCount } from "@/lib/stores/chat-store";
-import { useMessages, useSendMessage, useAddReaction, useMarkMultipleAsRead } from "@/lib/hooks/use-chat";
+import { useMessages, useSendMessage, useAddReaction, useMarkMultipleAsRead, useDeleteMessage, useEditMessage, usePinMessage } from "@/lib/hooks/use-chat";
 import { usePresence, useTypingIndicator } from "@/lib/hooks/use-presence";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -19,6 +19,7 @@ import {
   Edit3,
   Trash2,
   Pin,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -360,6 +361,12 @@ export function ChatPanel() {
   const sendMessage = useSendMessage();
   const addReaction = useAddReaction();
   const markAsRead = useMarkMultipleAsRead();
+  const deleteMessage = useDeleteMessage();
+  const editMessage = useEditMessage();
+  const pinMessage = usePinMessage();
+
+  // Edit state
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
 
   // Typing indicator
   const { startTyping, stopTyping } = useTypingIndicator(
@@ -474,33 +481,87 @@ export function ChatPanel() {
     };
   }, [currentWorkspaceId, currentUserId, activeConversation, supabase, addMessage, updateMessage, removeMessage]);
 
-  // Handle send message
+  // Handle send message (or edit if in edit mode)
   const handleSend = useCallback(async () => {
     if (!newMessage.trim() || !currentWorkspaceId || !currentUserId) return;
 
-    const messageData = {
-      workspace_id: currentWorkspaceId,
-      text: newMessage.trim(),
-      recipient_id: recipientId,
-      reply_to_id: replyingTo?.id,
-      mentions: [],
-    };
-
     try {
-      await sendMessage.mutateAsync(messageData);
+      if (editingMessageId) {
+        // Edit existing message
+        await editMessage.mutateAsync({
+          id: editingMessageId,
+          data: { text: newMessage.trim() },
+        });
+        setEditingMessageId(null);
+      } else {
+        // Send new message
+        const messageData = {
+          workspace_id: currentWorkspaceId,
+          text: newMessage.trim(),
+          recipient_id: recipientId,
+          reply_to_id: replyingTo?.id,
+          mentions: [],
+        };
+        await sendMessage.mutateAsync(messageData);
+        setReplyingTo(null);
+      }
       setNewMessage("");
-      setReplyingTo(null);
       stopTyping();
     } catch (error) {
-      console.error("Failed to send message:", error);
+      console.error("Failed to send/edit message:", error);
     }
-  }, [newMessage, currentWorkspaceId, currentUserId, recipientId, replyingTo, sendMessage, setReplyingTo, stopTyping]);
+  }, [newMessage, currentWorkspaceId, currentUserId, recipientId, replyingTo, editingMessageId, sendMessage, editMessage, setReplyingTo, stopTyping]);
+
+  // Handle delete message
+  const handleDelete = useCallback(async (messageId: string) => {
+    if (!currentWorkspaceId) return;
+
+    try {
+      await deleteMessage.mutateAsync({
+        id: messageId,
+        workspaceId: currentWorkspaceId,
+        recipientId,
+      });
+    } catch (error) {
+      console.error("Failed to delete message:", error);
+    }
+  }, [currentWorkspaceId, recipientId, deleteMessage]);
+
+  // Handle pin/unpin message
+  const handlePin = useCallback(async (messageId: string, isPinned: boolean) => {
+    try {
+      await pinMessage.mutateAsync({
+        messageId,
+        pin: !isPinned,
+      });
+    } catch (error) {
+      console.error("Failed to pin/unpin message:", error);
+    }
+  }, [pinMessage]);
+
+  // Handle start editing message
+  const handleStartEdit = useCallback((message: ChatMessageWithUser) => {
+    setEditingMessageId(message.id);
+    setNewMessage(message.text);
+    setReplyingTo(null);
+    inputRef.current?.focus();
+  }, [setReplyingTo]);
+
+  // Handle cancel editing
+  const handleCancelEdit = useCallback(() => {
+    setEditingMessageId(null);
+    setNewMessage("");
+  }, []);
 
   // Handle key press
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+    if (e.key === "Escape" && editingMessageId) {
+      e.preventDefault();
+      handleCancelEdit();
     }
   };
 
@@ -604,17 +665,10 @@ export function ChatPanel() {
                     message={message}
                     currentUserId={currentUserId || ""}
                     onReply={() => setReplyingTo(message)}
-                    onEdit={() => {
-                      setEditingMessage(message);
-                      setNewMessage(message.text);
-                    }}
-                    onDelete={async () => {
-                      // Handle delete
-                    }}
+                    onEdit={() => handleStartEdit(message)}
+                    onDelete={() => handleDelete(message.id)}
                     onReact={(reaction) => handleReact(message.id, reaction)}
-                    onPin={async () => {
-                      // Handle pin
-                    }}
+                    onPin={() => handlePin(message.id, message.is_pinned)}
                   />
                 ))}
                 <div ref={messagesEndRef} />
@@ -626,8 +680,21 @@ export function ChatPanel() {
             </AnimatePresence>
           </div>
 
+          {/* Edit preview */}
+          {editingMessageId && (
+            <div className="px-4 py-2 bg-amber-500/10 border-t border-amber-500/20 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm">
+                <Edit3 className="h-4 w-4 text-amber-500" />
+                <span className="text-amber-500">Editing message</span>
+              </div>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCancelEdit}>
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+
           {/* Reply preview */}
-          {replyingTo && (
+          {replyingTo && !editingMessageId && (
             <div className="px-4 py-2 bg-muted/50 border-t flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm">
                 <Reply className="h-4 w-4 text-muted-foreground" />
@@ -654,11 +721,18 @@ export function ChatPanel() {
               />
               <Button
                 onClick={handleSend}
-                disabled={!newMessage.trim() || sendMessage.isPending}
+                disabled={!newMessage.trim() || sendMessage.isPending || editMessage.isPending}
                 size="icon"
-                className="h-10 w-10 flex-shrink-0"
+                className={cn(
+                  "h-10 w-10 flex-shrink-0",
+                  editingMessageId && "bg-amber-500 hover:bg-amber-600"
+                )}
               >
-                <Send className="h-4 w-4" />
+                {editingMessageId ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
               </Button>
             </div>
           </div>

@@ -8,6 +8,7 @@ import { useWorkspaceStore } from "@/lib/stores/workspace-store";
 import { usePagination } from "@/lib/hooks/use-pagination";
 import { Pagination } from "@/components/ui/pagination";
 import { TaskCard } from "./task-card";
+import { BulkActionsToolbar } from "./bulk-actions-toolbar";
 import { MESSAGES } from "@/lib/constants";
 
 // Mock data for development when not connected to database
@@ -70,6 +71,7 @@ interface TaskListProps {
   workspaceId?: string | null;
   paginate?: boolean;
   pageSize?: number;
+  showBulkActions?: boolean;
 }
 
 export function TaskList({
@@ -80,6 +82,7 @@ export function TaskList({
   workspaceId: propWorkspaceId,
   paginate = false,
   pageSize: initialPageSize = 20,
+  showBulkActions = true,
 }: TaskListProps) {
   const { currentWorkspaceId } = useWorkspaceStore();
 
@@ -150,6 +153,9 @@ export function TaskList({
     ? pagination.paginateData(processedTasks)
     : processedTasks;
 
+  // Get all task IDs for bulk selection - must be before any early returns
+  const allTaskIds = useMemo(() => processedTasks.map((t) => t.id), [processedTasks]);
+
   const handleToggleComplete = (task: TaskFromAPI) => {
     if (useMockData) {
       // Mock mode - no action needed
@@ -202,6 +208,11 @@ export function TaskList({
 
   return (
     <div className="space-y-4">
+      {/* Bulk Actions Toolbar */}
+      {showBulkActions && !useMockData && (
+        <BulkActionsToolbar allTaskIds={allTaskIds} />
+      )}
+
       <div className="space-y-2">
         {displayedTasks.map((task) => (
           <TaskCard

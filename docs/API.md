@@ -1254,6 +1254,279 @@ curl -X POST "https://your-domain.com/api/ai/extract-tasks" \
 
 ---
 
+## Analytics API
+
+### Get Workspace Analytics
+
+```http
+GET /api/analytics?workspace_id={id}&period={period}
+```
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `workspace_id` | string | Yes | Workspace UUID |
+| `period` | string | No | Time period: `7d`, `30d`, `90d`, `all` (default: `30d`) |
+
+**Response:**
+
+```json
+{
+  "summary": {
+    "totalTasks": 150,
+    "completedTasks": 85,
+    "inProgressTasks": 40,
+    "pendingTasks": 25,
+    "completionRate": 57,
+    "avgTasksPerDay": 2.8,
+    "totalProjects": 12,
+    "memberCount": 8
+  },
+  "tasksByStatus": {
+    "todo": 25,
+    "progress": 40,
+    "done": 85
+  },
+  "tasksByPriority": {
+    "p1": 15,
+    "p2": 45,
+    "p3": 60,
+    "p4": 30
+  },
+  "tasksByCategory": {
+    "research": 60,
+    "teaching": 30,
+    "grants": 25,
+    "admin": 20,
+    "misc": 15
+  },
+  "projectsByType": {
+    "manuscript": 5,
+    "grant": 4,
+    "general": 3
+  },
+  "activityTrend": [
+    { "date": "2025-01-01", "count": 12 },
+    { "date": "2025-01-02", "count": 15 }
+  ],
+  "completionTrend": [
+    { "date": "2025-01-01", "count": 8 },
+    { "date": "2025-01-02", "count": 10 }
+  ],
+  "memberProductivity": [
+    {
+      "userId": "...",
+      "name": "Dr. Smith",
+      "avatar": "https://...",
+      "role": "owner",
+      "totalTasks": 45,
+      "completedTasks": 30,
+      "activityCount": 120
+    }
+  ],
+  "period": "30d"
+}
+```
+
+---
+
+## Bulk Operations API
+
+### Bulk Update Tasks
+
+```http
+PATCH /api/tasks/bulk
+```
+
+**Request Body:**
+
+```json
+{
+  "taskIds": ["uuid1", "uuid2", "uuid3"],
+  "updates": {
+    "status": "done",
+    "priority": "p2",
+    "category": "research",
+    "due": "2025-02-01",
+    "project_id": "project-uuid"
+  }
+}
+```
+
+**Validation:**
+- `taskIds`: 1-100 UUIDs
+- `updates`: At least one field required
+- RLS policies enforced (user must have access to all tasks)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "updated": 3,
+  "data": [
+    { "id": "uuid1", "title": "Task 1", "status": "done", ... },
+    { "id": "uuid2", "title": "Task 2", "status": "done", ... },
+    { "id": "uuid3", "title": "Task 3", "status": "done", ... }
+  ]
+}
+```
+
+### Bulk Delete Tasks
+
+```http
+DELETE /api/tasks/bulk
+```
+
+**Request Body:**
+
+```json
+{
+  "taskIds": ["uuid1", "uuid2", "uuid3"]
+}
+```
+
+**Validation:**
+- `taskIds`: 1-100 UUIDs
+- RLS policies enforced
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "deleted": 3
+}
+```
+
+---
+
+## Import/Export API
+
+### Export Tasks
+
+```http
+GET /api/tasks/export?workspace_id={id}&format={format}
+```
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `workspace_id` | string | No | Workspace UUID (omit for personal tasks) |
+| `format` | string | No | Export format: `csv` (default), `json` |
+
+**CSV Response:**
+
+```csv
+ID,Title,Description,Status,Priority,Category,Due Date,Project ID,Created At,Updated At,Completed At
+uuid1,"Review paper","Check methodology section",done,p2,research,2025-01-15,proj-uuid,...
+```
+
+**JSON Response:**
+
+```json
+{
+  "data": [
+    {
+      "id": "uuid1",
+      "title": "Review paper",
+      "description": "Check methodology section",
+      "status": "done",
+      "priority": "p2",
+      "category": "research",
+      "due": "2025-01-15",
+      "project_id": "proj-uuid",
+      "created_at": "2025-01-01T10:00:00Z",
+      "updated_at": "2025-01-10T15:30:00Z",
+      "completed_at": "2025-01-10T15:30:00Z"
+    }
+  ]
+}
+```
+
+### Import Tasks (JSON)
+
+```http
+POST /api/tasks/import
+Content-Type: application/json
+```
+
+**Request Body:**
+
+```json
+{
+  "workspace_id": "workspace-uuid",
+  "tasks": [
+    {
+      "title": "New Task 1",
+      "description": "Task details",
+      "status": "todo",
+      "priority": "p2",
+      "category": "research",
+      "due": "2025-02-01"
+    },
+    {
+      "title": "New Task 2",
+      "priority": "p1",
+      "category": "grants"
+    }
+  ]
+}
+```
+
+**Validation:**
+- `tasks`: 1-500 tasks per request
+- Each task must have at minimum a `title`
+- Invalid tasks are skipped with errors reported
+
+### Import Tasks (CSV)
+
+```http
+POST /api/tasks/import
+Content-Type: multipart/form-data
+```
+
+**Form Data:**
+- `file`: CSV file
+- `workspace_id`: Workspace UUID (optional)
+
+**CSV Format:**
+- Header row required
+- Flexible column names (e.g., "Title", "title", "Task", "Name" all map to title)
+- Automatic status/priority/category normalization
+- Date format detection (ISO, MM/DD/YYYY, YYYY-MM-DD)
+
+**Example CSV:**
+
+```csv
+Title,Description,Status,Priority,Category,Due Date
+Review manuscript,Check references,todo,p2,research,2025-02-01
+Submit grant,NSF deadline,urgent,p1,grants,2025-01-31
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "imported": 48,
+  "failed": 2,
+  "total": 50,
+  "errors": [
+    "Batch 1: Missing required field 'title' on row 25"
+  ]
+}
+```
+
+**Processing:**
+- Batch processing in groups of 50
+- Continues on errors (partial success possible)
+- Returns detailed error messages for failed batches
+
+---
+
 ## Webhooks (Future)
 
 Webhook support for external integrations is planned for a future release. This will enable:
@@ -1264,5 +1537,5 @@ Webhook support for external integrations is planned for a future release. This 
 
 ---
 
-*API Version: 2.0*
-*Last Updated: January 2025*
+*API Version: 2.0 (Phase 8)*
+*Last Updated: January 12, 2026*

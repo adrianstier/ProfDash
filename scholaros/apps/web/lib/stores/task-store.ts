@@ -9,6 +9,10 @@ interface TaskUIState {
   // Task being edited
   editingTaskId: string | null;
 
+  // Bulk selection
+  selectedTaskIds: Set<string>;
+  isSelectionMode: boolean;
+
   // Filters
   filters: {
     status: string | null;
@@ -28,13 +32,23 @@ interface TaskUIState {
   setFilter: (key: keyof TaskUIState["filters"], value: string | null) => void;
   clearFilters: () => void;
   setSort: (sortBy: TaskUIState["sortBy"], direction?: TaskUIState["sortDirection"]) => void;
+
+  // Bulk selection actions
+  toggleSelectionMode: () => void;
+  toggleTaskSelection: (taskId: string) => void;
+  selectAllTasks: (taskIds: string[]) => void;
+  deselectAllTasks: () => void;
+  clearSelection: () => void;
+  isTaskSelected: (taskId: string) => boolean;
 }
 
-export const useTaskStore = create<TaskUIState>((set) => ({
+export const useTaskStore = create<TaskUIState>((set, get) => ({
   // Initial state
   selectedTaskId: null,
   isDetailOpen: false,
   editingTaskId: null,
+  selectedTaskIds: new Set<string>(),
+  isSelectionMode: false,
   filters: {
     status: null,
     category: null,
@@ -74,6 +88,35 @@ export const useTaskStore = create<TaskUIState>((set) => ({
       sortBy,
       sortDirection: direction ?? state.sortDirection,
     })),
+
+  // Bulk selection actions
+  toggleSelectionMode: () =>
+    set((state) => ({
+      isSelectionMode: !state.isSelectionMode,
+      selectedTaskIds: state.isSelectionMode ? new Set() : state.selectedTaskIds,
+    })),
+
+  toggleTaskSelection: (taskId) =>
+    set((state) => {
+      const newSelection = new Set(state.selectedTaskIds);
+      if (newSelection.has(taskId)) {
+        newSelection.delete(taskId);
+      } else {
+        newSelection.add(taskId);
+      }
+      return { selectedTaskIds: newSelection };
+    }),
+
+  selectAllTasks: (taskIds) =>
+    set({ selectedTaskIds: new Set(taskIds) }),
+
+  deselectAllTasks: () =>
+    set({ selectedTaskIds: new Set() }),
+
+  clearSelection: () =>
+    set({ selectedTaskIds: new Set(), isSelectionMode: false }),
+
+  isTaskSelected: (taskId) => get().selectedTaskIds.has(taskId),
 }));
 
 // Helper function to apply filters to tasks

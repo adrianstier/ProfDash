@@ -5,6 +5,7 @@ import { LayoutList, CheckCircle, Circle, Clock, ListTodo } from "lucide-react";
 import { QuickAdd } from "@/components/tasks/quick-add";
 import { TaskList } from "@/components/tasks/task-list";
 import { TaskFilters } from "@/components/tasks/task-filters";
+import { BulkActionsToolbar } from "@/components/tasks/bulk-actions-toolbar";
 import { useTasks } from "@/lib/hooks/use-tasks";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
 import { cn } from "@/lib/utils";
@@ -126,8 +127,13 @@ export default function ListPage() {
         <TaskFilters />
       </section>
 
-      {/* Task List */}
+      {/* Bulk Actions */}
       <section className="animate-fade-in stagger-4">
+        <BulkActionsToolbar allTaskIds={tasks.map(t => t.id)} />
+      </section>
+
+      {/* Task List */}
+      <section className="animate-fade-in stagger-5">
         <TaskList filter="all" useStoreFilters paginate pageSize={20} />
       </section>
     </div>

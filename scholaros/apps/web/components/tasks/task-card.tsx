@@ -101,6 +101,7 @@ interface TaskCardProps {
   onDelete?: (task: TaskFromAPI) => void;
   isDraggable?: boolean;
   isCompact?: boolean;
+  showSelectionCheckbox?: boolean;
 }
 
 export function TaskCard({
@@ -110,10 +111,12 @@ export function TaskCard({
   onDelete,
   isDraggable = false,
   isCompact = false,
+  showSelectionCheckbox = false,
 }: TaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
-  const { openTaskDetail } = useTaskStore();
+  const { openTaskDetail, isSelectionMode, toggleTaskSelection, selectedTaskIds } = useTaskStore();
+  const isSelected = selectedTaskIds.has(task.id);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const firstMenuItemRef = useRef<HTMLButtonElement>(null);
@@ -212,6 +215,12 @@ export function TaskCard({
   const categoryStyle = task.category ? categoryConfig[task.category] : null;
   const isDone = task.status === "done";
 
+  // Handle selection click
+  const handleSelectionClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleTaskSelection(task.id);
+  }, [task.id, toggleTaskSelection]);
+
   return (
     <div
       ref={setNodeRef}
@@ -226,12 +235,40 @@ export function TaskCard({
           : "hover:shadow-md hover:border-border hover-glow",
         isDone && "opacity-60",
         justCompleted && "animate-success glow-success",
-        isCompact ? "p-3" : "p-4"
+        isCompact ? "p-3" : "p-4",
+        // Selection mode styles
+        isSelected && "ring-2 ring-primary bg-primary/5",
+        isSelectionMode && "cursor-pointer"
       )}
+      onClick={isSelectionMode ? handleSelectionClick : undefined}
     >
       <div className="flex items-start gap-3">
+        {/* Selection Checkbox */}
+        {(isSelectionMode || showSelectionCheckbox) && (
+          <button
+            onClick={handleSelectionClick}
+            className={cn(
+              "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-all duration-200",
+              isSelected
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-muted-foreground/30 hover:border-primary"
+            )}
+            aria-label={isSelected ? `Deselect ${task.title}` : `Select ${task.title}`}
+            role="checkbox"
+            aria-checked={isSelected}
+          >
+            <Check
+              className={cn(
+                "h-3 w-3 transition-all duration-200",
+                isSelected ? "opacity-100 scale-100" : "opacity-0 scale-50"
+              )}
+              aria-hidden="true"
+            />
+          </button>
+        )}
+
         {/* Drag Handle */}
-        {isDraggable && (
+        {isDraggable && !isSelectionMode && (
           <button
             {...attributes}
             {...listeners}
@@ -245,32 +282,34 @@ export function TaskCard({
           </button>
         )}
 
-        {/* Checkbox with celebration animation */}
-        <button
-          onClick={() => handleToggleComplete(task)}
-          className={cn(
-            "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200",
-            isDone
-              ? "border-success bg-success text-white scale-100"
-              : "border-muted-foreground/30 hover:border-primary hover:scale-110 hover:bg-primary/5",
-            justCompleted && "animate-success"
-          )}
-          aria-label={
-            isDone
-              ? ARIA_LABELS.markIncomplete(task.title)
-              : ARIA_LABELS.markComplete(task.title)
-          }
-          role="checkbox"
-          aria-checked={isDone}
-        >
-          <Check
+        {/* Checkbox with celebration animation - hidden in selection mode */}
+        {!isSelectionMode && (
+          <button
+            onClick={() => handleToggleComplete(task)}
             className={cn(
-              "h-3 w-3 transition-all duration-200",
-              isDone ? "opacity-100 scale-100" : "opacity-0 scale-50"
+              "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200",
+              isDone
+                ? "border-success bg-success text-white scale-100"
+                : "border-muted-foreground/30 hover:border-primary hover:scale-110 hover:bg-primary/5",
+              justCompleted && "animate-success"
             )}
-            aria-hidden="true"
-          />
-        </button>
+            aria-label={
+              isDone
+                ? ARIA_LABELS.markIncomplete(task.title)
+                : ARIA_LABELS.markComplete(task.title)
+            }
+            role="checkbox"
+            aria-checked={isDone}
+          >
+            <Check
+              className={cn(
+                "h-3 w-3 transition-all duration-200",
+                isDone ? "opacity-100 scale-100" : "opacity-0 scale-50"
+              )}
+              aria-hidden="true"
+            />
+          </button>
+        )}
 
         {/* Completion sparkle effect */}
         {justCompleted && (

@@ -9,6 +9,7 @@ import type { User } from "@supabase/supabase-js";
 import { WorkspaceSwitcher } from "@/components/workspace/workspace-switcher";
 import { useTasks } from "@/lib/hooks/use-tasks";
 import {
+  BarChart3,
   BookOpen,
   Calendar,
   ChevronDown,
@@ -29,6 +30,7 @@ import {
   PanelLeft,
 } from "lucide-react";
 import { useAgentStore } from "@/lib/stores/agent-store";
+import { OnlineUsersList } from "@/components/presence/user-presence-indicator";
 
 interface SidebarProps {
   user: User;
@@ -73,6 +75,7 @@ const NAV_SECTIONS: NavSection[] = [
     defaultExpanded: false,
     items: [
       { label: "Personnel", href: "/personnel", icon: Users },
+      { label: "Analytics", href: "/analytics", icon: BarChart3 },
     ],
   },
   {
@@ -341,6 +344,13 @@ export function Sidebar({ user }: SidebarProps) {
           </div>
         ))}
       </nav>
+
+      {/* Online users */}
+      {!isCollapsed && (
+        <div className="px-3 py-2 border-t border-sidebar-border animate-fade-in">
+          <OnlineUsersList maxVisible={4} className="justify-start" />
+        </div>
+      )}
 
       {/* User section */}
       <div className="border-t border-sidebar-border p-3" role="region" aria-label="User account">

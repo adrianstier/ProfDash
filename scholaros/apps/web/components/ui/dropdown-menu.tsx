@@ -150,10 +150,20 @@ function DropdownMenuSeparator({ className, ...props }: React.HTMLAttributes<HTM
   return <div className={cn("-mx-1 my-1 h-px bg-muted", className)} {...props} />;
 }
 
+function DropdownMenuLabel({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn("px-2 py-1.5 text-sm font-semibold", className)}
+      {...props}
+    />
+  );
+}
+
 export {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuLabel,
 };
