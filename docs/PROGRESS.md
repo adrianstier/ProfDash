@@ -1,7 +1,7 @@
 # ScholarOS Development Progress
 
 **Last Updated:** January 12, 2026
-**Current Phase:** Phase 8 (Enhanced Collaboration & Insights) - Complete
+**Current Phase:** Phase 9A (Critical Bug Fixes) - In Progress
 
 ---
 
@@ -18,6 +18,9 @@
 | Phase 6: AI Features | ✅ Complete | 100% |
 | Phase 7: Polish & Launch | ✅ Complete | 100% |
 | Phase 8: Enhanced Collaboration & Insights | ✅ Complete | 100% |
+| **Phase 9A: Critical Bug Fixes** | 🚧 In Progress | 67% (2/3) |
+| Phase 9B: UX Optimization | 📋 Planned | 0% |
+| Phase 9C: Performance & Polish | 📋 Planned | 0% |
 
 ---
 
@@ -587,6 +590,346 @@ scholaros/
 | `funding_opportunities` | 5 | Grant opportunities from Grants.gov |
 | `saved_searches` | 5 | Saved grant search queries |
 | `opportunity_watchlist` | 5 | Tracked grant opportunities |
+
+---
+
+### Phase 9A: Critical Bug Fixes 🚧 IN PROGRESS
+
+**Status:** 2 of 3 bugs fixed (67% complete)
+**Started:** January 12, 2026
+
+**Completed:**
+- [x] Quick-add same-day parsing bug (CRITICAL)
+- [x] Grant filter state persistence (HIGH)
+- [x] Bulk delete confirmation modal (already existed)
+
+**Remaining:**
+- [ ] Calendar integration sync issues (CRITICAL)
+- [ ] Project milestone dependencies UI (HIGH)
+
+**Bug #1: Quick-Add Same-Day Parsing (CRITICAL) ✅ FIXED**
+- **Issue:** When users typed day abbreviations (e.g., "Monday" on a Monday), tasks were scheduled 7 days in the future instead of today
+- **Impact:** Users unintentionally scheduling tasks a week late
+- **Root Cause:** `getNextDayOfWeek()` function used `<= 0` comparison instead of `< 0`
+- **Fix:** Changed condition in `scholaros/packages/shared/src/utils/index.ts:147`
+  ```typescript
+  // Before: if (daysUntil <= 0) { daysUntil += 7; }
+  // After:  if (daysUntil < 0) { daysUntil += 7; }
+  ```
+- **Files Changed:** `packages/shared/src/utils/index.ts`
+- **Test:** Create task with "mon", "tue", etc. on same day of week - should schedule for today, not next week
+- **Committed:** January 12, 2026 (Commit: 67beab1)
+
+**Bug #2: Grant Filter State Persistence (HIGH) ✅ FIXED**
+- **Issue:** Grant search filters and query reset on every page refresh
+- **Impact:** Users forced to re-apply filters every time they navigate back to grants page
+- **Root Cause:** Filter state using React `useState` with no persistence
+- **Fix:** Added localStorage persistence with useEffect hooks
+  - Load saved filters and query on component mount
+  - Save filters whenever they change
+  - Save search query whenever it changes
+  - Clear localStorage when "Clear all" button clicked
+- **Files Changed:** `apps/web/app/(dashboard)/grants/page.tsx`
+  - Added `useEffect` import
+  - Added 3 useEffect hooks (lines 193-217)
+  - Updated `clearFilters()` to remove localStorage items
+- **Test:** Apply filters, refresh page, verify filters persist
+- **Committed:** January 12, 2026 (Commit: 67beab1)
+
+**Bug #3: Bulk Delete Confirmation (Already Implemented) ✅ VERIFIED**
+- **Status:** Feature already exists and works correctly
+- **Location:** `apps/web/components/tasks/bulk-actions-toolbar.tsx:308-331`
+- **Implementation:** Uses shadcn/ui AlertDialog with Radix primitives
+- **Features:**
+  - Shows "Delete X tasks?" confirmation
+  - Clear warning: "This action cannot be undone"
+  - Cancel and Delete buttons
+  - Loading state during deletion
+  - Accessible with ARIA labels
+- **No changes needed**
+
+**Bug #4: Calendar Integration Sync Issues (CRITICAL) ⏳ TODO**
+- **Issue:** Google Calendar events not syncing properly, token refresh failures
+- **Impact:** Calendar integration broken for users
+- **Estimated Fix:** 3-4 hours
+- **Files to Check:**
+  - `apps/web/app/api/calendar/events/route.ts`
+  - `apps/web/app/api/auth/google/callback/route.ts`
+  - `apps/web/lib/hooks/use-calendar.ts`
+- **Root Causes to Investigate:**
+  - OAuth token expiry not handling refresh properly
+  - Rate limiting from Google Calendar API
+  - RLS policies blocking calendar data access
+  - Error handling not surfacing failures to UI
+- **Proposed Fix:**
+  - Implement exponential backoff for API retries
+  - Add proper token refresh before expiry (5 min buffer)
+  - Surface calendar sync errors in UI with retry button
+  - Add sync status indicator in calendar view
+
+**Bug #5: Project Milestone Dependencies UI (HIGH) ⏳ TODO**
+- **Issue:** Database schema supports milestone dependencies but UI missing
+- **Impact:** Users can't set dependencies between milestones
+- **Estimated Fix:** 2 hours
+- **Database Schema:** `project_milestones` table has `depends_on` column (milestone_id array)
+- **Proposed Implementation:**
+  - Add dependency selector in milestone creation/edit modal
+  - Show dependency graph visualization in project detail page
+  - Validate no circular dependencies
+  - Auto-update dependent milestone statuses
+- **Files to Create/Modify:**
+  - `apps/web/components/projects/milestone-dependencies.tsx` (new)
+  - Update: `apps/web/components/projects/milestone-form.tsx`
+  - Update: `apps/web/app/(dashboard)/projects/[id]/page.tsx`
+
+**Key Files Changed in Phase 9A:**
+- `scholaros/packages/shared/src/utils/index.ts` - Quick-add parser fix
+- `scholaros/apps/web/app/(dashboard)/grants/page.tsx` - Filter persistence
+- `docs/TECH-LEAD-PLAN.md` - Comprehensive technical plan (new, 25,000+ words)
+
+---
+
+### Phase 9B: UX Optimization 📋 PLANNED
+
+**Status:** Not started (0% complete)
+**Estimated Duration:** 3-4 weeks
+**Priority:** High - Major user experience improvements
+
+**Planned Features:**
+
+**1. Progressive Onboarding Wizard (HIGH) - 3 days**
+- **Issue:** New users have no guidance on platform features
+- **Impact:** High bounce rate, poor user activation
+- **Implementation:**
+  - Welcome modal with product tour (5 screens)
+  - Workspace setup wizard (name, invite members)
+  - First task creation guide with quick-add tutorial
+  - Interactive tooltips for key features
+  - Progress tracking (steps completed)
+  - Option to skip or dismiss
+- **Files to Create:**
+  - `apps/web/components/onboarding/welcome-wizard.tsx`
+  - `apps/web/components/onboarding/feature-tour.tsx`
+  - `apps/web/components/onboarding/workspace-setup.tsx`
+  - `apps/web/components/onboarding/first-task-guide.tsx`
+  - `apps/web/lib/hooks/use-onboarding.ts`
+- **Database Changes:**
+  - Add `onboarding_completed` and `onboarding_step` to `profiles` table
+- **Success Metrics:**
+  - 60%+ of new users complete onboarding
+  - 40%+ create first task within 5 minutes
+  - 30%+ invite team member within first session
+
+**2. Global Search with Command Palette (HIGH) - 3 days**
+- **Issue:** Users can't search across all content types
+- **Impact:** Major productivity bottleneck, poor discoverability
+- **Implementation:**
+  - Command+K modal (Cmd+K / Ctrl+K)
+  - Fuse.js fuzzy search across tasks, projects, grants, publications
+  - Recent searches with history
+  - Quick actions (create task, open page, run command)
+  - Keyboard navigation (arrow keys, Enter to execute)
+  - Search filters by type
+- **Files to Create:**
+  - `apps/web/components/search/command-palette.tsx`
+  - `apps/web/components/search/search-results.tsx`
+  - `apps/web/lib/hooks/use-global-search.ts`
+  - `apps/web/app/api/search/route.ts`
+- **Search Index:**
+  - Tasks: title, description, category
+  - Projects: title, description, type, stage
+  - Grants: title, agency, description
+  - Publications: title, authors, journal
+- **Success Metrics:**
+  - 40%+ of power users use search daily
+  - Average search time < 2 seconds
+  - 80%+ of searches find relevant results
+
+**3. Mobile Responsiveness Improvements (HIGH) - 4-5 days**
+- **Issues:**
+  - Board view Kanban columns overflow on mobile
+  - Task detail drawer overlaps and blocks content
+  - Grant cards have poor mobile layout
+  - Navigation sidebar doesn't collapse properly on small screens
+  - Tables not scrollable horizontally
+- **Fixes Needed:**
+  - Board view: Single-column Kanban on mobile with horizontal scroll
+  - Task drawer: Full-screen modal on mobile instead of side panel
+  - Grant cards: Stack information vertically, collapse metadata
+  - Sidebar: Bottom navigation bar on mobile
+  - Tables: Add horizontal scroll with touch indicators
+  - Analytics charts: Responsive breakpoints, stack on mobile
+- **Files to Update:**
+  - `apps/web/app/(dashboard)/board/page.tsx`
+  - `apps/web/components/tasks/task-detail-drawer.tsx`
+  - `apps/web/app/(dashboard)/grants/page.tsx`
+  - `apps/web/components/layout/sidebar.tsx`
+  - `apps/web/components/analytics/analytics-dashboard.tsx`
+- **Testing:**
+  - iPhone SE (375px width)
+  - iPad (768px width)
+  - Android phones (various sizes)
+  - Landscape and portrait orientations
+- **Success Metrics:**
+  - No horizontal scroll on any page (except intentional)
+  - All interactive elements tappable (44x44px minimum)
+  - 90%+ Lighthouse mobile score
+
+**4. Recurring Tasks Implementation (HIGH) - 5 days**
+- **Issue:** Users can't create daily/weekly/monthly recurring tasks
+- **Impact:** Manual task duplication, missed recurring obligations
+- **Implementation:**
+  - RFC 5545 recurrence rules (RRULE format)
+  - UI for recurrence pattern selection
+  - Visual indicator on recurring tasks
+  - "Complete and create next" button
+  - Skip occurrence functionality
+  - Edit series vs single instance
+  - Recurrence end date or count
+- **Database Migration:**
+  ```sql
+  ALTER TABLE tasks
+  ADD COLUMN recurrence_rule TEXT,
+  ADD COLUMN recurrence_parent_id UUID REFERENCES tasks(id),
+  ADD COLUMN is_recurring BOOLEAN DEFAULT FALSE,
+  ADD COLUMN recurrence_exceptions JSONB DEFAULT '[]'::jsonb;
+  ```
+- **Files to Create:**
+  - `apps/web/components/tasks/recurrence-picker.tsx`
+  - `apps/web/lib/utils/recurrence.ts` (RRULE parser)
+  - `apps/web/app/api/tasks/[id]/occurrences/route.ts`
+- **Files to Update:**
+  - `apps/web/components/tasks/task-form.tsx`
+  - `apps/web/components/tasks/task-card.tsx`
+  - `apps/web/lib/hooks/use-tasks.ts`
+- **Success Metrics:**
+  - 30%+ of active users create recurring tasks
+  - Recurrence rules correctly generate occurrences
+  - No performance impact on task queries
+
+**5. Accessibility Compliance (MEDIUM) - 3 days**
+- **Issues:**
+  - Missing ARIA labels in some components
+  - Incomplete keyboard navigation
+  - Color contrast issues in dark mode
+  - Focus management needs improvement
+- **WCAG 2.1 AA Requirements:**
+  - All interactive elements keyboard accessible
+  - Proper ARIA labels and roles
+  - Color contrast ratio ≥ 4.5:1 for normal text, ≥ 3:1 for large text
+  - Focus indicators visible and clear
+  - Screen reader announcements for dynamic content
+  - Skip links for main navigation
+- **Files to Audit:**
+  - All components in `apps/web/components/`
+  - Pay special attention to modals, dropdowns, forms
+- **Tools:**
+  - axe DevTools for automated testing
+  - NVDA/JAWS screen reader testing
+  - Manual keyboard navigation testing
+- **Success Metrics:**
+  - 0 critical accessibility violations
+  - 100% keyboard navigable
+  - Passes WAVE and axe audits
+
+---
+
+### Phase 9C: Performance & Polish 📋 PLANNED
+
+**Status:** Not started (0% complete)
+**Estimated Duration:** 2-3 weeks
+**Priority:** Medium - Polish and optimization
+
+**Planned Features:**
+
+**1. Real-time Collaboration (MEDIUM) - 4 days**
+- **Feature:** Live presence and activity indicators
+- **Implementation:**
+  - Supabase Realtime channels for workspace
+  - User presence tracking (online/offline/away)
+  - Cursor position sharing on project pages
+  - Live typing indicators in notes
+  - Activity notifications (task assigned, project updated)
+- **Files to Create:**
+  - `apps/web/lib/hooks/use-presence.ts`
+  - `apps/web/components/collaboration/presence-avatars.tsx`
+  - `apps/web/components/collaboration/live-cursor.tsx`
+  - `apps/web/lib/realtime/presence-channel.ts`
+- **Success Metrics:**
+  - <100ms latency for presence updates
+  - 95%+ presence accuracy
+
+**2. Performance Optimizations (MEDIUM) - 3 days**
+- **Issues:**
+  - Large task lists (500+) load slowly
+  - Analytics dashboard initial render slow
+  - Images not optimized (no next/image)
+  - No virtualization for long lists
+- **Optimizations:**
+  - Implement virtual scrolling for task lists (react-window)
+  - Add materialized views for analytics queries
+  - Convert all images to next/image with blur placeholders
+  - Implement intersection observer for lazy loading
+  - Add request deduplication for parallel queries
+  - Optimize bundle size (tree shaking, code splitting)
+- **Performance Targets:**
+  - TTFB < 200ms (Time to First Byte)
+  - FCP < 1.8s (First Contentful Paint)
+  - LCP < 2.5s (Largest Contentful Paint)
+  - TTI < 3.8s (Time to Interactive)
+  - CLS < 0.1 (Cumulative Layout Shift)
+  - FID < 100ms (First Input Delay)
+- **Files to Update:**
+  - `apps/web/components/tasks/task-list.tsx` (virtualization)
+  - `apps/web/components/analytics/analytics-dashboard.tsx` (memoization)
+  - All image imports → next/image
+- **Success Metrics:**
+  - 90+ Lighthouse Performance score
+  - All Core Web Vitals pass
+  - <3s page load time on 3G
+
+**3. Enhanced Error Handling (LOW) - 2 days**
+- **Issues:**
+  - Generic "Something went wrong" error messages
+  - No error boundaries in critical components
+  - Poor offline experience
+  - No error logging/monitoring
+- **Improvements:**
+  - User-friendly error messages with action suggestions
+  - Error boundaries with component recovery
+  - Offline detection with sync queue
+  - Toast notifications for transient errors
+  - Sentry integration for error monitoring
+- **Files to Create:**
+  - `apps/web/components/error/error-boundary.tsx` (enhanced)
+  - `apps/web/components/error/offline-banner.tsx`
+  - `apps/web/lib/error/error-logger.ts`
+  - `apps/web/lib/offline/sync-queue.ts`
+- **Files to Update:**
+  - Wrap all major page sections in error boundaries
+  - Add user-friendly error messages to all API routes
+- **Success Metrics:**
+  - 90%+ of errors have actionable messages
+  - <5% error boundary fallback rate
+  - 100% of critical errors logged
+
+**4. Advanced Analytics (LOW) - 3 days**
+- **Features:**
+  - Custom date range selection (not just 7d/30d/90d)
+  - Task completion velocity charts
+  - Burndown charts for projects
+  - Category time allocation pie charts
+  - Export analytics reports as PDF/CSV
+  - Team member productivity comparison
+  - Project timeline Gantt chart
+- **Files to Create:**
+  - `apps/web/components/analytics/custom-date-picker.tsx`
+  - `apps/web/components/analytics/velocity-chart.tsx`
+  - `apps/web/components/analytics/burndown-chart.tsx`
+  - `apps/web/app/api/analytics/export/route.ts`
+- **Success Metrics:**
+  - 50%+ of teams use analytics weekly
+  - Custom reports created by 20%+ of users
 
 ---
 
