@@ -21,7 +21,16 @@ interface GoogleEventsResponse {
   nextPageToken?: string;
 }
 
-async function refreshAccessToken(encryptedRefreshToken: string): Promise<string | null> {
+interface RefreshTokenResult {
+  accessToken: string;
+  expiresIn: number;
+}
+
+/**
+ * Refresh OAuth access token using refresh token
+ * Returns new access token and expiry time
+ */
+async function refreshAccessToken(encryptedRefreshToken: string): Promise<RefreshTokenResult | null> {
   try {
     // Decrypt refresh token for API call
     const refreshToken = decryptToken(encryptedRefreshToken);
@@ -40,16 +49,58 @@ async function refreshAccessToken(encryptedRefreshToken: string): Promise<string
     });
 
     if (!response.ok) {
-      console.error("Failed to refresh token:", await response.text());
+      const errorText = await response.text();
+      console.error("Failed to refresh token:", errorText);
       return null;
     }
 
     const data = await response.json();
-    return data.access_token;
+    return {
+      accessToken: data.access_token,
+      expiresIn: data.expires_in || 3600, // Default to 1 hour
+    };
   } catch (error) {
     console.error("Error refreshing token:", error);
     return null;
   }
+}
+
+/**
+ * Fetch with exponential backoff retry for rate limiting
+ * Handles Google Calendar API 429 responses
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries: number = 3
+): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+
+      // If rate limited (429), wait and retry with exponential backoff
+      if (response.status === 429) {
+        const retryAfter = parseInt(response.headers.get("Retry-After") || "1", 10);
+        const waitTime = Math.min(retryAfter * 1000, Math.pow(2, attempt) * 1000);
+        console.log(`Rate limited. Retrying after ${waitTime}ms (attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
+      }
+
+      return response;
+    } catch (error) {
+      lastError = error as Error;
+      if (attempt < maxRetries - 1) {
+        const waitTime = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+        console.log(`Request failed. Retrying after ${waitTime}ms (attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+    }
+  }
+
+  throw lastError || new Error("Max retries exceeded");
 }
 
 // GET /api/calendar/events - Fetch calendar events
@@ -78,11 +129,18 @@ export async function GET(request: Request) {
       .single();
 
     if (connError || !connection) {
-      return NextResponse.json({ error: "No calendar connected" }, { status: 404 });
+      return NextResponse.json({
+        error: "No calendar connected",
+        message: "Connect your Google Calendar in Settings to see events.",
+        needsConnection: true,
+      }, { status: 404 });
     }
 
     if (!connection.sync_enabled) {
-      return NextResponse.json({ error: "Calendar sync is disabled" }, { status: 400 });
+      return NextResponse.json({
+        error: "Calendar sync disabled",
+        message: "Enable calendar sync in Settings to see events.",
+      }, { status: 400 });
     }
 
     // If not refreshing and we have cached events, return those
@@ -112,6 +170,10 @@ export async function GET(request: Request) {
             count: cachedEvents.length,
             source: "cache",
           },
+          syncStatus: {
+            lastSyncAt: connection.last_sync_at,
+            isHealthy: true,
+          },
         });
       }
     }
@@ -119,36 +181,62 @@ export async function GET(request: Request) {
     // Fetch fresh events from Google - decrypt token for API call
     let accessToken = decryptToken(connection.access_token_encrypted);
 
-    // Check if token is expired
-    if (connection.token_expires_at && new Date(connection.token_expires_at) < new Date()) {
+    // Check if token is expired OR will expire within 5 minutes (proactive refresh)
+    const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000);
+    const tokenExpiresAt = connection.token_expires_at ? new Date(connection.token_expires_at) : null;
+    const needsRefresh = !tokenExpiresAt || tokenExpiresAt < fiveMinutesFromNow;
+
+    if (needsRefresh) {
       if (connection.refresh_token_encrypted) {
-        const newToken = await refreshAccessToken(connection.refresh_token_encrypted);
-        if (newToken) {
-          accessToken = newToken;
+        console.log("Refreshing token (expires soon or expired)");
+        const refreshResult = await refreshAccessToken(connection.refresh_token_encrypted);
+
+        if (refreshResult) {
+          accessToken = refreshResult.accessToken;
           // Encrypt new token before storing
-          const encryptedNewToken = encryptToken(newToken);
-          await supabase
+          const encryptedNewToken = encryptToken(refreshResult.accessToken);
+          const newExpiresAt = new Date(Date.now() + refreshResult.expiresIn * 1000);
+
+          const { error: updateError } = await supabase
             .from("calendar_connections")
             .update({
               access_token_encrypted: encryptedNewToken,
-              token_expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+              token_expires_at: newExpiresAt.toISOString(),
             })
             .eq("id", connection.id);
+
+          if (updateError) {
+            console.error("Failed to update refreshed token:", updateError);
+          } else {
+            console.log("Token refreshed successfully, expires at:", newExpiresAt.toISOString());
+          }
         } else {
-          // Token refresh failed - clear the connection to force re-auth
+          // Token refresh failed - delete connection to force re-auth
+          console.error("Token refresh failed, deleting connection");
           await supabase
             .from("calendar_connections")
             .delete()
             .eq("id", connection.id);
-          return NextResponse.json({ error: "Token expired. Please reconnect your calendar." }, { status: 401 });
+
+          return NextResponse.json({
+            error: "Calendar token expired",
+            message: "Your Google Calendar connection has expired. Please reconnect in Settings → Integrations.",
+            needsReconnect: true,
+          }, { status: 401 });
         }
       } else {
-        // No refresh token - clear the connection
+        // No refresh token - delete connection
+        console.error("No refresh token available, deleting connection");
         await supabase
           .from("calendar_connections")
           .delete()
           .eq("id", connection.id);
-        return NextResponse.json({ error: "Token expired. Please reconnect your calendar." }, { status: 401 });
+
+        return NextResponse.json({
+          error: "Calendar token expired",
+          message: "Your Google Calendar connection has expired. Please reconnect in Settings → Integrations.",
+          needsReconnect: true,
+        }, { status: 401 });
       }
     }
 
@@ -178,7 +266,8 @@ export async function GET(request: Request) {
       calendarUrl.searchParams.set("timeMax", thirtyDaysAhead.toISOString());
     }
 
-    const eventsResponse = await fetch(calendarUrl.toString(), {
+    // Fetch with retry logic for rate limiting
+    const eventsResponse = await fetchWithRetry(calendarUrl.toString(), {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
@@ -187,7 +276,38 @@ export async function GET(request: Request) {
     if (!eventsResponse.ok) {
       const errorText = await eventsResponse.text();
       console.error("Google Calendar API error:", errorText);
-      return NextResponse.json({ error: "Failed to fetch events" }, { status: eventsResponse.status });
+
+      // Provide user-friendly error messages
+      if (eventsResponse.status === 401) {
+        // Unauthorized - token is invalid
+        await supabase
+          .from("calendar_connections")
+          .delete()
+          .eq("id", connection.id);
+
+        return NextResponse.json({
+          error: "Calendar token invalid",
+          message: "Your Google Calendar connection is invalid. Please reconnect in Settings → Integrations.",
+          needsReconnect: true,
+        }, { status: 401 });
+      } else if (eventsResponse.status === 403) {
+        return NextResponse.json({
+          error: "Calendar permission denied",
+          message: "ScholarOS doesn't have permission to access your calendar. Please reconnect with calendar permissions enabled.",
+          needsReconnect: true,
+        }, { status: 403 });
+      } else if (eventsResponse.status === 429) {
+        return NextResponse.json({
+          error: "Rate limit exceeded",
+          message: "Google Calendar rate limit exceeded. Please try again in a few minutes.",
+          retryAfter: parseInt(eventsResponse.headers.get("Retry-After") || "60", 10),
+        }, { status: 429 });
+      }
+
+      return NextResponse.json({
+        error: "Failed to fetch calendar events",
+        message: "Could not retrieve calendar events from Google. Please try again later.",
+      }, { status: eventsResponse.status });
     }
 
     const eventsData: GoogleEventsResponse = await eventsResponse.json();
@@ -225,22 +345,32 @@ export async function GET(request: Request) {
     }
 
     // Update last sync time
+    const now = new Date().toISOString();
     await supabase
       .from("calendar_connections")
-      .update({ last_sync_at: new Date().toISOString() })
+      .update({ last_sync_at: now })
       .eq("id", connection.id);
 
-    // Return paginated response
+    // Return paginated response with sync status
     return NextResponse.json({
       data: events,
       pagination: {
         nextPageToken: eventsData.nextPageToken || null,
         hasMore: !!eventsData.nextPageToken,
         count: events.length,
+        source: "google",
+      },
+      syncStatus: {
+        lastSyncAt: now,
+        isHealthy: true,
+        message: "Successfully synced calendar events",
       },
     });
   } catch (error) {
-    console.error("Unexpected error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("Unexpected error in calendar events:", error);
+    return NextResponse.json({
+      error: "Internal server error",
+      message: "An unexpected error occurred while fetching calendar events. Please try again later.",
+    }, { status: 500 });
   }
 }
