@@ -144,7 +144,8 @@ function getNextDayOfWeek(dayIndex: number): Date {
   let daysUntil = dayIndex - currentDay;
 
   // If the day has passed this week, get next week's
-  if (daysUntil <= 0) {
+  // Use < 0 instead of <= 0 to allow same-day scheduling
+  if (daysUntil < 0) {
     daysUntil += 7;
   }
 

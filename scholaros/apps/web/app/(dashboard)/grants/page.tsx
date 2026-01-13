@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Wallet,
@@ -190,6 +190,32 @@ export default function GrantsPage() {
 
   const { currentWorkspaceId } = useWorkspaceStore();
 
+  // Persist filters to localStorage
+  useEffect(() => {
+    const savedFilters = localStorage.getItem("grant-filters");
+    const savedQuery = localStorage.getItem("grant-search-query");
+    if (savedFilters) {
+      try {
+        setFilters(JSON.parse(savedFilters));
+      } catch (e) {
+        console.error("Failed to parse saved filters:", e);
+      }
+    }
+    if (savedQuery) {
+      setSearchQuery(savedQuery);
+    }
+  }, []);
+
+  // Save filters to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("grant-filters", JSON.stringify(filters));
+  }, [filters]);
+
+  // Save search query to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("grant-search-query", searchQuery);
+  }, [searchQuery]);
+
   // Combine search query with filters
   const searchFilters: GrantSearchFilters = {
     ...filters,
@@ -259,6 +285,9 @@ export default function GrantsPage() {
   const clearFilters = () => {
     setFilters({});
     setSearchQuery("");
+    // Clear localStorage
+    localStorage.removeItem("grant-filters");
+    localStorage.removeItem("grant-search-query");
   };
 
   return (
