@@ -16,6 +16,10 @@ import {
 import { OnboardingProvider, MilestoneModal } from "@/components/learning/progressive-onboarding";
 import { UndoProvider } from "@/components/learning/undo-toast";
 
+// Phase 9B components
+import { CommandPaletteProvider } from "@/components/search";
+import { AnalyticsProvider } from "@/components/analytics";
+
 // Keyboard shortcuts wrapper
 function KeyboardShortcutsWrapper({ children }: { children: React.ReactNode }) {
   // Initialize keyboard shortcuts
@@ -29,28 +33,32 @@ interface DashboardProvidersProps {
 
 export function DashboardProviders({ children }: DashboardProvidersProps) {
   return (
-    <OnboardingProvider>
-      <FeatureDiscoveryProvider>
-        <UndoProvider>
-          <KeyboardShortcutsWrapper>
-            {children}
-            <TaskDetailDrawer />
-            {/* AI Agent Chat - floating interface */}
-            <AgentChat />
-            {/* Keyboard shortcut handler for agent chat */}
-            <AgentKeyboardShortcut />
-            {/* Team Chat Panel - floating interface */}
-            <ChatPanel />
-            {/* Keyboard Shortcuts Modal */}
-            <KeyboardShortcutsModal />
-            {/* User Presence Manager */}
-            <PresenceManager />
-            {/* Learning System - Feature spotlights and onboarding */}
-            <FeatureSpotlight />
-            <MilestoneModal />
-          </KeyboardShortcutsWrapper>
-        </UndoProvider>
-      </FeatureDiscoveryProvider>
-    </OnboardingProvider>
+    <AnalyticsProvider>
+      <OnboardingProvider>
+        <FeatureDiscoveryProvider>
+          <UndoProvider>
+            <CommandPaletteProvider>
+              <KeyboardShortcutsWrapper>
+                {children}
+                <TaskDetailDrawer />
+                {/* AI Agent Chat - floating interface */}
+                <AgentChat />
+                {/* Keyboard shortcut handler for agent chat */}
+                <AgentKeyboardShortcut />
+                {/* Team Chat Panel - floating interface */}
+                <ChatPanel />
+                {/* Keyboard Shortcuts Modal */}
+                <KeyboardShortcutsModal />
+                {/* User Presence Manager */}
+                <PresenceManager />
+                {/* Learning System - Feature spotlights and onboarding */}
+                <FeatureSpotlight />
+                <MilestoneModal />
+              </KeyboardShortcutsWrapper>
+            </CommandPaletteProvider>
+          </UndoProvider>
+        </FeatureDiscoveryProvider>
+      </OnboardingProvider>
+    </AnalyticsProvider>
   );
 }

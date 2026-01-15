@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 
 from app.config import get_settings, Settings
-from app.routers import extract, summarize, grants, documents, agents
+from app.routers import extract, summarize, grants, documents, agents, analytics
 
 # API Key security
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
@@ -66,6 +66,11 @@ app.include_router(
 )
 app.include_router(
     agents.router,
+    prefix="/api",
+    dependencies=[Depends(verify_api_key)],
+)
+app.include_router(
+    analytics.router,
     prefix="/api",
     dependencies=[Depends(verify_api_key)],
 )

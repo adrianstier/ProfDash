@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+// Re-export analytics schemas
+export * from "./analytics";
+
 // Task schemas
 export const TaskPrioritySchema = z.enum(["p1", "p2", "p3", "p4"]);
 export const TaskStatusSchema = z.enum(["todo", "progress", "done"]);
