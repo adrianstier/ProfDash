@@ -19,6 +19,7 @@ import { UndoProvider } from "@/components/learning/undo-toast";
 // Phase 9B components
 import { CommandPaletteProvider } from "@/components/search";
 import { AnalyticsProvider } from "@/components/analytics";
+import { WelcomeModal } from "@/components/dashboard";
 
 // Keyboard shortcuts wrapper
 function KeyboardShortcutsWrapper({ children }: { children: React.ReactNode }) {
@@ -54,6 +55,8 @@ export function DashboardProviders({ children }: DashboardProvidersProps) {
                 {/* Learning System - Feature spotlights and onboarding */}
                 <FeatureSpotlight />
                 <MilestoneModal />
+                {/* Welcome Modal - daily dashboard summary */}
+                <WelcomeModal />
               </KeyboardShortcutsWrapper>
             </CommandPaletteProvider>
           </UndoProvider>
