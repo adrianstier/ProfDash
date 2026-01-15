@@ -10,38 +10,34 @@ This report documents issues discovered by simulating 10 diverse AI test user pe
 
 | Severity | Count | Addressed |
 |----------|-------|-----------|
-| Critical | 4 | 0 |
-| High | 8 | 0 |
+| Critical | 4 | 2 |
+| High | 8 | 1 |
 | Medium | 12 | 0 |
 | Low | 6 | 0 |
-| **Total** | **30** | **0** |
+| **Total** | **30** | **3** |
+
+> **Update (January 14, 2026):** Phase 9A completed. Fixed: Quick-add same-day parsing (Critical), Calendar integration sync (Critical), Grant filter persistence (High).
 
 ---
 
 ## Critical Issues (P0)
 
-### 1. Quick-Add Same-Day Parsing Bug
+### 1. Quick-Add Same-Day Parsing Bug ✅ FIXED
 **Persona Affected:** Dr. Sarah Chen (New PI), Prof. Marcus Thompson (Power User)
 **File:** `packages/shared/src/utils/index.ts:141-153`
+**Status:** ✅ FIXED (January 12, 2026) - Commit: 67beab1
 
 **Problem:** When a user types a day-of-week that matches today (e.g., "meeting fri" on a Friday), the task is scheduled for NEXT week instead of today.
 
-**Code Issue:**
+**Fix Applied:**
 ```typescript
-function getNextDayOfWeek(dayIndex: number): Date {
-  const today = new Date();
-  const currentDay = today.getDay();
-  let daysUntil = dayIndex - currentDay;
-
-  // BUG: daysUntil === 0 should mean today, not next week
-  if (daysUntil <= 0) {
-    daysUntil += 7;
-  }
-  // ...
+// Changed condition from <= 0 to < 0
+if (daysUntil < 0) {  // Now allows same-day (daysUntil === 0)
+  daysUntil += 7;
 }
 ```
 
-**Impact:** Users expecting "fri" on Friday to mean today will have tasks scheduled 7 days later.
+**Impact:** Users can now correctly schedule tasks for today using day abbreviations.
 
 ---
 
@@ -85,13 +81,20 @@ void selectedPublication;
 
 ## High Severity Issues (P1)
 
-### 5. Grant Filter State Not Persisted
+### 5. Grant Filter State Not Persisted ✅ FIXED
 **Persona Affected:** Dr. Aisha Patel (Grant Hunter)
 **File:** `apps/web/app/(dashboard)/grants/page.tsx`
+**Status:** ✅ FIXED (January 12, 2026) - Commit: 67beab1
 
 **Problem:** Grant search filters reset on page refresh. Dr. Aisha saves search criteria but URL state isn't preserved.
 
-**Expected:** Filters should persist in URL params (like projects page does).
+**Fix Applied:** Added localStorage persistence with 3 useEffect hooks:
+- Load saved filters/query on mount
+- Save filters whenever they change
+- Save search query whenever it changes
+- Clear localStorage when "Clear all" clicked
+
+**Result:** Filters now persist across page refreshes.
 
 ---
 
@@ -361,15 +364,15 @@ return d.toLocaleDateString("en-US", { ... });
 
 ## Priority Recommendations
 
-### Sprint 1 (Critical Fixes)
-1. Fix quick-add same-day parsing bug (#1)
-2. Implement publication view/edit modal (#2)
-3. Integrate onboarding flow (#3)
+### Sprint 1 (Critical Fixes) - ✅ PARTIALLY COMPLETE
+1. ~~Fix quick-add same-day parsing bug (#1)~~ ✅ FIXED
+2. Implement publication view/edit modal (#2) ⏳ TODO
+3. Integrate onboarding flow (#3) ⏳ TODO (Phase 9B)
 
 ### Sprint 2 (High Priority UX)
 4. Add timezone support (#6)
 5. Increase mobile touch targets (#7)
-6. Persist grant filter state (#5)
+6. ~~Persist grant filter state (#5)~~ ✅ FIXED
 7. Add keyboard shortcuts (#10)
 
 ### Sprint 3 (Power User Features)
