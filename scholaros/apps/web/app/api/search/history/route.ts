@@ -18,6 +18,33 @@ import { createClient } from "@/lib/supabase/server";
 import { SearchHistoryInsertSchema } from "@scholaros/shared/schemas";
 import type { RecentSearch } from "@scholaros/shared/types";
 
+// ============================================================================
+// Security Utilities
+// ============================================================================
+
+/**
+ * Verifies that a user is a member of the specified workspace.
+ * Returns the user's role if they are a member, null otherwise.
+ */
+async function verifyWorkspaceMembership(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  workspaceId: string
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("workspace_members")
+    .select("role")
+    .eq("workspace_id", workspaceId)
+    .eq("user_id", userId)
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data.role;
+}
+
 /**
  * GET /api/search/history
  *
@@ -44,6 +71,17 @@ export async function GET(request: Request) {
     const workspaceId = searchParams.get("workspace_id");
     const limit = Math.min(parseInt(searchParams.get("limit") || "10"), 50);
     const selectedOnly = searchParams.get("selected_only") === "true";
+
+    // Verify workspace membership if workspace_id is provided
+    if (workspaceId) {
+      const membership = await verifyWorkspaceMembership(supabase, user.id, workspaceId);
+      if (!membership) {
+        return NextResponse.json(
+          { error: "You are not a member of this workspace" },
+          { status: 403 }
+        );
+      }
+    }
 
     // Try to fetch from search_history table
     let query = supabase
@@ -146,6 +184,17 @@ export async function POST(request: Request) {
 
     const historyData = parseResult.data;
 
+    // Verify workspace membership if workspace_id is provided
+    if (historyData.workspace_id) {
+      const membership = await verifyWorkspaceMembership(supabase, user.id, historyData.workspace_id);
+      if (!membership) {
+        return NextResponse.json(
+          { error: "You are not a member of this workspace" },
+          { status: 403 }
+        );
+      }
+    }
+
     // Insert into search_history table
     const { data, error } = await supabase
       .from("search_history")
@@ -163,9 +212,8 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      // Table might not exist yet
+      // Table might not exist yet - graceful degradation
       if (error.code === "42P01" || error.message?.includes("does not exist")) {
-        console.log("[SearchHistory] Table not yet available - logging search");
         return NextResponse.json({
           success: true,
           stored: false,
@@ -210,6 +258,17 @@ export async function DELETE(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const workspaceId = searchParams.get("workspace_id");
+
+    // Verify workspace membership if workspace_id is provided
+    if (workspaceId) {
+      const membership = await verifyWorkspaceMembership(supabase, user.id, workspaceId);
+      if (!membership) {
+        return NextResponse.json(
+          { error: "You are not a member of this workspace" },
+          { status: 403 }
+        );
+      }
+    }
 
     let query = supabase.from("search_history").delete().eq("user_id", user.id);
 

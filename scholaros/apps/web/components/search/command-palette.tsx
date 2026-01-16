@@ -321,7 +321,8 @@ export function CommandPalette({ onOpenChange }: CommandPaletteProps) {
         };
         const route = entityRoutes[(result as SearchResult).type];
         if (route) {
-          router.push(`${route}?highlight=${result.id}`);
+          // Encode the ID to prevent URL parameter injection
+          router.push(`${route}?highlight=${encodeURIComponent(result.id)}`);
         }
       }
 

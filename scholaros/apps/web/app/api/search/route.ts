@@ -23,6 +23,41 @@ import {
 // Maximum results per entity type before ranking
 const MAX_CANDIDATES_PER_TYPE = 50;
 
+// ============================================================================
+// Security Utilities
+// ============================================================================
+
+/**
+ * Escapes SQL LIKE/ILIKE pattern special characters to prevent pattern injection.
+ * Characters %, _, and \ have special meaning in LIKE patterns and must be escaped.
+ */
+function escapeLikePattern(input: string): string {
+  return input.replace(/[%_\\]/g, "\\$&");
+}
+
+/**
+ * Verifies that a user is a member of the specified workspace.
+ * Returns the user's role if they are a member, null otherwise.
+ */
+async function verifyWorkspaceMembership(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  workspaceId: string
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("workspace_members")
+    .select("role")
+    .eq("workspace_id", workspaceId)
+    .eq("user_id", userId)
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data.role;
+}
+
 interface SearchResultItem extends SearchResult {
   description?: string | null;
   status?: string;
@@ -78,6 +113,20 @@ export async function GET(request: Request) {
 
     const { q: query, types, limit, workspace_id } = parseResult.data;
 
+    // Verify workspace membership if workspace_id is provided
+    if (workspace_id) {
+      const membership = await verifyWorkspaceMembership(supabase, user.id, workspace_id);
+      if (!membership) {
+        return NextResponse.json(
+          { error: "You are not a member of this workspace" },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Escape LIKE pattern special characters to prevent pattern injection
+    const safeQuery = escapeLikePattern(query);
+
     // Determine which types to search
     const searchTypes: SearchResultType[] = types?.length
       ? types
@@ -94,19 +143,21 @@ export async function GET(request: Request) {
     };
 
     // Search each entity type in parallel
+    // Note: safeQuery is used for database ILIKE patterns (escaped)
+    // Note: query (original) is used for ranking algorithms (unescaped)
     const searchPromises: Promise<SearchResultItem[]>[] = [];
 
     if (searchTypes.includes("task")) {
-      searchPromises.push(searchTasks(supabase, query, user.id, workspace_id));
+      searchPromises.push(searchTasks(supabase, safeQuery, user.id, workspace_id));
     }
     if (searchTypes.includes("project")) {
-      searchPromises.push(searchProjects(supabase, query, workspace_id));
+      searchPromises.push(searchProjects(supabase, safeQuery, workspace_id));
     }
     if (searchTypes.includes("grant")) {
-      searchPromises.push(searchGrants(supabase, query, workspace_id));
+      searchPromises.push(searchGrants(supabase, safeQuery, workspace_id));
     }
     if (searchTypes.includes("publication")) {
-      searchPromises.push(searchPublications(supabase, query, user.id, workspace_id));
+      searchPromises.push(searchPublications(supabase, safeQuery, user.id, workspace_id));
     }
 
     const searchResults = await Promise.all(searchPromises);
@@ -177,8 +228,7 @@ async function fetchUserSearchHistory(
     const { data, error } = await query;
 
     if (error) {
-      // Table might not exist yet
-      console.log("[Search] Search history not available:", error.message);
+      // Table might not exist yet - return empty array for graceful degradation
       return [];
     }
 
@@ -269,10 +319,11 @@ async function searchProjects(
 async function searchGrants(
   supabase: Awaited<ReturnType<typeof createClient>>,
   query: string,
-  workspaceId?: string
+  _workspaceId?: string
 ): Promise<SearchResultItem[]> {
   try {
-    // Search funding opportunities
+    // Search funding opportunities (public data, not workspace-scoped)
+    // Note: query is already escaped by caller via escapeLikePattern()
     const { data, error } = await supabase
       .from("funding_opportunities")
       .select("id, title, agency, description, deadline, updated_at")
