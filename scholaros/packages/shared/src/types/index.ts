@@ -159,6 +159,223 @@ export interface ProjectWithDetails extends Project {
   completed_task_count?: number;
 }
 
+// =============================================================================
+// Project Hierarchy Types (Phases, Workstreams, Deliverables, Roles, Templates)
+// =============================================================================
+
+// Phase types
+export type PhaseStatus = "pending" | "in_progress" | "blocked" | "completed";
+
+export interface ProjectPhase {
+  id: string;
+  project_id: string;
+  title: string;
+  description?: string | null;
+  sort_order: number;
+  status: PhaseStatus;
+  started_at?: Date | null;
+  completed_at?: Date | null;
+  due_date?: Date | null;
+  blocked_by: string[]; // Phase IDs that must complete first
+  assigned_role?: string | null; // Primary role name
+  metadata?: Record<string, unknown>;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface ProjectPhaseFromAPI
+  extends Omit<ProjectPhase, "started_at" | "completed_at" | "due_date" | "created_at" | "updated_at"> {
+  started_at?: string | null;
+  completed_at?: string | null;
+  due_date?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CreateProjectPhase = Pick<ProjectPhase, "project_id" | "title"> &
+  Partial<Pick<ProjectPhase, "description" | "sort_order" | "due_date" | "blocked_by" | "assigned_role" | "metadata">>;
+
+export type UpdateProjectPhase = Partial<Omit<CreateProjectPhase, "project_id">> &
+  Partial<Pick<ProjectPhase, "status">>;
+
+// Workstream types
+export type WorkstreamStatus = "active" | "paused" | "completed";
+
+export interface ProjectWorkstream {
+  id: string;
+  project_id: string;
+  title: string;
+  description?: string | null;
+  color: string;
+  sort_order: number;
+  status: WorkstreamStatus;
+  owner_id?: string | null;
+  metadata?: Record<string, unknown>;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface ProjectWorkstreamFromAPI
+  extends Omit<ProjectWorkstream, "created_at" | "updated_at"> {
+  created_at: string;
+  updated_at: string;
+}
+
+export type CreateProjectWorkstream = Pick<ProjectWorkstream, "project_id" | "title"> &
+  Partial<Pick<ProjectWorkstream, "description" | "color" | "sort_order" | "owner_id" | "metadata">>;
+
+export type UpdateProjectWorkstream = Partial<Omit<CreateProjectWorkstream, "project_id">> &
+  Partial<Pick<ProjectWorkstream, "status">>;
+
+// Deliverable types
+export type DeliverableStatus = "pending" | "in_progress" | "review" | "completed";
+export type DeliverableArtifactType = "document" | "code" | "data" | "report" | "presentation" | "other";
+
+export interface ProjectDeliverable {
+  id: string;
+  phase_id: string;
+  project_id: string;
+  workstream_id?: string | null; // NULL = shared across workstreams
+  title: string;
+  description?: string | null;
+  artifact_type?: DeliverableArtifactType | null;
+  file_path?: string | null;
+  sort_order: number;
+  status: DeliverableStatus;
+  completed_at?: Date | null;
+  due_date?: Date | null;
+  document_id?: string | null;
+  url?: string | null;
+  metadata?: Record<string, unknown>;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface ProjectDeliverableFromAPI
+  extends Omit<ProjectDeliverable, "completed_at" | "due_date" | "created_at" | "updated_at"> {
+  completed_at?: string | null;
+  due_date?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CreateProjectDeliverable = Pick<ProjectDeliverable, "phase_id" | "title"> &
+  Partial<Pick<ProjectDeliverable, "workstream_id" | "description" | "artifact_type" | "file_path" | "sort_order" | "due_date" | "url" | "metadata">>;
+
+export type UpdateProjectDeliverable = Partial<Omit<CreateProjectDeliverable, "phase_id">> &
+  Partial<Pick<ProjectDeliverable, "status" | "document_id">>;
+
+// Role types
+export interface ProjectRole {
+  id: string;
+  project_id: string;
+  name: string;
+  description?: string | null;
+  color: string;
+  is_ai_agent: boolean;
+  metadata?: Record<string, unknown>;
+  created_at: Date;
+}
+
+export interface ProjectRoleFromAPI extends Omit<ProjectRole, "created_at"> {
+  created_at: string;
+}
+
+export type CreateProjectRole = Pick<ProjectRole, "project_id" | "name"> &
+  Partial<Pick<ProjectRole, "description" | "color" | "is_ai_agent" | "metadata">>;
+
+export type UpdateProjectRole = Partial<Omit<CreateProjectRole, "project_id">>;
+
+// Phase Assignment types
+export type PhaseAssignmentType = "owner" | "contributor" | "reviewer";
+
+export interface ProjectPhaseAssignment {
+  id: string;
+  phase_id: string;
+  role_id?: string | null;
+  user_id?: string | null;
+  assignment_type: PhaseAssignmentType;
+  created_at: Date;
+}
+
+export interface ProjectPhaseAssignmentFromAPI extends Omit<ProjectPhaseAssignment, "created_at"> {
+  created_at: string;
+  role?: ProjectRoleFromAPI | null;
+  user?: { id: string; full_name: string | null; avatar_url: string | null } | null;
+}
+
+export type CreateProjectPhaseAssignment = Pick<ProjectPhaseAssignment, "phase_id"> &
+  Partial<Pick<ProjectPhaseAssignment, "role_id" | "user_id" | "assignment_type">>;
+
+// Template types
+export interface PhaseDefinition {
+  title: string;
+  description?: string | null;
+  blocked_by_index: number[]; // Indexes of phases that must complete first
+  assigned_role?: string | null;
+  deliverables: DeliverableDefinition[];
+}
+
+export interface DeliverableDefinition {
+  title: string;
+  description?: string | null;
+  artifact_type?: DeliverableArtifactType | null;
+  file_path?: string | null;
+}
+
+export interface RoleDefinition {
+  name: string;
+  description?: string | null;
+  color?: string;
+  is_ai_agent?: boolean;
+}
+
+export interface ProjectTemplate {
+  id: string;
+  workspace_id?: string | null; // NULL = global template
+  name: string;
+  description?: string | null;
+  phase_definitions: PhaseDefinition[];
+  role_definitions: RoleDefinition[];
+  is_public: boolean;
+  created_by?: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface ProjectTemplateFromAPI extends Omit<ProjectTemplate, "created_at" | "updated_at"> {
+  created_at: string;
+  updated_at: string;
+}
+
+export type CreateProjectTemplate = Pick<ProjectTemplate, "name" | "phase_definitions"> &
+  Partial<Pick<ProjectTemplate, "workspace_id" | "description" | "role_definitions" | "is_public">>;
+
+export type UpdateProjectTemplate = Partial<Omit<CreateProjectTemplate, "workspace_id">>;
+
+// Extended types with relations
+export interface ProjectPhaseWithDetails extends ProjectPhaseFromAPI {
+  deliverables?: ProjectDeliverableFromAPI[];
+  assignments?: ProjectPhaseAssignmentFromAPI[];
+  tasks?: TaskFromAPI[];
+  blocking_phases?: ProjectPhaseFromAPI[]; // Phases this one is waiting on
+  blocked_phases?: ProjectPhaseFromAPI[]; // Phases waiting on this one
+  deliverable_count?: number;
+  completed_deliverable_count?: number;
+}
+
+export interface ProjectWorkstreamWithDetails extends ProjectWorkstreamFromAPI {
+  task_count?: number;
+  completed_task_count?: number;
+  owner?: { id: string; full_name: string | null; avatar_url: string | null } | null;
+}
+
+export interface ProjectWithHierarchy extends ProjectWithDetails {
+  phases?: ProjectPhaseWithDetails[];
+  workstreams?: ProjectWorkstreamWithDetails[];
+  roles?: ProjectRoleFromAPI[];
+}
+
 // Workspace types
 export type WorkspaceRole = "owner" | "admin" | "member" | "limited";
 

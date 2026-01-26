@@ -171,6 +171,215 @@ export const CreateProjectCollaboratorSchema = z.object({
   is_external: z.boolean().default(false),
 });
 
+// =============================================================================
+// Project Hierarchy Schemas (Phases, Workstreams, Deliverables, Roles, Templates)
+// =============================================================================
+
+// Phase schemas
+export const PhaseStatusSchema = z.enum(["pending", "in_progress", "blocked", "completed"]);
+
+export const ProjectPhaseSchema = z.object({
+  id: z.string().uuid(),
+  project_id: z.string().uuid(),
+  title: z.string().min(1).max(200),
+  description: z.string().nullable().optional(),
+  sort_order: z.number().int().default(0),
+  status: PhaseStatusSchema.default("pending"),
+  started_at: z.coerce.date().nullable().optional(),
+  completed_at: z.coerce.date().nullable().optional(),
+  due_date: z.coerce.date().nullable().optional(),
+  blocked_by: z.array(z.string().uuid()).default([]),
+  assigned_role: z.string().nullable().optional(),
+  metadata: z.record(z.unknown()).default({}),
+  created_at: z.coerce.date(),
+  updated_at: z.coerce.date(),
+});
+
+export const CreateProjectPhaseSchema = z.object({
+  project_id: z.string().uuid(),
+  title: z.string().min(1).max(200),
+  description: z.string().nullable().optional(),
+  sort_order: z.number().int().default(0),
+  due_date: z.coerce.date().nullable().optional(),
+  blocked_by: z.array(z.string().uuid()).default([]),
+  assigned_role: z.string().nullable().optional(),
+  metadata: z.record(z.unknown()).default({}),
+});
+
+export const UpdateProjectPhaseSchema = CreateProjectPhaseSchema.omit({ project_id: true }).partial().extend({
+  status: PhaseStatusSchema.optional(),
+});
+
+// Workstream schemas
+export const WorkstreamStatusSchema = z.enum(["active", "paused", "completed"]);
+
+export const ProjectWorkstreamSchema = z.object({
+  id: z.string().uuid(),
+  project_id: z.string().uuid(),
+  title: z.string().min(1).max(200),
+  description: z.string().nullable().optional(),
+  color: z.string().default("bg-blue-500"),
+  sort_order: z.number().int().default(0),
+  status: WorkstreamStatusSchema.default("active"),
+  owner_id: z.string().uuid().nullable().optional(),
+  metadata: z.record(z.unknown()).default({}),
+  created_at: z.coerce.date(),
+  updated_at: z.coerce.date(),
+});
+
+export const CreateProjectWorkstreamSchema = z.object({
+  project_id: z.string().uuid(),
+  title: z.string().min(1).max(200),
+  description: z.string().nullable().optional(),
+  color: z.string().default("bg-blue-500"),
+  sort_order: z.number().int().default(0),
+  owner_id: z.string().uuid().nullable().optional(),
+  metadata: z.record(z.unknown()).default({}),
+});
+
+export const UpdateProjectWorkstreamSchema = CreateProjectWorkstreamSchema.omit({ project_id: true }).partial().extend({
+  status: WorkstreamStatusSchema.optional(),
+});
+
+// Deliverable schemas
+export const DeliverableStatusSchema = z.enum(["pending", "in_progress", "review", "completed"]);
+export const DeliverableArtifactTypeSchema = z.enum(["document", "code", "data", "report", "presentation", "other"]);
+
+export const ProjectDeliverableSchema = z.object({
+  id: z.string().uuid(),
+  phase_id: z.string().uuid(),
+  project_id: z.string().uuid(),
+  workstream_id: z.string().uuid().nullable().optional(),
+  title: z.string().min(1).max(200),
+  description: z.string().nullable().optional(),
+  artifact_type: DeliverableArtifactTypeSchema.nullable().optional(),
+  file_path: z.string().nullable().optional(),
+  sort_order: z.number().int().default(0),
+  status: DeliverableStatusSchema.default("pending"),
+  completed_at: z.coerce.date().nullable().optional(),
+  due_date: z.coerce.date().nullable().optional(),
+  document_id: z.string().uuid().nullable().optional(),
+  url: z.string().url().nullable().optional(),
+  metadata: z.record(z.unknown()).default({}),
+  created_at: z.coerce.date(),
+  updated_at: z.coerce.date(),
+});
+
+export const CreateProjectDeliverableSchema = z.object({
+  phase_id: z.string().uuid(),
+  title: z.string().min(1).max(200),
+  workstream_id: z.string().uuid().nullable().optional(),
+  description: z.string().nullable().optional(),
+  artifact_type: DeliverableArtifactTypeSchema.nullable().optional(),
+  file_path: z.string().nullable().optional(),
+  sort_order: z.number().int().default(0),
+  due_date: z.coerce.date().nullable().optional(),
+  url: z.string().url().nullable().optional(),
+  metadata: z.record(z.unknown()).default({}),
+});
+
+export const UpdateProjectDeliverableSchema = CreateProjectDeliverableSchema.omit({ phase_id: true }).partial().extend({
+  status: DeliverableStatusSchema.optional(),
+  document_id: z.string().uuid().nullable().optional(),
+});
+
+// Role schemas
+export const ProjectRoleSchema = z.object({
+  id: z.string().uuid(),
+  project_id: z.string().uuid(),
+  name: z.string().min(1).max(100),
+  description: z.string().nullable().optional(),
+  color: z.string().default("bg-gray-500"),
+  is_ai_agent: z.boolean().default(false),
+  metadata: z.record(z.unknown()).default({}),
+  created_at: z.coerce.date(),
+});
+
+export const CreateProjectRoleSchema = z.object({
+  project_id: z.string().uuid(),
+  name: z.string().min(1).max(100),
+  description: z.string().nullable().optional(),
+  color: z.string().default("bg-gray-500"),
+  is_ai_agent: z.boolean().default(false),
+  metadata: z.record(z.unknown()).default({}),
+});
+
+export const UpdateProjectRoleSchema = CreateProjectRoleSchema.omit({ project_id: true }).partial();
+
+// Phase Assignment schemas
+export const PhaseAssignmentTypeSchema = z.enum(["owner", "contributor", "reviewer"]);
+
+export const ProjectPhaseAssignmentSchema = z.object({
+  id: z.string().uuid(),
+  phase_id: z.string().uuid(),
+  role_id: z.string().uuid().nullable().optional(),
+  user_id: z.string().uuid().nullable().optional(),
+  assignment_type: PhaseAssignmentTypeSchema.default("contributor"),
+  created_at: z.coerce.date(),
+});
+
+export const CreateProjectPhaseAssignmentSchema = z.object({
+  phase_id: z.string().uuid(),
+  role_id: z.string().uuid().nullable().optional(),
+  user_id: z.string().uuid().nullable().optional(),
+  assignment_type: PhaseAssignmentTypeSchema.default("contributor"),
+}).refine(
+  (data) => data.role_id !== undefined || data.user_id !== undefined,
+  { message: "Either role_id or user_id must be provided" }
+);
+
+// Template schemas
+export const DeliverableDefinitionSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().nullable().optional(),
+  artifact_type: DeliverableArtifactTypeSchema.nullable().optional(),
+  file_path: z.string().nullable().optional(),
+});
+
+export const PhaseDefinitionSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().nullable().optional(),
+  blocked_by_index: z.array(z.number().int().min(0)).default([]),
+  assigned_role: z.string().nullable().optional(),
+  deliverables: z.array(DeliverableDefinitionSchema).default([]),
+});
+
+export const RoleDefinitionSchema = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().nullable().optional(),
+  color: z.string().optional(),
+  is_ai_agent: z.boolean().optional(),
+});
+
+export const ProjectTemplateSchema = z.object({
+  id: z.string().uuid(),
+  workspace_id: z.string().uuid().nullable().optional(),
+  name: z.string().min(1).max(200),
+  description: z.string().nullable().optional(),
+  phase_definitions: z.array(PhaseDefinitionSchema),
+  role_definitions: z.array(RoleDefinitionSchema).default([]),
+  is_public: z.boolean().default(false),
+  created_by: z.string().uuid().nullable().optional(),
+  created_at: z.coerce.date(),
+  updated_at: z.coerce.date(),
+});
+
+export const CreateProjectTemplateSchema = z.object({
+  workspace_id: z.string().uuid().nullable().optional(),
+  name: z.string().min(1).max(200),
+  description: z.string().nullable().optional(),
+  phase_definitions: z.array(PhaseDefinitionSchema),
+  role_definitions: z.array(RoleDefinitionSchema).default([]),
+  is_public: z.boolean().default(false),
+});
+
+export const UpdateProjectTemplateSchema = CreateProjectTemplateSchema.omit({ workspace_id: true }).partial();
+
+// Apply template request schema
+export const ApplyTemplateSchema = z.object({
+  template_id: z.string().uuid(),
+});
+
 // Workspace schemas
 export const WorkspaceRoleSchema = z.enum([
   "owner",
@@ -361,6 +570,29 @@ export type UpdatePublicationSchemaType = z.infer<typeof UpdatePublicationSchema
 export type PublicationAuthorSchemaType = z.infer<typeof PublicationAuthorSchema>;
 export type CreatePublicationAuthorSchemaType = z.infer<typeof CreatePublicationAuthorSchema>;
 
+// Export inferred hierarchy types
+export type ProjectPhaseSchemaType = z.infer<typeof ProjectPhaseSchema>;
+export type CreateProjectPhaseSchemaType = z.infer<typeof CreateProjectPhaseSchema>;
+export type UpdateProjectPhaseSchemaType = z.infer<typeof UpdateProjectPhaseSchema>;
+export type ProjectWorkstreamSchemaType = z.infer<typeof ProjectWorkstreamSchema>;
+export type CreateProjectWorkstreamSchemaType = z.infer<typeof CreateProjectWorkstreamSchema>;
+export type UpdateProjectWorkstreamSchemaType = z.infer<typeof UpdateProjectWorkstreamSchema>;
+export type ProjectDeliverableSchemaType = z.infer<typeof ProjectDeliverableSchema>;
+export type CreateProjectDeliverableSchemaType = z.infer<typeof CreateProjectDeliverableSchema>;
+export type UpdateProjectDeliverableSchemaType = z.infer<typeof UpdateProjectDeliverableSchema>;
+export type ProjectRoleSchemaType = z.infer<typeof ProjectRoleSchema>;
+export type CreateProjectRoleSchemaType = z.infer<typeof CreateProjectRoleSchema>;
+export type UpdateProjectRoleSchemaType = z.infer<typeof UpdateProjectRoleSchema>;
+export type ProjectPhaseAssignmentSchemaType = z.infer<typeof ProjectPhaseAssignmentSchema>;
+export type CreateProjectPhaseAssignmentSchemaType = z.infer<typeof CreateProjectPhaseAssignmentSchema>;
+export type PhaseDefinitionSchemaType = z.infer<typeof PhaseDefinitionSchema>;
+export type DeliverableDefinitionSchemaType = z.infer<typeof DeliverableDefinitionSchema>;
+export type RoleDefinitionSchemaType = z.infer<typeof RoleDefinitionSchema>;
+export type ProjectTemplateSchemaType = z.infer<typeof ProjectTemplateSchema>;
+export type CreateProjectTemplateSchemaType = z.infer<typeof CreateProjectTemplateSchema>;
+export type UpdateProjectTemplateSchemaType = z.infer<typeof UpdateProjectTemplateSchema>;
+export type ApplyTemplateSchemaType = z.infer<typeof ApplyTemplateSchema>;
+
 // Chat and messaging schemas
 export const MessageReactionTypeSchema = z.enum([
   "heart",
@@ -423,6 +655,7 @@ export const AddReactionSchema = z.object({
 
 // Activity schemas
 export const ActivityActionSchema = z.enum([
+  // Task actions
   "task_created",
   "task_updated",
   "task_deleted",
@@ -436,12 +669,30 @@ export const ActivityActionSchema = z.enum([
   "subtask_completed",
   "subtask_deleted",
   "notes_updated",
+  // Project actions
   "project_created",
   "project_updated",
   "project_stage_changed",
   "project_milestone_completed",
+  // Phase actions
+  "phase_created",
+  "phase_started",
+  "phase_completed",
+  "phase_blocked",
+  // Workstream actions
+  "workstream_created",
+  "workstream_updated",
+  // Deliverable actions
+  "deliverable_created",
+  "deliverable_completed",
+  // Role actions
+  "role_assigned",
+  // Template actions
+  "template_applied",
+  // Chat actions
   "message_sent",
   "message_pinned",
+  // AI actions
   "ai_tasks_extracted",
   "ai_task_enhanced",
   "ai_task_breakdown",

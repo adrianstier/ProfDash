@@ -15,6 +15,10 @@ import {
   MoreHorizontal,
   Sparkles,
   Trash2,
+  GitBranch,
+  ListChecks,
+  Users,
+  MessageSquare,
 } from "lucide-react";
 import { useAgentStore } from "@/lib/stores/agent-store";
 import { PROJECT_TYPE_CONFIG, PROJECT_STATUS_CONFIG } from "@scholaros/shared";
@@ -23,11 +27,15 @@ import {
   useUpdateProject,
   useDeleteProject,
 } from "@/lib/hooks/use-projects";
+import { useWorkspaceStore } from "@/lib/stores/workspace-store";
 import { ProjectStageProgress, ProjectStageSelect } from "@/components/projects/project-stage-badge";
 import { MilestoneList } from "@/components/projects/milestone-list";
 import { ProjectNotes } from "@/components/projects/project-notes";
 import { LinkedTasks } from "@/components/projects/linked-tasks";
 import { ProjectSummary } from "@/components/ai";
+import { PhaseTimeline, WorkstreamTabs, ApplyTemplateModal } from "@/components/projects/hierarchy";
+
+type TabId = "overview" | "phases" | "workstreams" | "team" | "activity";
 
 const typeIcons = {
   manuscript: FileText,
@@ -39,16 +47,20 @@ export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
   const projectId = params.id as string;
+  const { currentWorkspaceId } = useWorkspaceStore();
 
   const { data: project, isLoading, error } = useProject(projectId);
   const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
 
+  const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [isEditingSummary, setIsEditingSummary] = useState(false);
   const [editSummary, setEditSummary] = useState("");
   const [showMenu, setShowMenu] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [selectedWorkstreamId, setSelectedWorkstreamId] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -248,99 +260,176 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
-      {/* Stage Progress */}
-      <div className="rounded-lg border bg-card p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-medium">Progress</h3>
-          <ProjectStageSelect
-            projectType={project.type}
-            value={project.stage}
-            onChange={handleStageChange}
-          />
-        </div>
-        <ProjectStageProgress
-          projectType={project.type}
-          currentStage={project.stage}
-          onStageClick={handleStageChange}
-        />
+      {/* Tab Navigation */}
+      <div className="border-b">
+        <nav className="flex gap-1">
+          {[
+            { id: "overview" as TabId, label: "Overview", icon: FileText },
+            { id: "phases" as TabId, label: "Phases", icon: ListChecks },
+            { id: "workstreams" as TabId, label: "Workstreams", icon: GitBranch },
+            { id: "team" as TabId, label: "Team", icon: Users },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === tab.id
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          ))}
+        </nav>
       </div>
 
-      {/* Summary */}
-      <div className="rounded-lg border bg-card p-4">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-medium">Summary</h3>
-          {!isEditingSummary && (
-            <button
-              onClick={() => {
-                setEditSummary(project.summary ?? "");
-                setIsEditingSummary(true);
-              }}
-              className="text-sm text-primary hover:underline"
-            >
-              Edit
-            </button>
-          )}
-        </div>
-        {isEditingSummary ? (
-          <div className="space-y-2">
-            <textarea
-              value={editSummary}
-              onChange={(e) => setEditSummary(e.target.value)}
-              rows={3}
-              className="w-full rounded border bg-background px-3 py-2 text-sm"
-              placeholder="Add a summary..."
+      {/* Tab Content */}
+      {activeTab === "overview" && (
+        <div className="space-y-6">
+          {/* Stage Progress */}
+          <div className="rounded-lg border bg-card p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-medium">Progress</h3>
+              <ProjectStageSelect
+                projectType={project.type}
+                value={project.stage}
+                onChange={handleStageChange}
+              />
+            </div>
+            <ProjectStageProgress
+              projectType={project.type}
+              currentStage={project.stage}
+              onStageClick={handleStageChange}
             />
-            <div className="flex gap-2">
-              <button
-                onClick={handleSaveSummary}
-                className="rounded bg-primary px-3 py-1 text-sm font-medium text-primary-foreground"
-              >
-                Save
-              </button>
-              <button
-                onClick={() => setIsEditingSummary(false)}
-                className="rounded px-3 py-1 text-sm hover:bg-muted"
-              >
-                Cancel
-              </button>
+          </div>
+
+          {/* Summary */}
+          <div className="rounded-lg border bg-card p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-medium">Summary</h3>
+              {!isEditingSummary && (
+                <button
+                  onClick={() => {
+                    setEditSummary(project.summary ?? "");
+                    setIsEditingSummary(true);
+                  }}
+                  className="text-sm text-primary hover:underline"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+            {isEditingSummary ? (
+              <div className="space-y-2">
+                <textarea
+                  value={editSummary}
+                  onChange={(e) => setEditSummary(e.target.value)}
+                  rows={3}
+                  className="w-full rounded border bg-background px-3 py-2 text-sm"
+                  placeholder="Add a summary..."
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveSummary}
+                    className="rounded bg-primary px-3 py-1 text-sm font-medium text-primary-foreground"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setIsEditingSummary(false)}
+                    className="rounded px-3 py-1 text-sm hover:bg-muted"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {project.summary || "No summary yet. Click Edit to add one."}
+              </p>
+            )}
+          </div>
+
+          {/* AI Summary */}
+          <ProjectSummary
+            project={{
+              id: project.id,
+              title: project.title,
+              type: project.type,
+              status: project.status,
+              stage: project.stage ?? undefined,
+              summary: project.summary ?? undefined,
+            }}
+          />
+
+          {/* Three-column layout for milestones, tasks, and notes */}
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Milestones */}
+            <div className="rounded-lg border bg-card p-4">
+              <MilestoneList projectId={projectId} />
+            </div>
+
+            {/* Linked Tasks */}
+            <div className="rounded-lg border bg-card p-4">
+              <LinkedTasks projectId={projectId} />
+            </div>
+
+            {/* Notes */}
+            <div className="rounded-lg border bg-card p-4">
+              <ProjectNotes projectId={projectId} />
             </div>
           </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            {project.summary || "No summary yet. Click Edit to add one."}
-          </p>
-        )}
-      </div>
-
-      {/* AI Summary */}
-      <ProjectSummary
-        project={{
-          id: project.id,
-          title: project.title,
-          type: project.type,
-          status: project.status,
-          stage: project.stage ?? undefined,
-          summary: project.summary ?? undefined,
-        }}
-      />
-
-      {/* Three-column layout for milestones, tasks, and notes */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Milestones */}
-        <div className="rounded-lg border bg-card p-4">
-          <MilestoneList projectId={projectId} />
         </div>
+      )}
 
-        {/* Linked Tasks */}
+      {activeTab === "phases" && (
         <div className="rounded-lg border bg-card p-4">
-          <LinkedTasks projectId={projectId} />
+          <PhaseTimeline
+            projectId={projectId}
+            onApplyTemplate={() => setShowTemplateModal(true)}
+          />
         </div>
+      )}
 
-        {/* Notes */}
-        <div className="rounded-lg border bg-card p-4">
-          <ProjectNotes projectId={projectId} />
+      {activeTab === "workstreams" && (
+        <div className="space-y-4">
+          <div className="rounded-lg border bg-card p-4">
+            <WorkstreamTabs
+              projectId={projectId}
+              selectedId={selectedWorkstreamId}
+              onSelect={setSelectedWorkstreamId}
+            />
+          </div>
+          <div className="rounded-lg border bg-card p-4">
+            <LinkedTasks projectId={projectId} />
+          </div>
         </div>
-      </div>
+      )}
+
+      {activeTab === "team" && (
+        <div className="rounded-lg border bg-card p-4">
+          <div className="text-center py-8 text-muted-foreground">
+            <Users className="mx-auto h-10 w-10 mb-3" />
+            <p>Team roles and assignments coming soon.</p>
+            <p className="text-sm mt-1">
+              Assign roles to phases in the Phases tab.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Template Modal */}
+      {currentWorkspaceId && (
+        <ApplyTemplateModal
+          projectId={projectId}
+          workspaceId={currentWorkspaceId}
+          isOpen={showTemplateModal}
+          onClose={() => setShowTemplateModal(false)}
+          onSuccess={() => setActiveTab("phases")}
+        />
+      )}
     </div>
   );
 }
