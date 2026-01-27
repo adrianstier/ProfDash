@@ -5,11 +5,14 @@
 -- PROJECT TYPE EXTENSION
 -- =============================================================================
 
--- Add 'research' to project types (checking if type column allows it)
--- Note: projects.type is TEXT with CHECK constraint, need to update it
-ALTER TABLE projects DROP CONSTRAINT IF EXISTS valid_project_type;
-ALTER TABLE projects ADD CONSTRAINT valid_project_type
-    CHECK (type IN ('manuscript', 'grant', 'general', 'research'));
+-- Add 'research' to the project_type ENUM
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'project_type' AND typtype = 'e'
+                   AND EXISTS (SELECT 1 FROM pg_enum WHERE enumtypid = pg_type.oid AND enumlabel = 'research')) THEN
+        ALTER TYPE project_type ADD VALUE IF NOT EXISTS 'research';
+    END IF;
+END$$;
 
 -- =============================================================================
 -- NEW TABLES
@@ -179,7 +182,7 @@ CREATE INDEX idx_exp_team_experiment ON experiment_team_assignments(experiment_i
 CREATE INDEX idx_exp_team_personnel ON experiment_team_assignments(personnel_id);
 CREATE INDEX idx_exp_team_role ON experiment_team_assignments(role);
 CREATE INDEX idx_exp_team_active ON experiment_team_assignments(experiment_id)
-    WHERE end_date IS NULL OR end_date >= CURRENT_DATE;
+    WHERE end_date IS NULL;
 
 -- Updated_at trigger
 CREATE TRIGGER update_experiment_team_updated_at
@@ -227,7 +230,7 @@ CREATE INDEX idx_fieldwork_site ON fieldwork_schedules(site_id) WHERE site_id IS
 CREATE INDEX idx_fieldwork_status ON fieldwork_schedules(status);
 CREATE INDEX idx_fieldwork_dates ON fieldwork_schedules(start_date, end_date);
 CREATE INDEX idx_fieldwork_upcoming ON fieldwork_schedules(start_date)
-    WHERE status IN ('planned', 'confirmed') AND start_date >= CURRENT_DATE;
+    WHERE status IN ('planned', 'confirmed');
 
 -- Updated_at trigger
 CREATE TRIGGER update_fieldwork_schedules_updated_at

@@ -17,7 +17,7 @@
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS analytics_events (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id TEXT NOT NULL UNIQUE,
   event_name TEXT NOT NULL,
   timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -52,7 +52,7 @@ COMMENT ON TABLE analytics_events IS 'Stores all analytics events for funnel ana
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS experiment_assignments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   experiment_id TEXT NOT NULL,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   variant_name TEXT NOT NULL,
@@ -77,7 +77,7 @@ COMMENT ON TABLE experiment_assignments IS 'Tracks user assignments to A/B test 
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS feature_metrics (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   feature_name TEXT NOT NULL,
   metric_name TEXT NOT NULL,
   metric_type TEXT NOT NULL, -- 'continuous', 'proportion', 'count', 'rate'
