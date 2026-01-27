@@ -1,18 +1,23 @@
 -- Migration: Workspace Messages (Chat)
 -- Creates tables for real-time team chat and direct messaging
 
--- Reaction type enum
-CREATE TYPE message_reaction_type AS ENUM (
-    'heart',
-    'thumbsup',
-    'thumbsdown',
-    'haha',
-    'exclamation',
-    'question'
-);
+-- Reaction type enum (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'message_reaction_type') THEN
+        CREATE TYPE message_reaction_type AS ENUM (
+            'heart',
+            'thumbsup',
+            'thumbsdown',
+            'haha',
+            'exclamation',
+            'question'
+        );
+    END IF;
+END$$;
 
 -- Main messages table
-CREATE TABLE workspace_messages (
+CREATE TABLE IF NOT EXISTS workspace_messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -56,25 +61,26 @@ CREATE TABLE workspace_messages (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_workspace_messages_workspace ON workspace_messages(workspace_id);
-CREATE INDEX idx_workspace_messages_user ON workspace_messages(user_id);
-CREATE INDEX idx_workspace_messages_recipient ON workspace_messages(recipient_id);
-CREATE INDEX idx_workspace_messages_created ON workspace_messages(created_at DESC);
-CREATE INDEX idx_workspace_messages_reply_to ON workspace_messages(reply_to_id);
-CREATE INDEX idx_workspace_messages_task ON workspace_messages(related_task_id) WHERE related_task_id IS NOT NULL;
-CREATE INDEX idx_workspace_messages_project ON workspace_messages(related_project_id) WHERE related_project_id IS NOT NULL;
-CREATE INDEX idx_workspace_messages_read_by ON workspace_messages USING GIN(read_by);
-CREATE INDEX idx_workspace_messages_mentions ON workspace_messages USING GIN(mentions);
-CREATE INDEX idx_workspace_messages_pinned ON workspace_messages(workspace_id, is_pinned) WHERE is_pinned = TRUE;
-CREATE INDEX idx_workspace_messages_not_deleted ON workspace_messages(workspace_id, created_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_workspace_messages_workspace ON workspace_messages(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_messages_user ON workspace_messages(user_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_messages_recipient ON workspace_messages(recipient_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_messages_created ON workspace_messages(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_workspace_messages_reply_to ON workspace_messages(reply_to_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_messages_task ON workspace_messages(related_task_id) WHERE related_task_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_workspace_messages_project ON workspace_messages(related_project_id) WHERE related_project_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_workspace_messages_read_by ON workspace_messages USING GIN(read_by);
+CREATE INDEX IF NOT EXISTS idx_workspace_messages_mentions ON workspace_messages USING GIN(mentions);
+CREATE INDEX IF NOT EXISTS idx_workspace_messages_pinned ON workspace_messages(workspace_id, is_pinned) WHERE is_pinned = TRUE;
+CREATE INDEX IF NOT EXISTS idx_workspace_messages_not_deleted ON workspace_messages(workspace_id, created_at DESC) WHERE deleted_at IS NULL;
 
 -- Composite index for conversation queries
-CREATE INDEX idx_workspace_messages_conversation ON workspace_messages(workspace_id, recipient_id, created_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_workspace_messages_conversation ON workspace_messages(workspace_id, recipient_id, created_at DESC) WHERE deleted_at IS NULL;
 
 -- Enable Row Level Security
 ALTER TABLE workspace_messages ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies (workspace-based isolation)
+DROP POLICY IF EXISTS "Users can view messages in their workspaces" ON workspace_messages;
 CREATE POLICY "Users can view messages in their workspaces"
     ON workspace_messages FOR SELECT
     USING (
@@ -86,10 +92,12 @@ CREATE POLICY "Users can view messages in their workspaces"
         AND deleted_at IS NULL
     );
 
+DROP POLICY IF EXISTS "Users can view their own deleted messages" ON workspace_messages;
 CREATE POLICY "Users can view their own deleted messages"
     ON workspace_messages FOR SELECT
     USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can insert messages in their workspaces" ON workspace_messages;
 CREATE POLICY "Users can insert messages in their workspaces"
     ON workspace_messages FOR INSERT
     WITH CHECK (
@@ -101,17 +109,24 @@ CREATE POLICY "Users can insert messages in their workspaces"
         AND user_id = auth.uid()
     );
 
+DROP POLICY IF EXISTS "Users can update their own messages" ON workspace_messages;
 CREATE POLICY "Users can update their own messages"
     ON workspace_messages FOR UPDATE
     USING (user_id = auth.uid())
     WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can soft delete their own messages" ON workspace_messages;
 CREATE POLICY "Users can soft delete their own messages"
     ON workspace_messages FOR DELETE
     USING (user_id = auth.uid());
 
--- Enable Realtime
-ALTER PUBLICATION supabase_realtime ADD TABLE workspace_messages;
+-- Enable Realtime (safe if already added)
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE workspace_messages;
+EXCEPTION WHEN duplicate_object THEN
+    NULL;
+END$$;
 
 -- Update trigger for updated_at
 CREATE OR REPLACE FUNCTION update_workspace_messages_updated_at()
@@ -122,6 +137,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_workspace_messages_updated_at ON workspace_messages;
 CREATE TRIGGER trigger_workspace_messages_updated_at
     BEFORE UPDATE ON workspace_messages
     FOR EACH ROW
