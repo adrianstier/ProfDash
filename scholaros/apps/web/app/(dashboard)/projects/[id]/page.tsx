@@ -11,6 +11,7 @@ import {
   FileText,
   DollarSign,
   Folder,
+  FlaskConical,
   Loader2,
   MoreHorizontal,
   Sparkles,
@@ -18,7 +19,6 @@ import {
   GitBranch,
   ListChecks,
   Users,
-  MessageSquare,
 } from "lucide-react";
 import { useAgentStore } from "@/lib/stores/agent-store";
 import { PROJECT_TYPE_CONFIG, PROJECT_STATUS_CONFIG } from "@scholaros/shared";
@@ -34,6 +34,7 @@ import { ProjectNotes } from "@/components/projects/project-notes";
 import { LinkedTasks } from "@/components/projects/linked-tasks";
 import { ProjectSummary } from "@/components/ai";
 import { PhaseTimeline, WorkstreamTabs, ApplyTemplateModal } from "@/components/projects/hierarchy";
+import { ResearchProjectDashboard } from "@/components/research";
 
 type TabId = "overview" | "phases" | "workstreams" | "team" | "activity";
 
@@ -41,6 +42,7 @@ const typeIcons = {
   manuscript: FileText,
   grant: DollarSign,
   general: Folder,
+  research: FlaskConical,
 };
 
 export default function ProjectDetailPage() {
@@ -260,33 +262,41 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="border-b">
-        <nav className="flex gap-1">
-          {[
-            { id: "overview" as TabId, label: "Overview", icon: FileText },
-            { id: "phases" as TabId, label: "Phases", icon: ListChecks },
-            { id: "workstreams" as TabId, label: "Workstreams", icon: GitBranch },
-            { id: "team" as TabId, label: "Team", icon: Users },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === tab.id
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <tab.icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
+      {/* Research projects get their own specialized dashboard */}
+      {project.type === "research" && currentWorkspaceId ? (
+        <ResearchProjectDashboard
+          projectId={projectId}
+          workspaceId={currentWorkspaceId}
+        />
+      ) : (
+        <>
+          {/* Tab Navigation */}
+          <div className="border-b">
+            <nav className="flex gap-1">
+              {[
+                { id: "overview" as TabId, label: "Overview", icon: FileText },
+                { id: "phases" as TabId, label: "Phases", icon: ListChecks },
+                { id: "workstreams" as TabId, label: "Workstreams", icon: GitBranch },
+                { id: "team" as TabId, label: "Team", icon: Users },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                    activeTab === tab.id
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <tab.icon className="h-4 w-4" />
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
 
-      {/* Tab Content */}
-      {activeTab === "overview" && (
+          {/* Tab Content */}
+          {activeTab === "overview" && (
         <div className="space-y-6">
           {/* Stage Progress */}
           <div className="rounded-lg border bg-card p-4">
@@ -384,40 +394,42 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
-      {activeTab === "phases" && (
-        <div className="rounded-lg border bg-card p-4">
-          <PhaseTimeline
-            projectId={projectId}
-            onApplyTemplate={() => setShowTemplateModal(true)}
-          />
-        </div>
-      )}
+          {activeTab === "phases" && (
+            <div className="rounded-lg border bg-card p-4">
+              <PhaseTimeline
+                projectId={projectId}
+                onApplyTemplate={() => setShowTemplateModal(true)}
+              />
+            </div>
+          )}
 
-      {activeTab === "workstreams" && (
-        <div className="space-y-4">
-          <div className="rounded-lg border bg-card p-4">
-            <WorkstreamTabs
-              projectId={projectId}
-              selectedId={selectedWorkstreamId}
-              onSelect={setSelectedWorkstreamId}
-            />
-          </div>
-          <div className="rounded-lg border bg-card p-4">
-            <LinkedTasks projectId={projectId} />
-          </div>
-        </div>
-      )}
+          {activeTab === "workstreams" && (
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-card p-4">
+                <WorkstreamTabs
+                  projectId={projectId}
+                  selectedId={selectedWorkstreamId}
+                  onSelect={setSelectedWorkstreamId}
+                />
+              </div>
+              <div className="rounded-lg border bg-card p-4">
+                <LinkedTasks projectId={projectId} />
+              </div>
+            </div>
+          )}
 
-      {activeTab === "team" && (
-        <div className="rounded-lg border bg-card p-4">
-          <div className="text-center py-8 text-muted-foreground">
-            <Users className="mx-auto h-10 w-10 mb-3" />
-            <p>Team roles and assignments coming soon.</p>
-            <p className="text-sm mt-1">
-              Assign roles to phases in the Phases tab.
-            </p>
-          </div>
-        </div>
+          {activeTab === "team" && (
+            <div className="rounded-lg border bg-card p-4">
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="mx-auto h-10 w-10 mb-3" />
+                <p>Team roles and assignments coming soon.</p>
+                <p className="text-sm mt-1">
+                  Assign roles to phases in the Phases tab.
+                </p>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Template Modal */}

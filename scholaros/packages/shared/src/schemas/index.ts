@@ -3,6 +3,9 @@ import { z } from "zod";
 // Re-export analytics schemas
 export * from "./analytics";
 
+// Re-export research schemas
+export * from "./research";
+
 // Task schemas
 export const TaskPrioritySchema = z.enum(["p1", "p2", "p3", "p4"]);
 export const TaskStatusSchema = z.enum(["todo", "progress", "done"]);
@@ -50,7 +53,7 @@ export const CreateTaskSchema = z.object({
 export const UpdateTaskSchema = CreateTaskSchema.partial();
 
 // Project schemas
-export const ProjectTypeSchema = z.enum(["manuscript", "grant", "general"]);
+export const ProjectTypeSchema = z.enum(["manuscript", "grant", "general", "research"]);
 export const ProjectStatusSchema = z.enum(["active", "archived", "completed"]);
 
 export const ManuscriptStageSchema = z.enum([

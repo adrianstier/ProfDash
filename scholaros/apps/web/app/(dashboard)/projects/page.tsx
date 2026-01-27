@@ -10,6 +10,7 @@ import {
   FolderOpen,
   Filter,
   X,
+  FlaskConical,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -51,6 +52,14 @@ const statCards = [
     color: "text-amber-600 dark:text-amber-400",
     bgColor: "bg-amber-100 dark:bg-amber-900/30",
     filter: { type: "grant", status: "all" },
+  },
+  {
+    key: "research",
+    label: "Research",
+    icon: FlaskConical,
+    color: "text-purple-600 dark:text-purple-400",
+    bgColor: "bg-purple-100 dark:bg-purple-900/30",
+    filter: { type: "research", status: "all" },
   },
   {
     key: "active",
@@ -105,6 +114,8 @@ export default function ProjectsPage() {
         return projects.filter((p) => p.type === "manuscript").length;
       case "grant":
         return projects.filter((p) => p.type === "grant").length;
+      case "research":
+        return projects.filter((p) => p.type === "research").length;
       case "active":
         return projects.filter((p) => p.status === "active").length;
       default:
@@ -188,7 +199,7 @@ export default function ProjectsPage() {
       </header>
 
       {/* Stats Grid */}
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4 animate-fade-in stagger-1">
+      <section className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 animate-fade-in stagger-1">
         {statCards.map((stat, i) => {
           const Icon = stat.icon;
           const count = getStatCount(stat.key);
@@ -246,7 +257,7 @@ export default function ProjectsPage() {
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {(["all", "manuscript", "grant", "general"] as const).map((type) => (
+          {(["all", "manuscript", "grant", "research", "general"] as const).map((type) => (
             <button
               key={type}
               onClick={() => setFilterType(type)}

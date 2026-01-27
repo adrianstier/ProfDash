@@ -30,15 +30,28 @@ export const GENERAL_STAGES = [
   { id: "archived", label: "Archived", color: "bg-slate-500" },
 ] as const;
 
+export const RESEARCH_STAGES = [
+  { id: "planning", label: "Planning", color: "bg-gray-500" },
+  { id: "design", label: "Design", color: "bg-purple-500" },
+  { id: "permitting", label: "Permitting", color: "bg-yellow-500" },
+  { id: "fieldwork", label: "Fieldwork", color: "bg-orange-500" },
+  { id: "analysis", label: "Analysis", color: "bg-blue-500" },
+  { id: "writing", label: "Writing", color: "bg-indigo-500" },
+  { id: "completed", label: "Completed", color: "bg-green-500" },
+  { id: "archived", label: "Archived", color: "bg-slate-500" },
+] as const;
+
 export const PROJECT_STAGES = {
   manuscript: MANUSCRIPT_STAGES,
   grant: GRANT_STAGES,
   general: GENERAL_STAGES,
+  research: RESEARCH_STAGES,
 } as const;
 
 export type ManuscriptStageId = (typeof MANUSCRIPT_STAGES)[number]["id"];
 export type GrantStageId = (typeof GRANT_STAGES)[number]["id"];
 export type GeneralStageId = (typeof GENERAL_STAGES)[number]["id"];
+export type ResearchStageId = (typeof RESEARCH_STAGES)[number]["id"];
 
 // Helper function to get stage config
 export function getStageConfig(projectType: keyof typeof PROJECT_STAGES, stageId: string) {
@@ -100,6 +113,13 @@ export const PROJECT_TYPE_CONFIG = {
     description: "General projects and initiatives",
     defaultStage: "planning",
     color: "bg-purple-500",
+  },
+  research: {
+    label: "Research",
+    icon: "FlaskConical",
+    description: "Multi-experiment research projects with fieldwork and permits",
+    defaultStage: "planning",
+    color: "bg-teal-500",
   },
 } as const;
 

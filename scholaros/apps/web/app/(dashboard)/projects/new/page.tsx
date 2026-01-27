@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, FileText, DollarSign, Folder, Loader2 } from "lucide-react";
+import { ArrowLeft, FileText, DollarSign, Folder, FlaskConical, Loader2 } from "lucide-react";
 import Link from "next/link";
 import type { ProjectType } from "@scholaros/shared";
 import { PROJECT_TYPE_CONFIG, PROJECT_STAGES } from "@scholaros/shared";
@@ -13,6 +13,7 @@ const typeIcons = {
   manuscript: FileText,
   grant: DollarSign,
   general: Folder,
+  research: FlaskConical,
 };
 
 export default function NewProjectPage() {

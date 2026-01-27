@@ -7,6 +7,9 @@ export * from "./chat";
 // Re-export analytics types
 export * from "./analytics";
 
+// Re-export research types
+export * from "./research";
+
 // Task types
 export type TaskPriority = "p1" | "p2" | "p3" | "p4";
 export type TaskStatus = "todo" | "progress" | "done";
@@ -63,7 +66,7 @@ export type CreateTask = Omit<Task, "id" | "created_at" | "updated_at">;
 export type UpdateTask = Partial<CreateTask>;
 
 // Project types
-export type ProjectType = "manuscript" | "grant" | "general";
+export type ProjectType = "manuscript" | "grant" | "general" | "research";
 export type ProjectStatus = "active" | "archived" | "completed";
 
 export type ManuscriptStage =
