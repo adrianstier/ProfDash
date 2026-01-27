@@ -25,8 +25,8 @@ export async function GET(request: Request, { params }: RouteParams) {
       .select(
         `
         *,
-        user:profiles!workspace_messages_user_id_fkey(id, full_name, avatar_url),
-        reply_to_user:profiles!workspace_messages_reply_to_user_id_fkey(id, full_name)
+        user:profiles!workspace_messages_user_id_profiles_fkey(id, full_name, avatar_url),
+        reply_to_user:profiles!workspace_messages_reply_to_user_id_profiles_fkey(id, full_name)
       `
       )
       .eq("id", id)
@@ -134,8 +134,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       .select(
         `
         *,
-        user:profiles!workspace_messages_user_id_fkey(id, full_name, avatar_url),
-        reply_to_user:profiles!workspace_messages_reply_to_user_id_fkey(id, full_name)
+        user:profiles!workspace_messages_user_id_profiles_fkey(id, full_name, avatar_url),
+        reply_to_user:profiles!workspace_messages_reply_to_user_id_profiles_fkey(id, full_name)
       `
       )
       .single();

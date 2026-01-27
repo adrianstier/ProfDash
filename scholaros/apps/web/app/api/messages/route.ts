@@ -61,8 +61,8 @@ export async function GET(request: Request) {
       .select(
         `
         *,
-        user:profiles!workspace_messages_user_id_fkey(id, full_name, avatar_url),
-        reply_to_user:profiles!workspace_messages_reply_to_user_id_fkey(id, full_name)
+        user:profiles!workspace_messages_user_id_profiles_fkey(id, full_name, avatar_url),
+        reply_to_user:profiles!workspace_messages_reply_to_user_id_profiles_fkey(id, full_name)
       `
       )
       .eq("workspace_id", workspaceId)
@@ -208,8 +208,8 @@ export async function POST(request: Request) {
       .select(
         `
         *,
-        user:profiles!workspace_messages_user_id_fkey(id, full_name, avatar_url),
-        reply_to_user:profiles!workspace_messages_reply_to_user_id_fkey(id, full_name)
+        user:profiles!workspace_messages_user_id_profiles_fkey(id, full_name, avatar_url),
+        reply_to_user:profiles!workspace_messages_reply_to_user_id_profiles_fkey(id, full_name)
       `
       )
       .single();

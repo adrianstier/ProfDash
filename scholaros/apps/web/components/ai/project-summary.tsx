@@ -17,7 +17,7 @@ interface ProjectSummaryProps {
   project: {
     id: string;
     title: string;
-    type: "manuscript" | "grant" | "general";
+    type: "manuscript" | "grant" | "general" | "research";
     status: string;
     stage?: string;
     summary?: string;

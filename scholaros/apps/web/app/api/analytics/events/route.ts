@@ -94,15 +94,7 @@ export async function POST(request: Request) {
       .insert(eventsToInsert);
 
     if (insertError) {
-      // Table might not exist yet - log for monitoring
-      console.log(
-        `[Analytics] Received ${events.length} events from user ${user.id}`,
-        {
-          eventTypes: [...new Set(events.map((e) => e.event_name))],
-          error: insertError.message,
-        }
-      );
-
+      // Table might not exist yet - graceful degradation
       // Return success anyway - don't block the client
       return NextResponse.json({
         success: true,

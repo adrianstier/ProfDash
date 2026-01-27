@@ -84,7 +84,6 @@ async function fetchWithRetry(
       if (response.status === 429) {
         const retryAfter = parseInt(response.headers.get("Retry-After") || "1", 10);
         const waitTime = Math.min(retryAfter * 1000, Math.pow(2, attempt) * 1000);
-        console.log(`Rate limited. Retrying after ${waitTime}ms (attempt ${attempt + 1}/${maxRetries})`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
         continue;
       }
@@ -94,7 +93,6 @@ async function fetchWithRetry(
       lastError = error as Error;
       if (attempt < maxRetries - 1) {
         const waitTime = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
-        console.log(`Request failed. Retrying after ${waitTime}ms (attempt ${attempt + 1}/${maxRetries})`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }
@@ -188,7 +186,6 @@ export async function GET(request: Request) {
 
     if (needsRefresh) {
       if (connection.refresh_token_encrypted) {
-        console.log("Refreshing token (expires soon or expired)");
         const refreshResult = await refreshAccessToken(connection.refresh_token_encrypted);
 
         if (refreshResult) {
@@ -207,8 +204,6 @@ export async function GET(request: Request) {
 
           if (updateError) {
             console.error("Failed to update refreshed token:", updateError);
-          } else {
-            console.log("Token refreshed successfully, expires at:", newExpiresAt.toISOString());
           }
         } else {
           // Token refresh failed - delete connection to force re-auth

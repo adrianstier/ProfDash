@@ -175,7 +175,7 @@ async function extractTasks(params: {
 async function generateProjectSummary(params: {
   project: {
     title: string;
-    type: "manuscript" | "grant" | "general";
+    type: "manuscript" | "grant" | "general" | "research";
     status: string;
     stage?: string;
     summary?: string;

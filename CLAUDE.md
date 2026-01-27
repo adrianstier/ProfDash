@@ -34,13 +34,14 @@ ProfDash/
 |------------|---------|---------|
 | Next.js | 15.1.0 | App Router, Server Components, API routes |
 | React | 19.x | UI components with RSC support |
-| TypeScript | 5.9.3 | Type safety |
+| TypeScript | 5.3.x | Type safety |
 | Tailwind CSS | 3.4.16 | Styling |
 | shadcn/ui | Latest | Radix-based accessible components |
-| TanStack Query | 5.90.12 | Server state caching |
+| TanStack Query | 5.60.0 | Server state caching |
 | Zustand | 5.0.0 | Client state management |
 | Zod | 3.23.0 | Runtime validation |
-| @dnd-kit | 6.3.1 | Drag-and-drop for Kanban |
+| @dnd-kit | 6.3.1 / 8.0.0 | Drag-and-drop for Kanban |
+| Framer Motion | 12.x | Animations |
 
 ### Backend & Database
 | Technology | Purpose |
@@ -71,48 +72,151 @@ Next.js App Router structure:
   - `grants/` - Grant discovery & tracking
   - `personnel/` - Team management
   - `teaching/` - Teaching dashboard
+  - `analytics/` - Usage analytics dashboard
   - `settings/` - User & workspace settings
-- `api/` - REST API route handlers
+- `api/` - REST API route handlers (see API Routes section)
+
+### `scholaros/apps/web/app/api/` (API Routes)
+- `tasks/` - Task CRUD, bulk operations, recurring tasks
+- `projects/` - Project management
+- `personnel/` - Team member management
+- `publications/` - Publication tracking
+- `calendar/` - Google Calendar sync & events
+- `grants/` - Grant search, watchlist, saved searches
+- `documents/` - Document upload & management
+- `ai/` - AI task extraction, enhancement, breakdown, smart-parse, voice
+- `agents/` - Multi-agent chat, execution, orchestration
+- `analytics/` - Usage analytics events
+- `search/` - Global search with history
+- `messages/` - Workspace messaging
+- `activity/` - Activity feed
+- `presence/` - User presence tracking
+- `onboarding/` - Onboarding progress tracking
+- `workspaces/` - Workspace management & invites
+- `auth/` - Authentication callbacks
 
 ### `scholaros/apps/web/components/`
-React components organized by feature:
-- `ui/` - shadcn/ui base components
-- `tasks/` - Task cards, lists, Kanban, quick-add
-- `projects/` - Project cards, milestones, stages
-- `grants/` - Grant search, watchlist
+React components organized by feature (23 directories):
+- `ui/` - shadcn/ui base components (24 primitives)
+- `tasks/` - Task cards, lists, Kanban, quick-add, detail drawer
+- `projects/` - Project cards, milestones, stages, notes
+- `grants/` - Grant search, watchlist, fit scoring
 - `publications/` - Publication import, cards
 - `layout/` - Sidebar, navigation, workspace switcher
+- `ai/` - Smart parsing, task breakdown, email generation, summaries
+- `analytics/` - Usage charts, metrics dashboards
+- `chat/` - Workspace chat interface
+- `documents/` - Document upload, viewer
+- `learning/` - Progressive onboarding, feature discovery, AI insights
+- `onboarding/` - Welcome modal, setup wizard
+- `presence/` - User presence indicators
+- `search/` - Global search, history, filters
+- `voice/` - Voice input, transcription
+- `activity/` - Activity feed components
+- `dashboard/` - Dashboard-specific components
+- `workspace/` - Workspace management
+- `personnel/` - Personnel cards, forms
+- `accessibility/` - A11y helpers
+- `migration/` - Data migration helpers
 
 ### `scholaros/apps/web/lib/`
 - `supabase/` - Client/server Supabase instances
-- `hooks/` - TanStack Query data-fetching hooks
-- `stores/` - Zustand stores (workspace, task, agent)
+- `hooks/` - 24 TanStack Query hooks (see Hooks section)
+- `stores/` - 5 Zustand stores (workspace, task, agent, chat, analytics)
 - `utils.ts` - Utility functions (cn, formatDate, etc.)
 - `constants.ts` - Application constants
+- `env.ts` - Environment variable handling
+- `crypto.ts` - Encryption utilities
+- `rate-limit.ts` - API rate limiting
+- `search-ranking.ts` - Search result ranking
+
+### `scholaros/apps/web/lib/hooks/`
+Data-fetching and utility hooks:
+- `use-tasks.ts` - Task CRUD with optimistic updates
+- `use-projects.ts` - Project management
+- `use-personnel.ts` - Team member operations
+- `use-publications.ts` - Publication tracking
+- `use-calendar.ts` - Calendar sync & events
+- `use-grants.ts` - Grant search & watchlist
+- `use-documents.ts` - Document management
+- `use-workspaces.ts` - Workspace operations
+- `use-ai.ts` - AI feature hooks
+- `use-agents.ts` - Multi-agent interactions
+- `use-chat.ts` - Workspace messaging
+- `use-search.ts` - Global search
+- `use-analytics.ts` - Analytics data
+- `use-analytics-events.ts` - Event tracking
+- `use-onboarding.ts` - Onboarding progress
+- `use-activity.ts` - Activity feed
+- `use-presence.ts` - User presence
+- `use-voice.ts` - Voice transcription
+- `use-smart-parse.ts` - Smart task parsing
+- `use-keyboard-shortcuts.ts` - Keyboard navigation
+- `use-user.ts` - User profile
+- `use-pagination.ts` - List pagination
+- `use-debounce.ts` - Debounce utility
 
 ### `scholaros/packages/shared/src/`
 Shared across frontend & backend:
-- `types/` - TypeScript interfaces (Task, Project, Workspace)
+- `types/` - TypeScript interfaces
+  - `index.ts` - Core types (Task, Project, Workspace, etc.)
+  - `agents.ts` - Multi-agent framework types
+  - `analytics.ts` - Analytics event types
+  - `chat.ts` - Messaging types
 - `schemas/` - Zod validation schemas
+  - `index.ts` - Core validation schemas
+  - `analytics.ts` - Analytics event validation
 - `utils/` - Quick-add parser, shared utilities
 - `config/project-stages.ts` - Project type stage definitions
 
 ### `scholaros/services/ai/`
 Python FastAPI microservice:
-- `app/main.py` - FastAPI application
-- `app/agents/` - Multi-agent framework (task, grant, project agents)
-- `app/routers/` - API endpoints (extract, summarize, grants)
+- `app/main.py` - FastAPI application entry point
+- `app/config.py` - Service configuration
+- `app/agents/` - Multi-agent framework
+  - `base.py` - Base agent class
+  - `orchestrator.py` - Agent orchestration
+  - `registry.py` - Agent registration
+  - `types.py` - Agent type definitions
+  - `specialized/` - 8 specialized agents:
+    - `task_agent.py` - Task management
+    - `project_agent.py` - Project operations
+    - `grant_agent.py` - Grant discovery & analysis
+    - `calendar_agent.py` - Calendar operations
+    - `personnel_agent.py` - Team management
+    - `research_agent.py` - Research assistance
+    - `writing_agent.py` - Writing assistance
+    - `planner_agent.py` - Planning & scheduling
+- `app/routers/` - API endpoints
+  - `extract.py` - Task extraction from text
+  - `summarize.py` - Content summarization
+  - `grants.py` - Grant search & scoring
+  - `documents.py` - Document processing
+  - `agents.py` - Agent chat & execution
+  - `analytics.py` - Analytics & A/B testing
+- `app/analytics/` - Analytics & experimentation
+- `app/ml/` - ML models (onboarding predictor, search ranker)
+- `app/models/` - Pydantic models
 - `app/services/llm.py` - LLM service abstraction (Anthropic)
 
 ### `scholaros/supabase/migrations/`
-Database migrations applied in order:
+Database migrations applied in order (16 total):
 1. `20241217000000_initial_schema.sql` - Profiles, workspaces, tasks
 2. `20241217000001_workspace_invites.sql` - Invite system, RLS
 3. `20241217000002_project_milestones_notes.sql` - Projects hierarchy
 4. `20241217000003_calendar_integrations.sql` - Google Calendar
 5. `20241217000004_funding_opportunities.sql` - Grant discovery
-6. `20241221000000_documents_and_ai.sql` - Documents, embeddings
-7. `20241221000001_publications.sql` - Publication tracking
+6. `20241219000000_fix_task_workspace_rls.sql` - RLS policy fixes
+7. `20241221000000_documents_and_ai.sql` - Documents, embeddings
+8. `20241221000001_publications.sql` - Publication tracking
+9. `20241221100000_agent_framework.sql` - Multi-agent infrastructure
+10. `20250108000001_workspace_messages.sql` - Workspace chat
+11. `20250108000002_workspace_activity.sql` - Activity feed
+12. `20250108000003_user_presence.sql` - User presence tracking
+13. `20260115000000_onboarding_tracking.sql` - Onboarding progress
+14. `20260118000000_search_history.sql` - Search history
+15. `20260120000000_recurring_tasks.sql` - Recurring tasks
+16. `20260122000000_analytics_events.sql` - Usage analytics
 
 ## Development Commands
 
@@ -185,10 +289,19 @@ export async function GET(request: Request) {
 - `profiles` - User profiles (links to auth.users)
 - `workspaces` - Multi-tenant workspaces
 - `workspace_members` - User-workspace associations with roles
+- `workspace_invites` - Magic link invitations
 - `tasks` - Task management with categories, priorities, assignees
+- `recurring_tasks` - Recurring task definitions
 - `projects` - Unified manuscripts, grants, general projects
 - `project_milestones` - Project milestone tracking
 - `project_notes` - Project notes
+- `publications` - Publication tracking
+- `personnel` - Team member records
+
+### Collaboration
+- `workspace_messages` - Workspace chat messages
+- `workspace_activity` - Activity feed events
+- `user_presence` - Real-time user presence
 
 ### Integrations
 - `calendar_connections` - Google Calendar OAuth tokens
@@ -202,6 +315,11 @@ export async function GET(request: Request) {
 - `document_chunks` - Document chunks with embeddings
 - `ai_actions_log` - AI action history and feedback
 - `agent_executions` - Agent framework logs
+
+### Analytics & UX
+- `analytics_events` - Usage analytics events
+- `onboarding_tracking` - User onboarding progress
+- `search_history` - Search query history
 
 ## Quick Add Syntax
 

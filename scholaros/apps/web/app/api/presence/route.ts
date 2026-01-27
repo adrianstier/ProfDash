@@ -46,7 +46,7 @@ export async function GET(request: Request) {
       .select(
         `
         *,
-        user:profiles!user_presence_user_id_fkey(id, full_name, avatar_url)
+        user:profiles!user_presence_user_id_profiles_fkey(id, full_name, avatar_url)
       `
       )
       .eq("workspace_id", workspaceId);
@@ -131,7 +131,7 @@ export async function POST(request: Request) {
       .select(
         `
         *,
-        user:profiles!user_presence_user_id_fkey(id, full_name, avatar_url)
+        user:profiles!user_presence_user_id_profiles_fkey(id, full_name, avatar_url)
       `
       )
       .single();

@@ -99,7 +99,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       .select(
         `
         *,
-        user:profiles!workspace_messages_user_id_fkey(id, full_name, avatar_url)
+        user:profiles!workspace_messages_user_id_profiles_fkey(id, full_name, avatar_url)
       `
       )
       .single();
@@ -159,7 +159,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       .select(
         `
         *,
-        user:profiles!workspace_messages_user_id_fkey(id, full_name, avatar_url)
+        user:profiles!workspace_messages_user_id_profiles_fkey(id, full_name, avatar_url)
       `
       )
       .single();

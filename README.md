@@ -6,7 +6,7 @@ ScholarOS (evolved from ProfDash) is a multi-tenant, collaborative dashboard for
 
 **Live Demo:** [scholaros-ashen.vercel.app](https://scholaros-ashen.vercel.app)
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15.1-black.svg)](https://nextjs.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green.svg)](https://supabase.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -57,6 +57,19 @@ NSF report fri #grants p1 @craig +manuscript-123
 - **Project Summaries** - AI-generated status updates
 - **Grant Fit Scoring** - Match opportunities to your profile
 - **Smart Suggestions** - Priority and deadline recommendations
+- **Multi-Agent System** - 8 specialized AI agents (task, project, grant, calendar, personnel, research, writing, planner)
+- **Voice Transcription** - Voice-to-text task input
+- **Smart Parsing** - Natural language task creation
+
+### Collaboration
+- **Workspace Chat** - Team messaging within workspaces
+- **Activity Feed** - Real-time activity tracking
+- **User Presence** - See who's online
+
+### Analytics & Onboarding
+- **Usage Analytics** - Track feature usage and engagement
+- **Progressive Onboarding** - Guided setup and feature discovery
+- **Search History** - Recent searches and suggestions
 
 ### Multi-Tenancy
 - **Workspaces** - Isolated lab/team environments
@@ -145,27 +158,42 @@ scholaros/
 ├── apps/
 │   └── web/                    # Next.js 15 application
 │       ├── app/                # App Router pages
-│       │   ├── (auth)/         # Auth routes (login, signup)
+│       │   ├── (auth)/         # Auth routes (login, signup, invite)
 │       │   ├── (dashboard)/    # Protected dashboard routes
-│       │   └── api/            # REST API routes
-│       ├── components/         # React components
-│       └── lib/                # Utilities, hooks, stores
+│       │   │   ├── today/      # Today view
+│       │   │   ├── upcoming/   # Upcoming tasks
+│       │   │   ├── board/      # Kanban board
+│       │   │   ├── list/       # List view
+│       │   │   ├── calendar/   # Calendar view
+│       │   │   ├── projects/   # Project management
+│       │   │   ├── grants/     # Grant discovery
+│       │   │   ├── publications/ # Publications
+│       │   │   ├── personnel/  # Team management
+│       │   │   ├── analytics/  # Usage analytics
+│       │   │   └── settings/   # Settings
+│       │   └── api/            # 20+ REST API route groups
+│       ├── components/         # 23 feature directories
+│       └── lib/                # Utilities, 24 hooks, 5 stores
 │
 ├── packages/
 │   └── shared/                 # Shared types & schemas
-│       ├── types/              # TypeScript interfaces
+│       ├── types/              # TypeScript interfaces (core, agents, analytics, chat)
 │       ├── schemas/            # Zod validation schemas
-│       └── utils/              # Shared utilities
+│       ├── utils/              # Shared utilities
+│       └── config/             # Project stage configs
 │
 ├── services/
 │   └── ai/                     # Python AI microservice
-│       ├── app/                # FastAPI application
-│       │   ├── agents/         # Multi-agent framework
-│       │   └── routers/        # API endpoints
+│       ├── app/
+│       │   ├── agents/         # 8 specialized agents + orchestrator
+│       │   ├── routers/        # 6 API endpoint groups
+│       │   ├── analytics/      # A/B testing, metrics
+│       │   ├── ml/             # ML models
+│       │   └── services/       # LLM abstraction
 │       └── Dockerfile
 │
 ├── supabase/
-│   └── migrations/             # Database migrations
+│   └── migrations/             # 16 database migrations
 │
 ├── turbo.json                  # Turborepo config
 └── pnpm-workspace.yaml
@@ -262,6 +290,8 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed instructions.
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Deployment guide |
 | [docs/PRD.md](docs/PRD.md) | Product requirements document |
 | [docs/PROGRESS.md](docs/PROGRESS.md) | Implementation status |
+| [docs/PHASE-9-ROADMAP.md](docs/PHASE-9-ROADMAP.md) | Current development roadmap |
+| [docs/UX-DELIVERABLES.md](docs/UX-DELIVERABLES.md) | UX specifications and deliverables |
 
 ---
 
@@ -311,11 +341,23 @@ NSF report fri #grants p1
 - Zustand for client state (UI, local preferences)
 - Optimistic updates for responsive UX
 
+### AI Architecture
+- Multi-agent framework with 8 specialized agents
+- Agent orchestration for complex workflows
+- ML models for onboarding prediction and search ranking
+- A/B testing infrastructure for AI features
+
+### Real-time Features
+- Workspace messaging with Supabase Realtime
+- User presence tracking
+- Activity feed updates
+
 ### Security
 - Supabase Auth with secure HTTP-only cookies
 - Row Level Security on all tables
 - OAuth token encryption in database
 - Rate limiting on API endpoints
+- ILIKE pattern escaping for SQL injection prevention
 
 ---
 
