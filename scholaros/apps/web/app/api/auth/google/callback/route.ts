@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     // Validate required OAuth configuration
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
       return NextResponse.redirect(
-        new URL("/settings/integrations?error=oauth_not_configured", request.url)
+        new URL("/settings?error=oauth_not_configured", request.url)
       );
     }
 
@@ -34,13 +34,13 @@ export async function GET(request: Request) {
     if (error) {
       console.error("Google OAuth error:", error);
       return NextResponse.redirect(
-        new URL(`/settings/integrations?error=${encodeURIComponent(error)}`, request.url)
+        new URL(`/settings?error=${encodeURIComponent(error)}`, request.url)
       );
     }
 
     if (!code || !state) {
       return NextResponse.redirect(
-        new URL("/settings/integrations?error=missing_params", request.url)
+        new URL("/settings?error=missing_params", request.url)
       );
     }
 
@@ -50,14 +50,14 @@ export async function GET(request: Request) {
       stateData = JSON.parse(Buffer.from(state, "base64").toString());
     } catch {
       return NextResponse.redirect(
-        new URL("/settings/integrations?error=invalid_state", request.url)
+        new URL("/settings?error=invalid_state", request.url)
       );
     }
 
     // Check state isn't too old (15 minutes max)
     if (Date.now() - stateData.timestamp > 15 * 60 * 1000) {
       return NextResponse.redirect(
-        new URL("/settings/integrations?error=expired_state", request.url)
+        new URL("/settings?error=expired_state", request.url)
       );
     }
 
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
 
     if (authError || !user || user.id !== stateData.userId) {
       return NextResponse.redirect(
-        new URL("/settings/integrations?error=unauthorized", request.url)
+        new URL("/settings?error=unauthorized", request.url)
       );
     }
 
@@ -89,7 +89,7 @@ export async function GET(request: Request) {
       const errorData = await tokenResponse.text();
       console.error("Token exchange failed:", errorData);
       return NextResponse.redirect(
-        new URL("/settings/integrations?error=token_exchange_failed", request.url)
+        new URL("/settings?error=token_exchange_failed", request.url)
       );
     }
 
@@ -122,18 +122,18 @@ export async function GET(request: Request) {
     if (dbError) {
       console.error("Error storing calendar connection:", dbError);
       return NextResponse.redirect(
-        new URL("/settings/integrations?error=storage_failed", request.url)
+        new URL("/settings?error=storage_failed", request.url)
       );
     }
 
     // Redirect to settings with success message
     return NextResponse.redirect(
-      new URL("/settings/integrations?success=google_connected", request.url)
+      new URL("/settings?success=google_connected", request.url)
     );
   } catch (error) {
     console.error("Unexpected error in Google callback:", error);
     return NextResponse.redirect(
-      new URL("/settings/integrations?error=unexpected", request.url)
+      new URL("/settings?error=unexpected", request.url)
     );
   }
 }
