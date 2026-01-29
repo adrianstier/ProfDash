@@ -8,12 +8,38 @@ export async function GET(
   { params }: { params: Promise<{ id: string; phaseId: string }> }
 ) {
   try {
-    const { phaseId } = await params;
+    const { id: projectId, phaseId } = await params;
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get project to verify workspace membership
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("workspace_id")
+      .eq("id", projectId)
+      .single();
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    // Verify user is member of the project's workspace
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", project.workspace_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Not a member of this workspace" },
+        { status: 403 }
+      );
     }
 
     const { data: deliverables, error } = await supabase
@@ -50,6 +76,32 @@ export async function POST(
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get project to verify workspace membership
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("workspace_id")
+      .eq("id", projectId)
+      .single();
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    // Verify user is member of the project's workspace
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", project.workspace_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Not a member of this workspace" },
+        { status: 403 }
+      );
     }
 
     const body = await request.json();
@@ -91,24 +143,16 @@ export async function POST(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Log activity
-    const { data: project } = await supabase
-      .from("projects")
-      .select("workspace_id")
-      .eq("id", projectId)
-      .single();
-
-    if (project) {
-      await supabase.from("workspace_activity").insert({
-        workspace_id: project.workspace_id,
-        user_id: user.id,
-        action: "deliverable_created",
-        project_id: projectId,
-        deliverable_id: data.id,
-        entity_title: data.title,
-        details: { deliverable_id: data.id, phase_id: phaseId }
-      });
-    }
+    // Log activity (project already fetched above for workspace verification)
+    await supabase.from("workspace_activity").insert({
+      workspace_id: project.workspace_id,
+      user_id: user.id,
+      action: "deliverable_created",
+      project_id: projectId,
+      deliverable_id: data.id,
+      entity_title: data.title,
+      details: { deliverable_id: data.id, phase_id: phaseId }
+    });
 
     return NextResponse.json(data, { status: 201 });
   } catch (error) {
@@ -136,6 +180,32 @@ export async function PATCH(
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get project to verify workspace membership
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("workspace_id")
+      .eq("id", projectId)
+      .single();
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    // Verify user is member of the project's workspace
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", project.workspace_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Not a member of this workspace" },
+        { status: 403 }
+      );
     }
 
     const body = await request.json();
@@ -167,25 +237,17 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Log activity if completed
+    // Log activity if completed (project already fetched above for workspace verification)
     if (validationResult.data.status === "completed") {
-      const { data: project } = await supabase
-        .from("projects")
-        .select("workspace_id")
-        .eq("id", projectId)
-        .single();
-
-      if (project) {
-        await supabase.from("workspace_activity").insert({
-          workspace_id: project.workspace_id,
-          user_id: user.id,
-          action: "deliverable_completed",
-          project_id: projectId,
-          deliverable_id: deliverableId,
-          entity_title: data.title,
-          details: { deliverable_id: deliverableId }
-        });
-      }
+      await supabase.from("workspace_activity").insert({
+        workspace_id: project.workspace_id,
+        user_id: user.id,
+        action: "deliverable_completed",
+        project_id: projectId,
+        deliverable_id: deliverableId,
+        entity_title: data.title,
+        details: { deliverable_id: deliverableId }
+      });
     }
 
     return NextResponse.json(data);
@@ -201,7 +263,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; phaseId: string }> }
 ) {
   try {
-    await params;
+    const { id: projectId } = await params;
     const url = new URL(request.url);
     const deliverableId = url.searchParams.get("deliverableId");
 
@@ -214,6 +276,32 @@ export async function DELETE(
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get project to verify workspace membership
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("workspace_id")
+      .eq("id", projectId)
+      .single();
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    // Verify user is member of the project's workspace
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", project.workspace_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Not a member of this workspace" },
+        { status: 403 }
+      );
     }
 
     const { error } = await supabase

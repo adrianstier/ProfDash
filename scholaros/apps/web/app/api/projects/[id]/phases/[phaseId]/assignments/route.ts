@@ -8,12 +8,38 @@ export async function GET(
   { params }: { params: Promise<{ id: string; phaseId: string }> }
 ) {
   try {
-    const { phaseId } = await params;
+    const { id: projectId, phaseId } = await params;
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get project to verify workspace membership
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("workspace_id")
+      .eq("id", projectId)
+      .single();
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    // Verify user is member of the project's workspace
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", project.workspace_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Not a member of this workspace" },
+        { status: 403 }
+      );
     }
 
     const { data: assignments, error } = await supabase
@@ -49,6 +75,32 @@ export async function POST(
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get project to verify workspace membership
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("workspace_id")
+      .eq("id", projectId)
+      .single();
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    // Verify user is member of the project's workspace
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", project.workspace_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Not a member of this workspace" },
+        { status: 403 }
+      );
     }
 
     const body = await request.json();
@@ -96,36 +148,28 @@ export async function POST(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Log activity
-    const { data: project } = await supabase
-      .from("projects")
-      .select("workspace_id")
-      .eq("id", projectId)
-      .single();
-
+    // Log activity (project already fetched above for workspace verification)
     const { data: phase } = await supabase
       .from("project_phases")
       .select("title")
       .eq("id", phaseId)
       .single();
 
-    if (project) {
-      const assigneeName = data.user?.full_name || data.role?.name || "Unknown";
-      await supabase.from("workspace_activity").insert({
-        workspace_id: project.workspace_id,
-        user_id: user.id,
-        action: "role_assigned",
-        project_id: projectId,
+    const assigneeName = data.user?.full_name || data.role?.name || "Unknown";
+    await supabase.from("workspace_activity").insert({
+      workspace_id: project.workspace_id,
+      user_id: user.id,
+      action: "role_assigned",
+      project_id: projectId,
+      phase_id: phaseId,
+      entity_title: phase?.title,
+      details: {
+        assignment_id: data.id,
         phase_id: phaseId,
-        entity_title: phase?.title,
-        details: {
-          assignment_id: data.id,
-          phase_id: phaseId,
-          assignee: assigneeName,
-          assignment_type: data.assignment_type
-        }
-      });
-    }
+        assignee: assigneeName,
+        assignment_type: data.assignment_type
+      }
+    });
 
     return NextResponse.json(data, { status: 201 });
   } catch (error) {
@@ -140,7 +184,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; phaseId: string }> }
 ) {
   try {
-    await params;
+    const { id: projectId } = await params;
     const url = new URL(request.url);
     const assignmentId = url.searchParams.get("assignmentId");
 
@@ -153,6 +197,32 @@ export async function DELETE(
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get project to verify workspace membership
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("workspace_id")
+      .eq("id", projectId)
+      .single();
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    // Verify user is member of the project's workspace
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", project.workspace_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Not a member of this workspace" },
+        { status: 403 }
+      );
     }
 
     const { error } = await supabase
