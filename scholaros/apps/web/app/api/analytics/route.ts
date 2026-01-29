@@ -24,6 +24,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Verify user is a member of the workspace
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", workspaceId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Not a member of this workspace" },
+        { status: 403 }
+      );
+    }
+
     // Calculate date range
     const now = new Date();
     let startDate: Date;

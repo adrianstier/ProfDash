@@ -42,6 +42,23 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // If workspace_id provided, verify membership
+  if (query.data.workspace_id) {
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", query.data.workspace_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Not a member of this workspace" },
+        { status: 403 }
+      );
+    }
+  }
+
   let dbQuery = supabase
     .from("documents")
     .select("*")
@@ -49,6 +66,9 @@ export async function GET(request: NextRequest) {
 
   if (query.data.workspace_id) {
     dbQuery = dbQuery.eq("workspace_id", query.data.workspace_id);
+  } else {
+    // If no workspace specified, only return user's own documents
+    dbQuery = dbQuery.eq("uploaded_by", user.id);
   }
 
   const { data, error } = await dbQuery;

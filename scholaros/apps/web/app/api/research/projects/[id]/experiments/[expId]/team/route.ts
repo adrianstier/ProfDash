@@ -36,7 +36,7 @@ export async function GET(
     .select(
       `
       *,
-      personnel:personnel(id, full_name, email, role, is_active)
+      personnel:personnel(id, name, email, role)
     `
     )
     .eq("experiment_id", experimentId)
@@ -134,7 +134,7 @@ export async function POST(
     .select(
       `
       *,
-      personnel:personnel(id, full_name, email, role, is_active)
+      personnel:personnel(id, name, email, role)
     `
     )
     .single();

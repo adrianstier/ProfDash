@@ -4,7 +4,7 @@ This file provides context for AI assistants (Claude, Cursor, GitHub Copilot, et
 
 ## Project Overview
 
-**ScholarOS** (evolved from ProfDash) is a multi-tenant, AI-native academic operations platform for professors, lab managers, and research teams. It provides task management, manuscript/grant project tracking, personnel management, Google Calendar integration, and grant discovery.
+**ScholarOS** (evolved from ProfDash) is a multi-tenant, AI-native academic operations platform for professors, lab managers, and research teams. It provides task management, manuscript/grant/research project tracking, personnel management, Google Calendar integration, grant discovery, and multi-experiment research project management with fieldwork scheduling and permit tracking.
 
 **Live Site:** https://scholaros-ashen.vercel.app
 
@@ -94,6 +94,13 @@ Next.js App Router structure:
 - `onboarding/` - Onboarding progress tracking
 - `workspaces/` - Workspace management & invites
 - `auth/` - Authentication callbacks
+- `research/` - Research project management
+  - `sites/` - Field site CRUD
+  - `projects/[id]/experiments/` - Experiment management
+  - `projects/[id]/permits/` - Permit tracking
+  - `projects/[id]/experiments/[expId]/team/` - Team assignments
+  - `projects/[id]/experiments/[expId]/fieldwork/` - Fieldwork scheduling
+  - `projects/[id]/dashboard/` - Research project dashboard stats
 
 ### `scholaros/apps/web/components/`
 React components organized by feature (23 directories):
@@ -118,6 +125,13 @@ React components organized by feature (23 directories):
 - `personnel/` - Personnel cards, forms
 - `accessibility/` - A11y helpers
 - `migration/` - Data migration helpers
+- `research/` - Research project components (12 components)
+  - `ResearchProjectDashboard.tsx` - Main dashboard with tabs
+  - `ExperimentCard.tsx`, `ExperimentList.tsx`, `ExperimentModal.tsx` - Experiment management
+  - `PermitCard.tsx`, `PermitList.tsx`, `PermitModal.tsx`, `PermitAlertBanner.tsx` - Permit tracking
+  - `SiteSelect.tsx`, `SiteManager.tsx` - Field site management
+  - `TeamPanel.tsx` - Team assignments per experiment
+  - `FieldworkCard.tsx`, `FieldworkTimeline.tsx`, `FieldworkModal.tsx` - Fieldwork scheduling
 
 ### `scholaros/apps/web/lib/`
 - `supabase/` - Client/server Supabase instances
@@ -155,6 +169,11 @@ Data-fetching and utility hooks:
 - `use-user.ts` - User profile
 - `use-pagination.ts` - List pagination
 - `use-debounce.ts` - Debounce utility
+- `use-experiments.ts` - Research experiment CRUD
+- `use-field-sites.ts` - Field site management
+- `use-permits.ts` - Permit tracking
+- `use-fieldwork.ts` - Fieldwork schedule management
+- `use-experiment-team.ts` - Experiment team assignments
 
 ### `scholaros/packages/shared/src/`
 Shared across frontend & backend:
