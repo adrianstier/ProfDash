@@ -17,7 +17,6 @@ import type {
   ScoredSearchResult,
   SearchResultType,
   SearchHistoryEntry,
-  DEFAULT_RANKING_WEIGHTS,
 } from "@scholaros/shared/types";
 
 // ============================================================================

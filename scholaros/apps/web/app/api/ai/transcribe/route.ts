@@ -40,7 +40,8 @@ const TranscribedTaskSchema = z.object({
   due_date: z.string().optional(),
 });
 
-const _TranscriptionResultSchema = z.object({
+// Schema used for type inference
+const transcriptionResultSchema = z.object({
   transcription: z.string(),
   tasks: z.array(TranscribedTaskSchema).optional(),
   subtasks: z.array(z.object({
@@ -52,7 +53,10 @@ const _TranscriptionResultSchema = z.object({
   duration_seconds: z.number().optional(),
 });
 
-export type TranscriptionResult = z.infer<typeof _TranscriptionResultSchema>;
+export type TranscriptionResult = z.infer<typeof transcriptionResultSchema>;
+
+// Use schema at runtime to satisfy lint (prevents unused variable warning)
+void transcriptionResultSchema;
 
 // Supported audio formats
 const SUPPORTED_FORMATS = [

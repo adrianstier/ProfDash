@@ -335,7 +335,6 @@ export function ChatPanel() {
     updateMessage,
     removeMessage,
     setReplyingTo,
-    setEditingMessage,
     clearUnread,
   } = useChatStore();
 

@@ -154,7 +154,6 @@ function StatCard({
 // Member productivity row
 function MemberRow({
   member,
-  maxTasks,
 }: {
   member: {
     userId: string;
@@ -165,7 +164,6 @@ function MemberRow({
     completedTasks: number;
     activityCount: number;
   };
-  maxTasks: number;
 }) {
   const completionRate =
     member.totalTasks > 0
@@ -251,11 +249,6 @@ export function AnalyticsDashboard() {
     value,
     color: getCategoryColor(label),
   }));
-
-  const maxMemberTasks = Math.max(
-    ...data.memberProductivity.map((m) => m.totalTasks),
-    1
-  );
 
   return (
     <div className="space-y-6">
@@ -438,7 +431,6 @@ export function AnalyticsDashboard() {
                   <MemberRow
                     key={member.userId}
                     member={member}
-                    maxTasks={maxMemberTasks}
                   />
                 ))}
             </div>

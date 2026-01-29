@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTaskStore } from "@/lib/stores/task-store";
 import { useChatStore } from "@/lib/stores/chat-store";
@@ -48,8 +48,8 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions = {}) 
     commandPaletteRef.current = opener;
   }, []);
 
-  // Define shortcuts
-  const shortcuts: KeyboardShortcut[] = [
+  // Define shortcuts - memoized to prevent unnecessary re-renders
+  const shortcuts = useMemo<KeyboardShortcut[]>(() => [
     // Navigation shortcuts
     {
       key: "g",
@@ -170,7 +170,7 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions = {}) 
         window.dispatchEvent(new CustomEvent("show-shortcuts-modal"));
       },
     },
-  ];
+  ], [router, toggleSelectionMode, clearSelection, toggleChat, openChat]);
 
   // Handle keydown
   const handleKeyDown = useCallback(

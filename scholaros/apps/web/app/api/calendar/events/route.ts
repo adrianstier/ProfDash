@@ -29,9 +29,9 @@ const GoogleEventsResponseSchema = z.object({
   nextPageToken: z.string().optional(),
 });
 
-// Types inferred from schemas (exported for documentation)
-type _GoogleEvent = z.infer<typeof GoogleEventSchema>;
-type _GoogleEventsResponse = z.infer<typeof GoogleEventsResponseSchema>;
+// Types inferred from schemas
+export type GoogleEvent = z.infer<typeof GoogleEventSchema>;
+export type GoogleEventsResponse = z.infer<typeof GoogleEventsResponseSchema>;
 
 interface RefreshTokenResult {
   accessToken: string;

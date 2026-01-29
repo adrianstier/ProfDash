@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useTasks, type TaskFromAPI } from "@/lib/hooks/use-tasks";
+import { useTasks } from "@/lib/hooks/use-tasks";
 import { useRouter } from "next/navigation";
 
 interface WelcomeModalProps {

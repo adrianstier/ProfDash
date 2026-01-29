@@ -232,6 +232,7 @@ export function PresenceManager() {
         status: "offline",
       });
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentWorkspaceId]);
 
   // Real-time presence subscription

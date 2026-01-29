@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -161,19 +161,22 @@ export function CommandPalette({ onOpenChange }: CommandPaletteProps) {
   const clearHistory = useClearSearchHistory();
 
   // Filter navigation items by query
-  const filteredNavigation = query
-    ? NAVIGATION_ITEMS.filter(
-        (item) =>
-          item.title.toLowerCase().includes(query.toLowerCase()) ||
-          item.keywords.some((kw) => kw.toLowerCase().includes(query.toLowerCase()))
-      )
-    : [];
+  const filteredNavigation = useMemo(() =>
+    query
+      ? NAVIGATION_ITEMS.filter(
+          (item) =>
+            item.title.toLowerCase().includes(query.toLowerCase()) ||
+            item.keywords.some((kw) => kw.toLowerCase().includes(query.toLowerCase()))
+        )
+      : [],
+    [query]
+  );
 
   // Combine all results
-  const allResults: (SearchResult | NavigationItem)[] = [
+  const allResults = useMemo<(SearchResult | NavigationItem)[]>(() => [
     ...(searchResults?.results || []),
     ...filteredNavigation,
-  ];
+  ], [searchResults?.results, filteredNavigation]);
 
   // Show recent searches when no query
   const recentSearches = historyData?.searches || [];
