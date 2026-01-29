@@ -174,6 +174,21 @@ export async function PATCH(request: Request) {
       );
     }
 
+    // Verify user is member of workspace
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", workspace_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Not a member of this workspace" },
+        { status: 403 }
+      );
+    }
+
     // Quick update for typing status
     const { error } = await supabase
       .from("user_presence")

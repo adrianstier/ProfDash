@@ -109,6 +109,24 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "No messages found" }, { status: 404 });
     }
 
+    // Verify user has access to all messages' workspaces
+    const workspaceIds = [...new Set(messages.map((m) => m.workspace_id))];
+    const { data: memberships } = await supabase
+      .from("workspace_members")
+      .select("workspace_id")
+      .eq("user_id", user.id)
+      .in("workspace_id", workspaceIds);
+
+    const memberWorkspaceIds = new Set(memberships?.map((m) => m.workspace_id) || []);
+    const unauthorizedMessages = messages.filter((m) => !memberWorkspaceIds.has(m.workspace_id));
+
+    if (unauthorizedMessages.length > 0) {
+      return NextResponse.json(
+        { error: "Not authorized to access some messages" },
+        { status: 403 }
+      );
+    }
+
     // Update each message that doesn't already have user in read_by
     const updates = messages
       .filter((m) => !(m.read_by || []).includes(user.id))

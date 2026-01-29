@@ -144,6 +144,21 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Message not found" }, { status: 404 });
     }
 
+    // Verify user is member of workspace
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", message.workspace_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Not authorized to modify reactions on this message" },
+        { status: 403 }
+      );
+    }
+
     // Remove all reactions from this user
     const currentReactions = (message.reactions || []) as Array<{
       user_id: string;

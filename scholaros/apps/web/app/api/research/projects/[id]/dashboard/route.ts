@@ -28,6 +28,21 @@ export async function GET(
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
+  // Verify user is member of the project's workspace
+  const { data: membership } = await supabase
+    .from("workspace_members")
+    .select("id")
+    .eq("workspace_id", project.workspace_id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!membership) {
+    return NextResponse.json(
+      { error: "Not a member of this workspace" },
+      { status: 403 }
+    );
+  }
+
   if (project.type !== "research") {
     return NextResponse.json(
       { error: "This endpoint is only for research projects" },
