@@ -2,7 +2,7 @@
 
 import { PartyPopper, ArrowRight, Sparkles, BookOpen, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+// cn available for conditional styling if needed
 
 interface StepCompletionProps {
   onComplete: () => void;

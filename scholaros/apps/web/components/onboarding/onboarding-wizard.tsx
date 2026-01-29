@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOnboarding } from "@/lib/hooks/use-onboarding";
-import { useAnalyticsStore } from "@/lib/stores/analytics-store";
+// Analytics store available for future use
 import { useAnalyticsEvents } from "@/lib/hooks/use-analytics-events";
 import { OnboardingProgress, ProgressDots } from "./onboarding-progress";
 import {
@@ -13,7 +13,6 @@ import {
   StepProfile,
   StepWorkspace,
   StepFirstTask,
-  StepCalendar,
   StepCompletion,
 } from "./steps";
 import type { OnboardingStep } from "@scholaros/shared/types";

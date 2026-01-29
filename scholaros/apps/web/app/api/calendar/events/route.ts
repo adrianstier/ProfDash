@@ -2,24 +2,35 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { decryptToken, encryptToken } from "@/lib/crypto";
+import { z } from "zod";
 
 const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = env.GOOGLE_CLIENT_SECRET;
 
-interface GoogleEvent {
-  id: string;
-  summary?: string;
-  description?: string;
-  location?: string;
-  start: { dateTime?: string; date?: string };
-  end: { dateTime?: string; date?: string };
-  status?: string;
-}
+// Zod schemas for Google Calendar API response validation
+const GoogleEventSchema = z.object({
+  id: z.string(),
+  summary: z.string().optional(),
+  description: z.string().optional(),
+  location: z.string().optional(),
+  start: z.object({
+    dateTime: z.string().optional(),
+    date: z.string().optional(),
+  }),
+  end: z.object({
+    dateTime: z.string().optional(),
+    date: z.string().optional(),
+  }),
+  status: z.string().optional(),
+});
 
-interface GoogleEventsResponse {
-  items: GoogleEvent[];
-  nextPageToken?: string;
-}
+const GoogleEventsResponseSchema = z.object({
+  items: z.array(GoogleEventSchema).default([]),
+  nextPageToken: z.string().optional(),
+});
+
+type GoogleEvent = z.infer<typeof GoogleEventSchema>;
+type GoogleEventsResponse = z.infer<typeof GoogleEventsResponseSchema>;
 
 interface RefreshTokenResult {
   accessToken: string;
@@ -305,7 +316,19 @@ export async function GET(request: Request) {
       }, { status: eventsResponse.status });
     }
 
-    const eventsData: GoogleEventsResponse = await eventsResponse.json();
+    // Parse and validate events response
+    const rawEventsData = await eventsResponse.json();
+    const eventsValidation = GoogleEventsResponseSchema.safeParse(rawEventsData);
+
+    if (!eventsValidation.success) {
+      console.error("Invalid events response from Google:", eventsValidation.error.flatten());
+      return NextResponse.json({
+        error: "Invalid calendar response",
+        message: "Received unexpected data format from Google Calendar.",
+      }, { status: 502 });
+    }
+
+    const eventsData = eventsValidation.data;
 
     // Transform and cache events
     const events = eventsData.items.map((event) => {

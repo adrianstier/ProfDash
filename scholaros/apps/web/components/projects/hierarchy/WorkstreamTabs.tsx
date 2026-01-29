@@ -3,17 +3,14 @@
 import { useState } from "react";
 import {
   Plus,
-  CheckCircle2,
   AlertCircle,
   MoreHorizontal,
   Trash2,
-  Edit2,
   Loader2,
 } from "lucide-react";
 import {
   useWorkstreams,
   useCreateWorkstream,
-  useUpdateWorkstream,
   useDeleteWorkstream,
   type WorkstreamWithStats,
 } from "@/lib/hooks/use-project-hierarchy";
@@ -197,7 +194,7 @@ function WorkstreamTab({
   onToggleMenu,
 }: WorkstreamTabProps) {
   const taskCount = workstream.task_count || 0;
-  const completedCount = workstream.completed_task_count || 0;
+  const _completedCount = workstream.completed_task_count || 0; // Available for future use
   const overdueCount = workstream.overdue_task_count || 0;
 
   return (

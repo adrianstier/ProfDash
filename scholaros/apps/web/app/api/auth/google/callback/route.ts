@@ -2,18 +2,20 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { encryptToken } from "@/lib/crypto";
+import { z } from "zod";
 
 const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_REDIRECT_URI = env.GOOGLE_REDIRECT_URI || `${env.NEXT_PUBLIC_APP_URL}/api/auth/google/callback`;
 
-interface GoogleTokenResponse {
-  access_token: string;
-  refresh_token?: string;
-  expires_in: number;
-  token_type: string;
-  scope: string;
-}
+// Zod schema for Google OAuth token response validation
+const GoogleTokenResponseSchema = z.object({
+  access_token: z.string().min(1, "Access token is required"),
+  refresh_token: z.string().optional(),
+  expires_in: z.number().int().positive(),
+  token_type: z.string().default("Bearer"),
+  scope: z.string().optional(),
+});
 
 // GET /api/auth/google/callback - Handle OAuth callback
 export async function GET(request: Request) {
@@ -93,7 +95,18 @@ export async function GET(request: Request) {
       );
     }
 
-    const tokens: GoogleTokenResponse = await tokenResponse.json();
+    // Parse and validate token response
+    const rawTokens = await tokenResponse.json();
+    const tokenValidation = GoogleTokenResponseSchema.safeParse(rawTokens);
+
+    if (!tokenValidation.success) {
+      console.error("Invalid token response from Google:", tokenValidation.error.flatten());
+      return NextResponse.redirect(
+        new URL("/settings?error=invalid_token_response", request.url)
+      );
+    }
+
+    const tokens = tokenValidation.data;
 
     // Calculate token expiration
     const tokenExpiresAt = new Date(Date.now() + tokens.expires_in * 1000);

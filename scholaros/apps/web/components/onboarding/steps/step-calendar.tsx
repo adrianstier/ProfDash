@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Calendar, ArrowRight, ArrowLeft, Check, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+// cn available for conditional styling if needed
 import { useOnboardingInteraction } from "@/lib/hooks/use-onboarding";
 
 interface StepCalendarProps {

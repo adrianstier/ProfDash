@@ -17,7 +17,12 @@ interface GoogleCalendarListResponse {
   items: GoogleCalendar[];
 }
 
-async function refreshAccessToken(encryptedRefreshToken: string): Promise<string | null> {
+interface RefreshResult {
+  accessToken: string;
+  expiresIn: number;
+}
+
+async function refreshAccessToken(encryptedRefreshToken: string): Promise<RefreshResult | null> {
   try {
     // Decrypt refresh token for API call
     const refreshToken = decryptToken(encryptedRefreshToken);
@@ -40,7 +45,10 @@ async function refreshAccessToken(encryptedRefreshToken: string): Promise<string
     }
 
     const data = await response.json();
-    return data.access_token;
+    return {
+      accessToken: data.access_token,
+      expiresIn: data.expires_in || 3600, // Default to 1 hour if not provided
+    };
   } catch {
     return null;
   }
@@ -74,16 +82,17 @@ export async function GET() {
     // Check if token is expired
     if (connection.token_expires_at && new Date(connection.token_expires_at) < new Date()) {
       if (connection.refresh_token_encrypted) {
-        const newToken = await refreshAccessToken(connection.refresh_token_encrypted);
-        if (newToken) {
-          accessToken = newToken;
+        const refreshResult = await refreshAccessToken(connection.refresh_token_encrypted);
+        if (refreshResult) {
+          accessToken = refreshResult.accessToken;
           // Encrypt new token before storing
-          const encryptedNewToken = encryptToken(newToken);
+          const encryptedNewToken = encryptToken(refreshResult.accessToken);
+          const newExpiresAt = new Date(Date.now() + refreshResult.expiresIn * 1000);
           await supabase
             .from("calendar_connections")
             .update({
               access_token_encrypted: encryptedNewToken,
-              token_expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+              token_expires_at: newExpiresAt.toISOString(),
             })
             .eq("id", connection.id);
         } else {

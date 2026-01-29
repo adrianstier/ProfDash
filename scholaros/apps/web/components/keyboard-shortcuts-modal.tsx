@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Keyboard, Command } from "lucide-react";
+import { useState } from "react";
+import { Keyboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

@@ -9,7 +9,6 @@ import {
   Database,
   FileBarChart,
   Presentation,
-  MoreHorizontal,
   Trash2,
   ExternalLink,
   Upload,

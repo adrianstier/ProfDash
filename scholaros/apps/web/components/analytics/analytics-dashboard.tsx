@@ -2,14 +2,11 @@
 
 import { useState } from "react";
 import {
-  BarChart3,
   CheckCircle2,
-  Clock,
   FileText,
   Loader2,
   TrendingUp,
   Users,
-  Calendar,
   Target,
   Activity,
 } from "lucide-react";
