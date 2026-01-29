@@ -260,6 +260,9 @@ export function useSavedSearches(workspaceId: string | null) {
     queryKey: ["grants", "saved-searches", workspaceId],
     queryFn: () => fetchSavedSearches(workspaceId!),
     enabled: !!workspaceId,
+    // Cache settings for saved searches (change rarely)
+    staleTime: 5 * 60 * 1000, // Data is fresh for 5 minutes
+    gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
   });
 }
 

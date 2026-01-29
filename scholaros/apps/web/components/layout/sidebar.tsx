@@ -28,9 +28,19 @@ import {
   Command,
   PanelLeftClose,
   PanelLeft,
+  MoreHorizontal,
+  X,
 } from "lucide-react";
 import { useAgentStore } from "@/lib/stores/agent-store";
 import { OnlineUsersList } from "@/components/presence/user-presence-indicator";
+
+// Mobile bottom nav items
+const MOBILE_NAV_ITEMS = [
+  { label: "Today", href: "/today", icon: Sunrise },
+  { label: "Board", href: "/board", icon: Kanban },
+  { label: "Projects", href: "/projects", icon: FileText },
+  { label: "Calendar", href: "/calendar", icon: Calendar },
+] as const;
 
 interface SidebarProps {
   user: User;
@@ -93,6 +103,7 @@ export function Sidebar({ user }: SidebarProps) {
   const { data: tasks = [] } = useTasks();
   const { openChat, isOpen: isAgentChatOpen } = useAgentStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Initialize expanded sections from NAV_SECTIONS defaults
   const [expandedSections, setExpandedSections] = useState<string[]>(() =>
@@ -143,9 +154,11 @@ export function Sidebar({ user }: SidebarProps) {
   };
 
   return (
+    <>
+    {/* Desktop Sidebar - Hidden on mobile */}
     <aside
       className={cn(
-        "flex h-full flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 ease-out",
+        "hidden sm:flex h-full flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 ease-out",
         isCollapsed ? "w-[72px]" : "w-64"
       )}
       role="navigation"
@@ -429,5 +442,189 @@ export function Sidebar({ user }: SidebarProps) {
         )}
       </div>
     </aside>
+
+    {/* Mobile Bottom Navigation */}
+    <nav
+      className="sm:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-sidebar-border bg-sidebar safe-area-inset-bottom"
+      role="navigation"
+      aria-label="Mobile navigation"
+    >
+      <div className="flex items-center justify-around px-2 py-2">
+        {MOBILE_NAV_ITEMS.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-colors min-w-[64px]",
+                isActive
+                  ? "text-primary bg-primary/10"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              aria-current={isActive ? "page" : undefined}
+            >
+              <Icon className={cn("h-5 w-5", isActive && "scale-110")} />
+              <span className="text-[10px] font-medium">{item.label}</span>
+            </Link>
+          );
+        })}
+        {/* More button to open full sidebar overlay */}
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className={cn(
+            "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-colors min-w-[64px]",
+            isMobileMenuOpen
+              ? "text-primary bg-primary/10"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+          aria-label="Open full menu"
+          aria-expanded={isMobileMenuOpen}
+        >
+          <MoreHorizontal className="h-5 w-5" />
+          <span className="text-[10px] font-medium">More</span>
+        </button>
+      </div>
+    </nav>
+
+    {/* Mobile Menu Overlay */}
+    {isMobileMenuOpen && (
+      <>
+        {/* Backdrop */}
+        <div
+          className="sm:hidden fixed inset-0 z-50 bg-black/50 animate-fade-in"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+        {/* Slide-up panel */}
+        <div className="sm:hidden fixed inset-x-0 bottom-0 z-50 max-h-[85vh] rounded-t-2xl border-t bg-sidebar animate-slide-up overflow-hidden flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary shadow-sm shadow-primary/20">
+                <GraduationCap className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <span className="font-display text-base font-semibold tracking-tight">
+                Scholar<span className="text-primary">OS</span>
+              </span>
+            </div>
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Close menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Workspace Switcher */}
+          <div className="px-4 py-3 border-b">
+            <WorkspaceSwitcher />
+          </div>
+
+          {/* AI Assistant Button */}
+          <div className="px-4 py-3 border-b">
+            <button
+              onClick={() => {
+                openChat();
+                setIsMobileMenuOpen(false);
+              }}
+              className="group relative flex w-full items-center gap-2.5 overflow-hidden rounded-xl bg-gradient-to-r from-primary/5 via-primary/10 to-amber-500/5 border border-primary/20 px-3.5 py-2.5 text-foreground hover:border-primary/40"
+            >
+              <div className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-amber-500 shadow-sm">
+                <Sparkles className="h-3.5 w-3.5 text-white" />
+              </div>
+              <span className="flex-1 text-left text-sm font-medium">AI Assistant</span>
+            </button>
+          </div>
+
+          {/* Scrollable Navigation */}
+          <div className="flex-1 overflow-y-auto px-4 py-3 scrollbar-hide">
+            {NAV_SECTIONS.map((section) => (
+              <div key={section.label} className="mb-4">
+                <h3 className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                  {section.label}
+                </h3>
+                <ul className="mt-1 space-y-0.5">
+                  {section.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = pathname === item.href;
+                    const badgeCount = item.badgeKey ? badgeCounts[item.badgeKey] : 0;
+                    const hasOverdue = item.badgeKey === "today" && badgeCounts.overdue > 0;
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className={cn(
+                            "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-all",
+                            isActive
+                              ? "bg-primary/10 text-primary font-medium"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          )}
+                          aria-current={isActive ? "page" : undefined}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" />
+                          <span className="flex-1">{item.label}</span>
+                          {badgeCount > 0 && (
+                            <span
+                              className={cn(
+                                "flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold",
+                                hasOverdue
+                                  ? "bg-priority-p1-light text-priority-p1"
+                                  : "bg-muted text-muted-foreground"
+                              )}
+                            >
+                              {badgeCount}
+                            </span>
+                          )}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {/* User section */}
+          <div className="border-t px-4 py-3 mb-safe">
+            <div className="flex items-center gap-3 mb-3">
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-amber-500/20 text-sm font-semibold text-primary ring-2 ring-primary/10"
+              >
+                {user.email?.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="truncate text-sm font-medium">
+                  {user.user_metadata?.full_name || "User"}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {user.email}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Link
+                href="/settings"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <Settings className="h-4 w-4" />
+                <span className="text-xs font-medium">Settings</span>
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="text-xs font-medium">Sign out</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    )}
+    </>
   );
 }

@@ -104,6 +104,9 @@ export function useTasks(filters?: TaskFilters) {
     queryKey: queryKeys.tasks.list((filters ?? {}) as Record<string, unknown>),
     queryFn: () => fetchTasks(filters),
     select: (response) => response.data, // Extract just the data array for backward compatibility
+    // Cache settings for optimal performance
+    staleTime: 30 * 1000, // Data is fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 }
 
@@ -112,6 +115,9 @@ export function useTasksWithPagination(filters?: TaskFilters) {
   return useQuery({
     queryKey: queryKeys.tasks.list((filters ?? {}) as Record<string, unknown>),
     queryFn: () => fetchTasks(filters),
+    // Cache settings for optimal performance
+    staleTime: 30 * 1000, // Data is fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 }
 
@@ -210,6 +216,51 @@ export function useToggleTaskComplete() {
       return updateTask.mutateAsync({ id: task.id, status: newStatus });
     },
   };
+}
+
+// Complete recurring task response
+interface CompleteRecurringResponse {
+  completed: TaskFromAPI;
+  nextOccurrence: TaskFromAPI | null;
+  message: string;
+}
+
+// Complete a recurring task and generate the next occurrence
+async function completeRecurringTask(
+  id: string,
+  options?: { completeThisOnly?: boolean; stopRecurrence?: boolean }
+): Promise<CompleteRecurringResponse> {
+  const response = await fetch(`/api/tasks/${id}/complete-recurring`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(options || {}),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to complete recurring task");
+  }
+
+  return response.json();
+}
+
+// Hook: Complete recurring task
+export function useCompleteRecurringTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      options,
+    }: {
+      id: string;
+      options?: { completeThisOnly?: boolean; stopRecurrence?: boolean };
+    }) => completeRecurringTask(id, options),
+    onSuccess: () => {
+      // Invalidate to fetch both the completed task and new occurrence
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+    },
+  });
 }
 
 // Bulk operation types

@@ -21,6 +21,12 @@ import { CommandPaletteProvider } from "@/components/search";
 import { AnalyticsProvider } from "@/components/analytics";
 import { WelcomeModal } from "@/components/dashboard";
 
+// Progressive Onboarding Wizard
+import { OnboardingWizardWrapper } from "@/components/onboarding/onboarding-wizard-wrapper";
+
+// Real-time collaboration
+import { RealtimePresenceProvider } from "@/components/collaboration";
+
 // Keyboard shortcuts wrapper
 function KeyboardShortcutsWrapper({ children }: { children: React.ReactNode }) {
   // Initialize keyboard shortcuts
@@ -39,25 +45,29 @@ export function DashboardProviders({ children }: DashboardProvidersProps) {
         <FeatureDiscoveryProvider>
           <UndoProvider>
             <CommandPaletteProvider>
-              <KeyboardShortcutsWrapper>
-                {children}
-                <TaskDetailDrawer />
-                {/* AI Agent Chat - floating interface */}
-                <AgentChat />
-                {/* Keyboard shortcut handler for agent chat */}
-                <AgentKeyboardShortcut />
-                {/* Team Chat Panel - floating interface */}
-                <ChatPanel />
-                {/* Keyboard Shortcuts Modal */}
-                <KeyboardShortcutsModal />
-                {/* User Presence Manager */}
-                <PresenceManager />
-                {/* Learning System - Feature spotlights and onboarding */}
-                <FeatureSpotlight />
-                <MilestoneModal />
-                {/* Welcome Modal - daily dashboard summary */}
-                <WelcomeModal />
-              </KeyboardShortcutsWrapper>
+              <RealtimePresenceProvider>
+                <KeyboardShortcutsWrapper>
+                  {children}
+                  <TaskDetailDrawer />
+                  {/* AI Agent Chat - floating interface */}
+                  <AgentChat />
+                  {/* Keyboard shortcut handler for agent chat */}
+                  <AgentKeyboardShortcut />
+                  {/* Team Chat Panel - floating interface */}
+                  <ChatPanel />
+                  {/* Keyboard Shortcuts Modal */}
+                  <KeyboardShortcutsModal />
+                  {/* User Presence Manager - also handles API presence updates */}
+                  <PresenceManager />
+                  {/* Learning System - Feature spotlights and onboarding */}
+                  <FeatureSpotlight />
+                  <MilestoneModal />
+                  {/* Welcome Modal - daily dashboard summary */}
+                  <WelcomeModal />
+                  {/* Progressive Onboarding Wizard for new users */}
+                  <OnboardingWizardWrapper />
+                </KeyboardShortcutsWrapper>
+              </RealtimePresenceProvider>
             </CommandPaletteProvider>
           </UndoProvider>
         </FeatureDiscoveryProvider>

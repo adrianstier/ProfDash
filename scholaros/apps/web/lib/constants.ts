@@ -91,14 +91,48 @@ export const CATEGORY_LABELS = {
 
 // Accessibility
 export const ARIA_LABELS = {
+  // Navigation
   mainContent: "Main content",
   skipToContent: "Skip to main content",
   navigation: "Main navigation",
+
+  // Task actions
   taskOptions: (title: string) => `Task options for "${title}"`,
   markComplete: (title: string) => `Mark "${title}" as complete`,
   markIncomplete: (title: string) => `Mark "${title}" as incomplete`,
   openDetails: (title: string) => `Open details for task: ${title}`,
   dragToReorder: (title: string) => `Drag to reorder task: ${title}`,
+
+  // Project actions
+  editProject: (title: string) => `Edit project "${title}"`,
+  deleteProject: (title: string) => `Delete project "${title}"`,
+  projectOptions: (title: string) => `Project options for "${title}"`,
+  viewProject: (title: string) => `View project "${title}"`,
+
+  // General actions
+  close: "Close",
+  closeDialog: "Close dialog",
+  closeDrawer: "Close drawer",
+  edit: "Edit",
+  delete: "Delete",
+  save: "Save changes",
+  cancel: "Cancel",
+  loading: "Loading",
+
+  // Form fields
+  selectStatus: "Select status",
+  selectPriority: "Select priority",
+  selectCategory: "Select category",
+  selectDueDate: "Select due date",
+  selectProject: "Select project",
+
+  // File operations
+  uploadFile: "Upload file",
+  browseFiles: "Browse files",
+  dropZone: "Drop zone for file upload",
+  exportCsv: "Export as CSV",
+  exportJson: "Export as JSON",
+  dismissResult: "Dismiss import result",
 } as const;
 
 // Keyboard shortcuts

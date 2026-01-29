@@ -38,8 +38,8 @@ export default async function DashboardLayout({
           {/* Subtle grid pattern overlay */}
           <div className="fixed inset-0 pointer-events-none dot-pattern opacity-30 dark:opacity-20" />
 
-          {/* Content container */}
-          <div className="relative px-6 py-8 lg:px-8 xl:px-10">
+          {/* Content container - Added bottom padding for mobile nav */}
+          <div className="relative px-4 sm:px-6 py-6 sm:py-8 lg:px-8 xl:px-10 pb-24 sm:pb-8">
             <div className="mx-auto max-w-7xl">
               <DashboardProviders>{children}</DashboardProviders>
             </div>

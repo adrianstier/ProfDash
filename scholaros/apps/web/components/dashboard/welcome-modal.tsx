@@ -19,11 +19,13 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTasks } from "@/lib/hooks/use-tasks";
 import { useRouter } from "next/navigation";
+import { ARIA_LABELS } from "@/lib/constants";
 
 interface WelcomeModalProps {
   userName?: string;
@@ -141,23 +143,24 @@ export function WelcomeModal({ userName, isOpen: controlledOpen, onOpenChange }:
           <button
             onClick={() => setOpen(false)}
             className="absolute right-4 top-4 rounded-full p-2 bg-muted/80 hover:bg-muted text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-            aria-label="Close"
+            aria-label={ARIA_LABELS.closeDialog}
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
 
           <DialogTitle className="text-2xl font-semibold pr-10">
             {getGreeting()}{userName ? `, ${userName}` : ""}!
           </DialogTitle>
-          <p className="text-sm text-muted-foreground mt-1">
+          <DialogDescription className="text-sm text-muted-foreground mt-1">
             Here&apos;s your day at a glance
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         <div className="px-6 pb-6 space-y-5">
           {/* Overdue Warning Banner */}
           {overdueTasks.length > 0 && (
             <div
+              role="alert"
               className={cn(
                 "flex items-center gap-3 rounded-lg p-3 border",
                 overdueTasks.length >= 10
@@ -176,6 +179,7 @@ export function WelcomeModal({ userName, isOpen: controlledOpen, onOpenChange }:
                     ? "text-orange-500"
                     : "text-amber-500"
                 )}
+                aria-hidden="true"
               />
               <div className="flex-1 min-w-0">
                 <p
@@ -213,18 +217,22 @@ export function WelcomeModal({ userName, isOpen: controlledOpen, onOpenChange }:
           )}
 
           {/* Weekly Progress Chart */}
-          <div className="space-y-3">
+          <section className="space-y-3" aria-labelledby="weekly-progress-title">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <h3 id="weekly-progress-title" className="text-sm font-medium flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 Weekly Progress
               </h3>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground" aria-live="polite">
                 {weeklyData.reduce((acc, d) => acc + d.completed, 0)} / {weeklyData.reduce((acc, d) => acc + d.total, 0)} completed
               </span>
             </div>
 
-            <div className="flex items-end justify-between gap-2 h-24 px-2">
+            <div
+              className="flex items-end justify-between gap-2 h-24 px-2"
+              role="group"
+              aria-label="Weekly task completion chart"
+            >
               {weeklyData.map((day, index) => {
                 const isToday = day.date.toDateString() === new Date().toDateString();
                 const completionRate = day.total > 0 ? day.completed / day.total : 0;
@@ -234,11 +242,17 @@ export function WelcomeModal({ userName, isOpen: controlledOpen, onOpenChange }:
                   <div
                     key={index}
                     className="flex flex-col items-center gap-1.5 flex-1"
+                    role="group"
+                    aria-label={`${day.label}: ${day.completed} of ${day.total} tasks completed${isToday ? " (today)" : ""}`}
                   >
                     {/* Bar container */}
                     <div
                       className="w-full relative rounded-t-sm overflow-hidden bg-muted/50"
                       style={{ height: `${Math.max(barHeight, 8)}%` }}
+                      role="progressbar"
+                      aria-valuenow={Math.round(completionRate * 100)}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
                     >
                       {/* Completed portion */}
                       <div
@@ -270,6 +284,7 @@ export function WelcomeModal({ userName, isOpen: controlledOpen, onOpenChange }:
                           ? "text-primary"
                           : "text-muted-foreground"
                       )}
+                      aria-hidden="true"
                     >
                       {day.label}
                     </span>
@@ -277,41 +292,42 @@ export function WelcomeModal({ userName, isOpen: controlledOpen, onOpenChange }:
                 );
               })}
             </div>
-          </div>
+          </section>
 
           {/* Today's Tasks Preview */}
           {todayTasks.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
+            <section className="space-y-2" aria-labelledby="today-tasks-title">
+              <h3 id="today-tasks-title" className="text-sm font-medium flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 Up Next Today
               </h3>
-              <div className="space-y-1.5">
+              <ul className="space-y-1.5" role="list" aria-label="Today's tasks">
                 {todayTasks.map((task) => (
-                  <TaskPreviewItem
-                    key={task.id}
-                    title={task.title}
-                    status={task.status}
-                    priority={task.priority}
-                  />
+                  <li key={task.id}>
+                    <TaskPreviewItem
+                      title={task.title}
+                      status={task.status}
+                      priority={task.priority}
+                    />
+                  </li>
                 ))}
                 {tasks.filter((t) => t.due === new Date().toISOString().split("T")[0]).length > 3 && (
-                  <p className="text-xs text-muted-foreground pl-2">
+                  <li className="text-xs text-muted-foreground pl-2">
                     +{tasks.filter((t) => t.due === new Date().toISOString().split("T")[0]).length - 3} more tasks
-                  </p>
+                  </li>
                 )}
-              </div>
-            </div>
+              </ul>
+            </section>
           )}
 
           {/* Action Buttons - Clear hierarchy */}
-          <div className="flex flex-col sm:flex-row gap-2 pt-2">
+          <div className="flex flex-col sm:flex-row gap-2 pt-2" role="group" aria-label="Quick actions">
             <Button
               onClick={handleViewTasks}
               className="flex-1 gap-2"
               size="lg"
             >
-              <ListTodo className="h-4 w-4" />
+              <ListTodo className="h-4 w-4" aria-hidden="true" />
               View Tasks
             </Button>
             <Button
@@ -320,7 +336,7 @@ export function WelcomeModal({ userName, isOpen: controlledOpen, onOpenChange }:
               className="flex-1 gap-2"
               size="lg"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4" aria-hidden="true" />
               Add Task
             </Button>
           </div>

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { QuickAdd } from "@/components/tasks/quick-add";
 import { TaskList } from "@/components/tasks/task-list";
@@ -108,11 +109,13 @@ export default async function TodayPage() {
             {/* Personalized greeting with wave */}
             <div className="flex items-center gap-3">
               {userProfile?.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={userProfile.avatarUrl}
                   alt=""
+                  width={48}
+                  height={48}
                   className="h-12 w-12 rounded-xl object-cover ring-2 ring-primary/20"
+                  unoptimized // External avatar URLs may not be in allowed domains
                 />
               ) : (
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-amber-500/20 text-lg font-semibold text-primary ring-2 ring-primary/10">

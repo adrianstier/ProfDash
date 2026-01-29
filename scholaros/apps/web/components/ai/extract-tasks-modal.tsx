@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   X,
   Loader2,
@@ -15,6 +15,8 @@ import { useExtractTasks } from "@/lib/hooks/use-ai";
 import { useCreateTask } from "@/lib/hooks/use-tasks";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
 import { PRIORITY_LABELS, CATEGORY_LABELS } from "@scholaros/shared";
+import { FocusTrap } from "@/components/accessibility/focus-trap";
+import { ARIA_LABELS } from "@/lib/constants";
 
 interface ExtractTasksModalProps {
   isOpen: boolean;
@@ -104,69 +106,92 @@ export function ExtractTasksModal({ isOpen, onClose }: ExtractTasksModalProps) {
     onClose();
   };
 
+  // Handle Escape key to close modal
+  const handleEscape = useCallback(() => {
+    handleClose();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-lg bg-background shadow-lg flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b p-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-purple-500" />
-            <h2 className="text-lg font-semibold">Extract Tasks with AI</h2>
-          </div>
-          <button
-            onClick={handleClose}
-            className="rounded-md p-1 hover:bg-muted"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-50 bg-black/50" aria-hidden="true" />
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {!extractTasks.data ? (
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">
-                  Paste your text (meeting notes, emails, etc.)
-                </label>
-                <textarea
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  placeholder="Paste meeting notes, email threads, or any text containing tasks you want to extract..."
-                  className="mt-1 w-full h-48 rounded-md border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
-                  disabled={extractTasks.isPending}
-                />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {text.length}/10000 characters
-                </p>
+      <FocusTrap active={isOpen} onEscape={handleEscape}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="extract-tasks-title"
+        >
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-lg bg-background shadow-lg flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b p-4">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-purple-500" aria-hidden="true" />
+                <h2 id="extract-tasks-title" className="text-lg font-semibold">Extract Tasks with AI</h2>
               </div>
-
-              <div>
-                <label className="text-sm font-medium">
-                  Context (optional)
-                </label>
-                <input
-                  type="text"
-                  value={context}
-                  onChange={(e) => setContext(e.target.value)}
-                  placeholder="e.g., Lab meeting with PhD students, Grant proposal feedback"
-                  className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  disabled={extractTasks.isPending}
-                />
-              </div>
-
-              {extractTasks.isError && (
-                <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-400">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>
-                    {extractTasks.error?.message || "Failed to extract tasks"}
-                  </span>
-                </div>
-              )}
+              <button
+                onClick={handleClose}
+                className="rounded-md p-1.5 hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                aria-label={ARIA_LABELS.closeDialog}
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
             </div>
-          ) : (
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {!extractTasks.data ? (
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="extract-text-input" className="text-sm font-medium">
+                      Paste your text (meeting notes, emails, etc.)
+                    </label>
+                    <textarea
+                      id="extract-text-input"
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                      placeholder="Paste meeting notes, email threads, or any text containing tasks you want to extract..."
+                      className="mt-1 w-full h-48 rounded-md border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                      disabled={extractTasks.isPending}
+                      aria-describedby="text-char-count"
+                    />
+                    <p id="text-char-count" className="mt-1 text-xs text-muted-foreground">
+                      {text.length}/10000 characters
+                    </p>
+                  </div>
+
+                  <div>
+                    <label htmlFor="extract-context-input" className="text-sm font-medium">
+                      Context (optional)
+                    </label>
+                    <input
+                      id="extract-context-input"
+                      type="text"
+                      value={context}
+                      onChange={(e) => setContext(e.target.value)}
+                      placeholder="e.g., Lab meeting with PhD students, Grant proposal feedback"
+                      className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      disabled={extractTasks.isPending}
+                    />
+                  </div>
+
+                  {extractTasks.isError && (
+                    <div
+                      role="alert"
+                      className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-400"
+                    >
+                      <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      <span>
+                        {extractTasks.error?.message || "Failed to extract tasks"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
             <div className="space-y-4">
               {/* Source summary */}
               <div className="rounded-md bg-muted/50 p-3">
@@ -338,8 +363,10 @@ export function ExtractTasksModal({ isOpen, onClose }: ExtractTasksModalProps) {
               </button>
             </>
           )}
+          </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </FocusTrap>
+    </>
   );
 }

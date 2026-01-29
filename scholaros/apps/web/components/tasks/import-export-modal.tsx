@@ -26,6 +26,7 @@ import { useWorkspaceStore } from "@/lib/stores/workspace-store";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/app/providers";
 import { cn } from "@/lib/utils";
+import { ARIA_LABELS } from "@/lib/constants";
 
 interface ImportResult {
   success: boolean;
@@ -167,7 +168,7 @@ export function ImportExportModal() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
-          <FileSpreadsheet className="h-4 w-4" />
+          <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
           Import/Export
         </Button>
       </DialogTrigger>
@@ -182,11 +183,11 @@ export function ImportExportModal() {
         <Tabs defaultValue="export" className="mt-4">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="export" className="gap-2">
-              <Download className="h-4 w-4" />
+              <Download className="h-4 w-4" aria-hidden="true" />
               Export
             </TabsTrigger>
             <TabsTrigger value="import" className="gap-2">
-              <Upload className="h-4 w-4" />
+              <Upload className="h-4 w-4" aria-hidden="true" />
               Import
             </TabsTrigger>
           </TabsList>
@@ -196,17 +197,18 @@ export function ImportExportModal() {
               Download all your tasks in CSV or JSON format.
             </p>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3" role="group" aria-label="Export options">
               <Button
                 variant="outline"
                 onClick={() => handleExport("csv")}
                 disabled={isExporting}
                 className="h-auto py-4 flex-col gap-2"
+                aria-label={ARIA_LABELS.exportCsv}
               >
                 {isExporting ? (
-                  <Loader2 className="h-8 w-8 animate-spin" />
+                  <Loader2 className="h-8 w-8 animate-spin" aria-hidden="true" />
                 ) : (
-                  <FileSpreadsheet className="h-8 w-8 text-green-600" />
+                  <FileSpreadsheet className="h-8 w-8 text-green-600" aria-hidden="true" />
                 )}
                 <span>Export as CSV</span>
               </Button>
@@ -216,11 +218,12 @@ export function ImportExportModal() {
                 onClick={() => handleExport("json")}
                 disabled={isExporting}
                 className="h-auto py-4 flex-col gap-2"
+                aria-label={ARIA_LABELS.exportJson}
               >
                 {isExporting ? (
-                  <Loader2 className="h-8 w-8 animate-spin" />
+                  <Loader2 className="h-8 w-8 animate-spin" aria-hidden="true" />
                 ) : (
-                  <FileJson className="h-8 w-8 text-blue-600" />
+                  <FileJson className="h-8 w-8 text-blue-600" aria-hidden="true" />
                 )}
                 <span>Export as JSON</span>
               </Button>
@@ -235,7 +238,7 @@ export function ImportExportModal() {
           </TabsContent>
 
           <TabsContent value="import" className="mt-4 space-y-4">
-            <p className="text-sm text-muted-foreground">
+            <p id="import-instructions" className="text-sm text-muted-foreground">
               Import tasks from a CSV file. Required column: <strong>Title</strong>.
               Optional: Description, Status, Priority, Category, Due Date.
             </p>
@@ -253,6 +256,9 @@ export function ImportExportModal() {
                   : "border-muted-foreground/25 hover:border-primary/50",
                 isImporting && "opacity-50 pointer-events-none"
               )}
+              role="region"
+              aria-label={ARIA_LABELS.dropZone}
+              aria-describedby="import-instructions"
             >
               <input
                 ref={fileInputRef}
@@ -260,22 +266,25 @@ export function ImportExportModal() {
                 accept=".csv"
                 onChange={handleFileSelect}
                 className="hidden"
+                aria-label={ARIA_LABELS.uploadFile}
+                id="csv-file-input"
               />
 
               {isImporting ? (
-                <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                  <p className="font-medium">Importing tasks...</p>
+                <div className="flex flex-col items-center gap-2" role="status" aria-live="polite">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary" aria-hidden="true" />
+                  <p className="font-medium">{ARIA_LABELS.loading}</p>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2">
-                  <Upload className="h-10 w-10 text-muted-foreground" />
+                  <Upload className="h-10 w-10 text-muted-foreground" aria-hidden="true" />
                   <p className="font-medium">Drop your CSV file here</p>
                   <p className="text-sm text-muted-foreground">
                     or{" "}
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="text-primary hover:underline"
+                      className="text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded"
+                      aria-label={ARIA_LABELS.browseFiles}
                     >
                       browse files
                     </button>
@@ -297,12 +306,14 @@ export function ImportExportModal() {
                       ? "bg-green-50 dark:bg-green-900/20"
                       : "bg-red-50 dark:bg-red-900/20"
                   )}
+                  role="alert"
+                  aria-live="polite"
                 >
                   <div className="flex items-start gap-3">
                     {importResult.success ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
                     ) : (
-                      <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
                     )}
                     <div className="flex-1">
                       {importResult.success ? (
@@ -336,9 +347,10 @@ export function ImportExportModal() {
                     </div>
                     <button
                       onClick={() => setImportResult(null)}
-                      className="text-muted-foreground hover:text-foreground"
+                      className="text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded"
+                      aria-label={ARIA_LABELS.dismissResult}
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-4 w-4" aria-hidden="true" />
                     </button>
                   </div>
                 </motion.div>

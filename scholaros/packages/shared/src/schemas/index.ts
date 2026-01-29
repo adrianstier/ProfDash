@@ -33,6 +33,12 @@ export const TaskSchema = z.object({
   assignees: z.array(z.string().uuid()).default([]),
   tags: z.array(z.string()).default([]),
   completed_at: z.coerce.date().nullable().optional(),
+  // Recurrence fields
+  is_recurring: z.boolean().default(false),
+  recurrence_rule: z.string().nullable().optional(),
+  recurrence_parent_id: z.string().uuid().nullable().optional(),
+  recurrence_date: z.coerce.date().nullable().optional(),
+  recurrence_exceptions: z.array(z.string()).default([]),
   created_at: z.coerce.date(),
   updated_at: z.coerce.date(),
 });
@@ -48,6 +54,12 @@ export const CreateTaskSchema = z.object({
   workspace_id: z.string().uuid().nullable().optional(),
   assignees: z.array(z.string().uuid()).default([]),
   tags: z.array(z.string()).default([]),
+  // Recurrence fields
+  is_recurring: z.boolean().default(false),
+  recurrence_rule: z.string().nullable().optional(),
+  recurrence_parent_id: z.string().uuid().nullable().optional(),
+  recurrence_date: z.coerce.date().nullable().optional(),
+  recurrence_exceptions: z.array(z.string()).default([]),
 });
 
 export const UpdateTaskSchema = CreateTaskSchema.partial();

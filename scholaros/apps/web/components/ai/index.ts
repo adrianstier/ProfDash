@@ -17,3 +17,18 @@ export { EmailGeneratorModal } from "./email-generator-modal";
 export { ContentImporterModal } from "./content-importer-modal";
 export { FileParserModal } from "./file-parser-modal";
 export { VoiceRecorder } from "./voice-recorder";
+
+// Lazy-loaded versions for better performance
+// Use these when the modals are not immediately visible on page load
+export {
+  LazyTaskBreakdownModal,
+  LazyTaskEnhanceModal,
+  LazyEmailGeneratorModal,
+  LazyContentImporterModal,
+  LazyFileParserModal,
+  LazyExtractTasksModal,
+  LazyExtractTasksFromDocumentModal,
+  LazySmartParseModal,
+  LazyVoiceRecorder,
+  LazyAgentChat,
+} from "./lazy-modals";

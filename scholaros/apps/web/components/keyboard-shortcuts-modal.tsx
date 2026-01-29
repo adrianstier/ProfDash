@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { useShortcutsModalListener, type KeyboardShortcut } from "@/lib/hooks/use-keyboard-shortcuts";
 import { cn } from "@/lib/utils";
@@ -115,64 +116,67 @@ export function KeyboardShortcutsModal() {
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Keyboard className="h-5 w-5" />
+            <Keyboard className="h-5 w-5" aria-hidden="true" />
             Keyboard Shortcuts
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            List of available keyboard shortcuts organized by category
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4" role="region" aria-label="Keyboard shortcuts reference">
           {/* Navigation */}
-          <div>
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">
+          <section aria-labelledby="nav-shortcuts-heading">
+            <h3 id="nav-shortcuts-heading" className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">
               Navigation
             </h3>
-            <div className="space-y-1 divide-y">
+            <div className="space-y-1 divide-y" role="list">
               {navigationShortcuts.map((shortcut, index) => (
                 <ShortcutRow key={index} shortcut={shortcut} />
               ))}
             </div>
-          </div>
+          </section>
 
           {/* Tasks */}
-          <div>
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">
+          <section aria-labelledby="task-shortcuts-heading">
+            <h3 id="task-shortcuts-heading" className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">
               Tasks
             </h3>
-            <div className="space-y-1 divide-y">
+            <div className="space-y-1 divide-y" role="list">
               {taskShortcuts.map((shortcut, index) => (
                 <ShortcutRow key={index} shortcut={shortcut} />
               ))}
             </div>
-          </div>
+          </section>
 
           {/* Chat */}
-          <div>
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">
+          <section aria-labelledby="chat-shortcuts-heading">
+            <h3 id="chat-shortcuts-heading" className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">
               Chat
             </h3>
-            <div className="space-y-1 divide-y">
+            <div className="space-y-1 divide-y" role="list">
               {chatShortcuts.map((shortcut, index) => (
                 <ShortcutRow key={index} shortcut={shortcut} />
               ))}
             </div>
-          </div>
+          </section>
 
           {/* General */}
-          <div>
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">
+          <section aria-labelledby="general-shortcuts-heading">
+            <h3 id="general-shortcuts-heading" className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">
               General
             </h3>
-            <div className="space-y-1 divide-y">
+            <div className="space-y-1 divide-y" role="list">
               {generalShortcuts.map((shortcut, index) => (
                 <ShortcutRow key={index} shortcut={shortcut} />
               ))}
             </div>
-          </div>
+          </section>
         </div>
 
         <div className="mt-6 pt-4 border-t">
           <p className="text-xs text-muted-foreground text-center">
-            Press <kbd className="px-1.5 py-0.5 rounded bg-muted border text-xs">?</kbd> anywhere to show this dialog
+            Press <kbd className="px-1.5 py-0.5 rounded bg-muted border text-xs" aria-label="question mark">?</kbd> anywhere to show this dialog
           </p>
         </div>
       </DialogContent>

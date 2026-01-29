@@ -145,6 +145,9 @@ export function usePublications(filters?: PublicationFilters) {
   return useQuery({
     queryKey: queryKeys.publications.list((filters ?? {}) as Record<string, unknown>),
     queryFn: () => fetchPublications(filters),
+    // Cache settings for optimal performance
+    staleTime: 2 * 60 * 1000, // Data is fresh for 2 minutes (publications change less frequently)
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 }
 
@@ -162,6 +165,9 @@ export function usePublication(id: string) {
     queryKey: queryKeys.publications.detail(id),
     queryFn: () => fetchPublication(id),
     enabled: !!id,
+    // Cache settings for publication details
+    staleTime: 60 * 1000, // Data is fresh for 1 minute
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 }
 

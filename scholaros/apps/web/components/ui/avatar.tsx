@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -25,26 +26,56 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
 );
 Avatar.displayName = "Avatar";
 
-interface AvatarImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+interface AvatarImageProps {
   src?: string;
+  alt?: string;
+  className?: string;
+  /**
+   * Width in pixels (for Next.js Image optimization)
+   * @default 40
+   */
+  width?: number;
+  /**
+   * Height in pixels (for Next.js Image optimization)
+   * @default 40
+   */
+  height?: number;
+  /**
+   * Use unoptimized image loading (for external URLs that may not support optimization)
+   * @default true for external URLs
+   */
+  unoptimized?: boolean;
 }
 
 const AvatarImage = React.forwardRef<HTMLImageElement, AvatarImageProps>(
-  ({ className, src, alt, ...props }, ref) => {
+  ({ className, src, alt, width = 40, height = 40, unoptimized, ...props }, ref) => {
     const [hasError, setHasError] = React.useState(false);
+
+    // Reset error state when src changes
+    React.useEffect(() => {
+      setHasError(false);
+    }, [src]);
 
     if (!src || hasError) {
       return null;
     }
 
+    // Determine if this is an external URL
+    const isExternal = src.startsWith("http://") || src.startsWith("https://");
+    // Use unoptimized for external URLs by default (to avoid Next.js image optimization domain issues)
+    const shouldBeUnoptimized = unoptimized ?? isExternal;
+
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        ref={ref}
+      <Image
+        ref={ref as React.Ref<HTMLImageElement>}
         src={src}
         alt={alt || "Avatar"}
+        width={width}
+        height={height}
         className={cn("aspect-square h-full w-full object-cover", className)}
         onError={() => setHasError(true)}
+        unoptimized={shouldBeUnoptimized}
+        // Priority loading for above-the-fold avatars can be added via props
         {...props}
       />
     );

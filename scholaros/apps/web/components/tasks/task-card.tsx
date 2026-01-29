@@ -13,6 +13,7 @@ import {
   Trash2,
   Clock,
   Sparkles,
+  Repeat,
 } from "lucide-react";
 import type { TaskPriority, TaskCategory } from "@scholaros/shared";
 import type { TaskFromAPI } from "@/lib/hooks/use-tasks";
@@ -397,6 +398,16 @@ export const TaskCard = memo(function TaskCard({
                   <Calendar className="h-3 w-3" />
                 )}
                 {formatDueDate(task.due)}
+              </span>
+            )}
+
+            {/* Recurring indicator */}
+            {task.is_recurring && (
+              <span
+                className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                title="Recurring task"
+              >
+                <Repeat className="h-3 w-3" />
               </span>
             )}
           </div>

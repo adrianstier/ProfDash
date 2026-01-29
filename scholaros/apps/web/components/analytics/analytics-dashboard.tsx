@@ -104,7 +104,7 @@ function Sparkline({
   );
 }
 
-// Stat card component
+// Stat card component - Mobile optimized
 function StatCard({
   title,
   value,
@@ -124,26 +124,26 @@ function StatCard({
 }) {
   return (
     <Card className={className}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 sm:p-6 pb-1 sm:pb-2">
+        <CardTitle className="text-xs sm:text-sm font-medium truncate pr-2">{title}</CardTitle>
+        <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+      <CardContent className="p-3 sm:p-6 pt-1 sm:pt-0">
+        <div className="text-xl sm:text-2xl font-bold">{value}</div>
         {description && (
-          <p className="text-xs text-muted-foreground">{description}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{description}</p>
         )}
         {trend !== undefined && (
           <div
             className={cn(
-              "flex items-center gap-1 text-xs mt-1",
+              "flex items-center gap-1 text-[10px] sm:text-xs mt-1",
               trend >= 0 ? "text-green-600" : "text-red-600"
             )}
           >
             <TrendingUp
-              className={cn("h-3 w-3", trend < 0 && "rotate-180")}
+              className={cn("h-2.5 w-2.5 sm:h-3 sm:w-3", trend < 0 && "rotate-180")}
             />
-            {Math.abs(trend)}% {trendLabel || "from last period"}
+            <span className="truncate">{Math.abs(trend)}% {trendLabel || "from last period"}</span>
           </div>
         )}
       </CardContent>
@@ -251,17 +251,17 @@ export function AnalyticsDashboard() {
   }));
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header - Stack on mobile */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold">Analytics</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-xl sm:text-2xl font-bold">Analytics</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Workspace productivity overview
           </p>
         </div>
         <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-full sm:w-[140px]">
             <SelectValue placeholder="Select period" />
           </SelectTrigger>
           <SelectContent>
@@ -273,61 +273,65 @@ export function AnalyticsDashboard() {
         </Select>
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Summary Stats - 2 columns on mobile, 4 on desktop */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard
           title="Total Tasks"
           value={data.summary.totalTasks}
           description={`${data.summary.pendingTasks} pending`}
           icon={FileText}
+          className="col-span-1"
         />
         <StatCard
           title="Completion Rate"
           value={`${data.summary.completionRate}%`}
           description={`${data.summary.completedTasks} completed`}
           icon={Target}
+          className="col-span-1"
         />
         <StatCard
           title="Avg. Tasks/Day"
           value={data.summary.avgTasksPerDay}
           description="Tasks completed per day"
           icon={TrendingUp}
+          className="col-span-1"
         />
         <StatCard
           title="Team Members"
           value={data.summary.memberCount}
           description={`${data.summary.totalProjects} active projects`}
           icon={Users}
+          className="col-span-1"
         />
       </div>
 
-      {/* Charts Row */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {/* Charts Row - Stack vertically on mobile */}
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {/* Task Status */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Task Status</CardTitle>
-            <CardDescription>Current task distribution</CardDescription>
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+            <CardTitle className="text-sm sm:text-base">Task Status</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Current task distribution</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-2 sm:pt-2">
             <SimpleBarChart
               data={[
                 { label: "To Do", value: data.tasksByStatus.todo, color: "bg-slate-400" },
                 { label: "In Progress", value: data.tasksByStatus.progress, color: "bg-blue-500" },
                 { label: "Done", value: data.tasksByStatus.done, color: "bg-green-500" },
               ]}
-              height={150}
+              height={120}
             />
           </CardContent>
         </Card>
 
         {/* Task Priority */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">By Priority</CardTitle>
-            <CardDescription>Task priority breakdown</CardDescription>
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+            <CardTitle className="text-sm sm:text-base">By Priority</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Task priority breakdown</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-2 sm:pt-2">
             <SimpleBarChart
               data={[
                 { label: "P1", value: data.tasksByPriority.p1, color: "bg-red-500" },
@@ -335,42 +339,42 @@ export function AnalyticsDashboard() {
                 { label: "P3", value: data.tasksByPriority.p3, color: "bg-yellow-500" },
                 { label: "P4", value: data.tasksByPriority.p4, color: "bg-green-500" },
               ]}
-              height={150}
+              height={120}
             />
           </CardContent>
         </Card>
 
         {/* Projects by Type */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Projects</CardTitle>
-            <CardDescription>Active projects by type</CardDescription>
+        <Card className="sm:col-span-2 lg:col-span-1">
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+            <CardTitle className="text-sm sm:text-base">Projects</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Active projects by type</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-2 sm:pt-2">
             <SimpleBarChart
               data={[
                 { label: "Manuscripts", value: data.projectsByType.manuscript, color: "bg-blue-500" },
                 { label: "Grants", value: data.projectsByType.grant, color: "bg-purple-500" },
                 { label: "General", value: data.projectsByType.general, color: "bg-slate-400" },
               ]}
-              height={150}
+              height={120}
             />
           </CardContent>
         </Card>
       </div>
 
-      {/* Trends Row */}
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* Trends Row - Stack vertically on mobile */}
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
         {/* Activity Trend */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+            <CardTitle className="text-sm sm:text-base flex items-center gap-2">
               <Activity className="h-4 w-4" />
               Activity Trend
             </CardTitle>
-            <CardDescription>Daily workspace activity</CardDescription>
+            <CardDescription className="text-xs sm:text-sm">Daily workspace activity</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-2 sm:pt-2">
             <Sparkline data={data.activityTrend} color="bg-blue-500" />
             <p className="text-xs text-muted-foreground mt-2">
               {data.activityTrend.reduce((sum, d) => sum + d.count, 0)} total activities
@@ -380,14 +384,14 @@ export function AnalyticsDashboard() {
 
         {/* Completion Trend */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+            <CardTitle className="text-sm sm:text-base flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4" />
               Completion Trend
             </CardTitle>
-            <CardDescription>Daily tasks completed</CardDescription>
+            <CardDescription className="text-xs sm:text-sm">Daily tasks completed</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-2 sm:pt-2">
             <Sparkline data={data.completionTrend} color="bg-green-500" />
             <p className="text-xs text-muted-foreground mt-2">
               {data.completionTrend.reduce((sum, d) => sum + d.count, 0)} tasks completed
@@ -399,26 +403,26 @@ export function AnalyticsDashboard() {
       {/* Categories */}
       {categoryData.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Tasks by Category</CardTitle>
-            <CardDescription>Distribution across work categories</CardDescription>
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+            <CardTitle className="text-sm sm:text-base">Tasks by Category</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Distribution across work categories</CardDescription>
           </CardHeader>
-          <CardContent>
-            <SimpleBarChart data={categoryData} height={180} />
+          <CardContent className="p-4 sm:p-6 pt-2 sm:pt-2">
+            <SimpleBarChart data={categoryData} height={140} />
           </CardContent>
         </Card>
       )}
 
       {/* Team Productivity */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+        <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+          <CardTitle className="text-sm sm:text-base flex items-center gap-2">
             <Users className="h-4 w-4" />
             Team Productivity
           </CardTitle>
-          <CardDescription>Individual member performance</CardDescription>
+          <CardDescription className="text-xs sm:text-sm">Individual member performance</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6 pt-2 sm:pt-2">
           {data.memberProductivity.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
               No team members yet

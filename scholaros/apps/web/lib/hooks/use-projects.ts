@@ -139,6 +139,9 @@ export function useProjects(filters: ProjectFilters) {
     queryKey: ["projects", filters],
     queryFn: () => fetchProjects(filters),
     enabled: !!filters.workspace_id,
+    // Cache settings for optimal performance
+    staleTime: 60 * 1000, // Data is fresh for 1 minute
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 }
 
@@ -148,6 +151,9 @@ export function useProject(id: string | null) {
     queryKey: ["project", id],
     queryFn: () => fetchProject(id!),
     enabled: !!id,
+    // Cache settings for project details
+    staleTime: 30 * 1000, // Data is fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 }
 
@@ -276,6 +282,9 @@ export function useMilestones(projectId: string | null) {
     queryKey: ["milestones", projectId],
     queryFn: () => fetchMilestones(projectId!),
     enabled: !!projectId,
+    // Cache settings for milestones
+    staleTime: 30 * 1000, // Data is fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 }
 
@@ -426,6 +435,9 @@ export function useNotes(projectId: string | null) {
     queryKey: ["notes", projectId],
     queryFn: () => fetchNotes(projectId!),
     enabled: !!projectId,
+    // Cache settings for notes
+    staleTime: 30 * 1000, // Data is fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 }
 

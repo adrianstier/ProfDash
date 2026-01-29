@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef, useCallback } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Check, Loader2 } from "lucide-react";
 import { useTasks, useToggleTaskComplete, useDeleteTask, type TaskFromAPI } from "@/lib/hooks/use-tasks";
 import { useTaskStore, filterTasks, sortTasks } from "@/lib/stores/task-store";
@@ -72,7 +73,24 @@ interface TaskListProps {
   paginate?: boolean;
   pageSize?: number;
   showBulkActions?: boolean;
+  /**
+   * Enable virtual scrolling for large lists
+   * Recommended for lists with 50+ items
+   * @default false
+   */
+  virtualize?: boolean;
+  /**
+   * Height of the virtualized container
+   * Only used when virtualize is true
+   * @default 600
+   */
+  virtualHeight?: number;
 }
+
+// Estimated row height for virtualization
+const ESTIMATED_ROW_HEIGHT = 88;
+// Number of items to render outside the visible area
+const OVERSCAN_COUNT = 5;
 
 export function TaskList({
   initialTasks,
@@ -83,8 +101,11 @@ export function TaskList({
   paginate = false,
   pageSize: initialPageSize = 20,
   showBulkActions = true,
+  virtualize = false,
+  virtualHeight = 600,
 }: TaskListProps) {
   const { currentWorkspaceId } = useWorkspaceStore();
+  const parentRef = useRef<HTMLDivElement>(null);
 
   // Use prop if provided, otherwise use store value
   const workspaceId = propWorkspaceId !== undefined ? propWorkspaceId : currentWorkspaceId;
@@ -148,28 +169,38 @@ export function TaskList({
     totalItems: processedTasks.length,
   });
 
-  // Apply pagination to tasks
-  const displayedTasks = paginate
+  // Apply pagination to tasks (only when not virtualizing)
+  const displayedTasks = paginate && !virtualize
     ? pagination.paginateData(processedTasks)
     : processedTasks;
 
   // Get all task IDs for bulk selection - must be before any early returns
   const allTaskIds = useMemo(() => processedTasks.map((t) => t.id), [processedTasks]);
 
-  const handleToggleComplete = (task: TaskFromAPI) => {
+  // Virtual scrolling setup
+  const virtualizer = useVirtualizer({
+    count: virtualize ? displayedTasks.length : 0,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ESTIMATED_ROW_HEIGHT,
+    overscan: OVERSCAN_COUNT,
+    // Maintain scroll position on data updates
+    getItemKey: (index) => displayedTasks[index]?.id ?? index,
+  });
+
+  const handleToggleComplete = useCallback((task: TaskFromAPI) => {
     if (useMockData) {
       // Mock mode - no action needed
       return;
     }
     toggleComplete.mutate(task);
-  };
+  }, [useMockData, toggleComplete]);
 
-  const handleEdit = (task: TaskFromAPI) => {
+  const handleEdit = useCallback((task: TaskFromAPI) => {
     setEditingTask(task.id);
     openTaskDetail(task.id);
-  };
+  }, [setEditingTask, openTaskDetail]);
 
-  const handleDelete = (task: TaskFromAPI) => {
+  const handleDelete = useCallback((task: TaskFromAPI) => {
     if (useMockData) {
       // Mock mode - no action needed
       return;
@@ -177,7 +208,7 @@ export function TaskList({
     if (confirm(MESSAGES.confirmations.deleteTask)) {
       deleteTask.mutate(task.id);
     }
-  };
+  }, [useMockData, deleteTask]);
 
   if (isLoading && shouldFetch) {
     return (
@@ -206,6 +237,60 @@ export function TaskList({
     );
   }
 
+  // Render virtualized list
+  if (virtualize && displayedTasks.length > 0) {
+    const virtualItems = virtualizer.getVirtualItems();
+
+    return (
+      <div className="space-y-4">
+        {/* Bulk Actions Toolbar */}
+        {showBulkActions && !useMockData && (
+          <BulkActionsToolbar allTaskIds={allTaskIds} />
+        )}
+
+        {/* Virtualized container */}
+        <div
+          ref={parentRef}
+          className="overflow-auto"
+          style={{ height: virtualHeight }}
+        >
+          {/* Total height spacer */}
+          <div
+            className="relative w-full"
+            style={{ height: virtualizer.getTotalSize() }}
+          >
+            {/* Rendered items */}
+            {virtualItems.map((virtualItem) => {
+              const task = displayedTasks[virtualItem.index];
+              if (!task) return null;
+
+              return (
+                <div
+                  key={task.id}
+                  className="absolute left-0 top-0 w-full"
+                  style={{
+                    height: virtualItem.size,
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}
+                >
+                  <div className="pb-2">
+                    <TaskCard
+                      task={task}
+                      onToggleComplete={handleToggleComplete}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render standard list
   return (
     <div className="space-y-4">
       {/* Bulk Actions Toolbar */}
@@ -240,5 +325,19 @@ export function TaskList({
         />
       )}
     </div>
+  );
+}
+
+/**
+ * Virtualized task list component for large datasets
+ * Pre-configured with optimal settings for performance
+ */
+export function VirtualizedTaskList(props: Omit<TaskListProps, "virtualize" | "paginate">) {
+  return (
+    <TaskList
+      {...props}
+      virtualize={true}
+      paginate={false}
+    />
   );
 }

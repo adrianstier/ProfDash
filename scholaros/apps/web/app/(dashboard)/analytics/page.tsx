@@ -1,4 +1,4 @@
-import { AnalyticsDashboard } from "@/components/analytics/analytics-dashboard";
+import { LazyAnalyticsDashboard } from "@/components/analytics";
 
 export const metadata = {
   title: "Analytics | ScholarOS",
@@ -8,7 +8,7 @@ export const metadata = {
 export default function AnalyticsPage() {
   return (
     <div className="space-y-6">
-      <AnalyticsDashboard />
+      <LazyAnalyticsDashboard />
     </div>
   );
 }

@@ -36,6 +36,12 @@ export interface Task {
   assignees?: string[];
   tags?: string[];
   completed_at?: Date | null;
+  // Recurrence fields
+  is_recurring?: boolean;
+  recurrence_rule?: string | null;
+  recurrence_parent_id?: string | null;
+  recurrence_date?: Date | null;
+  recurrence_exceptions?: string[];
   created_at: Date;
   updated_at: Date;
 }
@@ -58,6 +64,12 @@ export interface TaskFromAPI {
   assignees?: string[];
   tags?: string[];
   completed_at?: string | null;
+  // Recurrence fields
+  is_recurring?: boolean;
+  recurrence_rule?: string | null;
+  recurrence_parent_id?: string | null;
+  recurrence_date?: string | null;
+  recurrence_exceptions?: string[];
   created_at: string;
   updated_at: string;
 }

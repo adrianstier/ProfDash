@@ -560,11 +560,12 @@ export default function BoardPage() {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 animate-fade-in stagger-1">
+        {/* Mobile: vertical stack, Tablet: horizontal scroll, Desktop: grid */}
+        <div className="flex flex-col gap-5 sm:flex-row sm:overflow-x-auto sm:pb-4 sm:-mx-4 sm:px-4 sm:snap-x sm:snap-mandatory lg:grid lg:grid-cols-3 lg:overflow-visible lg:mx-0 lg:px-0 lg:pb-0 animate-fade-in stagger-1">
           {columns.map((column, i) => (
             <div
               key={column.id}
-              className="animate-fade-in"
+              className="animate-fade-in w-full sm:min-w-[320px] sm:max-w-[360px] sm:flex-shrink-0 sm:snap-center lg:min-w-0 lg:max-w-none lg:snap-align-none"
               style={{ animationDelay: `${i * 100}ms` }}
             >
               <DroppableColumn

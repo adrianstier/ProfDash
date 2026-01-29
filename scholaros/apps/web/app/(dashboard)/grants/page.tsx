@@ -68,7 +68,7 @@ function getDaysUntil(dateStr: string | null | undefined): number | null {
   return Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-// Opportunity Card Component
+// Opportunity Card Component - Mobile responsive
 function OpportunityCard({
   opportunity,
   onAddToWatchlist,
@@ -80,71 +80,83 @@ function OpportunityCard({
   isInWatchlist: boolean;
   isAdding: boolean;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const daysUntil = getDaysUntil(opportunity.deadline);
   const isUrgent = daysUntil !== null && daysUntil < 14;
   const isSoon = daysUntil !== null && daysUntil < 30;
 
   return (
-    <div className="group rounded-2xl border bg-card p-5 transition-all duration-200 hover:shadow-md hover:border-border">
-      <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30">
-          <Wallet className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h3 className="font-semibold text-base truncate">{opportunity.title}</h3>
-              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                {opportunity.agency && (
-                  <span className="font-medium">{opportunity.agency}</span>
-                )}
-                {opportunity.opportunity_number && (
-                  <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
-                    #{opportunity.opportunity_number}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {!isInWatchlist ? (
-                <button
-                  onClick={onAddToWatchlist}
-                  disabled={isAdding}
-                  className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted disabled:opacity-50"
-                  title="Add to watchlist"
-                >
-                  {isAdding ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <BookmarkPlus className="h-3.5 w-3.5" />
-                  )}
-                  Watch
-                </button>
-              ) : (
-                <span className="flex items-center gap-1.5 rounded-lg bg-green-100 dark:bg-green-900/30 px-3 py-1.5 text-xs font-medium text-green-700 dark:text-green-400">
-                  <Star className="h-3.5 w-3.5 fill-current" />
-                  Watching
-                </span>
-              )}
-              {opportunity.url && (
-                <a
-                  href={opportunity.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-muted transition-colors"
-                  title="View on Grants.gov"
-                >
-                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                </a>
+    <div className="group rounded-2xl border bg-card p-4 sm:p-5 transition-all duration-200 hover:shadow-md hover:border-border">
+      {/* Mobile: Stack vertically, Desktop: Horizontal layout */}
+      <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30">
+            <Wallet className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div className="flex-1 min-w-0 sm:hidden">
+            <h3 className="font-semibold text-base line-clamp-2">{opportunity.title}</h3>
+            <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-muted-foreground">
+              {opportunity.agency && (
+                <span className="font-medium">{opportunity.agency}</span>
               )}
             </div>
           </div>
-          {opportunity.description && (
-            <p className="mt-3 text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-              {opportunity.description}
-            </p>
-          )}
-          <div className="mt-4 flex flex-wrap items-center gap-3">
+        </div>
+        <div className="flex-1 min-w-0">
+          {/* Desktop title - hidden on mobile */}
+          <div className="hidden sm:block">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="font-semibold text-base truncate">{opportunity.title}</h3>
+                <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                  {opportunity.agency && (
+                    <span className="font-medium">{opportunity.agency}</span>
+                  )}
+                  {opportunity.opportunity_number && (
+                    <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                      #{opportunity.opportunity_number}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {!isInWatchlist ? (
+                  <button
+                    onClick={onAddToWatchlist}
+                    disabled={isAdding}
+                    className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted disabled:opacity-50"
+                    title="Add to watchlist"
+                  >
+                    {isAdding ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <BookmarkPlus className="h-3.5 w-3.5" />
+                    )}
+                    Watch
+                  </button>
+                ) : (
+                  <span className="flex items-center gap-1.5 rounded-lg bg-green-100 dark:bg-green-900/30 px-3 py-1.5 text-xs font-medium text-green-700 dark:text-green-400">
+                    <Star className="h-3.5 w-3.5 fill-current" />
+                    Watching
+                  </span>
+                )}
+                {opportunity.url && (
+                  <a
+                    href={opportunity.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-muted transition-colors"
+                    title="View on Grants.gov"
+                  >
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Key info badges - always visible */}
+          <div className="flex flex-wrap items-center gap-2 mt-3 sm:mt-4">
             {(opportunity.award_ceiling || opportunity.amount_max) && (
               <span className="inline-flex items-center gap-1.5 rounded-lg bg-green-100 dark:bg-green-900/30 px-2.5 py-1 text-xs font-semibold text-green-700 dark:text-green-400">
                 <DollarSign className="h-3.5 w-3.5" />
@@ -167,12 +179,88 @@ function OpportunityCard({
                 <span>({daysUntil}d)</span>
               )}
             </span>
-            {opportunity.funding_instrument_type && (
-              <span className="rounded-lg bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                {opportunity.funding_instrument_type}
-              </span>
+          </div>
+
+          {/* Mobile expandable section */}
+          <div className="sm:hidden mt-3">
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <ChevronDown className={cn(
+                "h-4 w-4 transition-transform",
+                isExpanded && "rotate-180"
+              )} />
+              {isExpanded ? "Show less" : "Show more"}
+            </button>
+
+            {isExpanded && (
+              <div className="mt-3 space-y-3 animate-slide-down">
+                {opportunity.opportunity_number && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Opportunity #:</span>
+                    <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                      {opportunity.opportunity_number}
+                    </span>
+                  </div>
+                )}
+                {opportunity.description && (
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {opportunity.description}
+                  </p>
+                )}
+                {opportunity.funding_instrument_type && (
+                  <span className="inline-block rounded-lg bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                    {opportunity.funding_instrument_type}
+                  </span>
+                )}
+                {/* Mobile action buttons */}
+                <div className="flex items-center gap-2 pt-2">
+                  {!isInWatchlist ? (
+                    <button
+                      onClick={onAddToWatchlist}
+                      disabled={isAdding}
+                      className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
+                    >
+                      {isAdding ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <BookmarkPlus className="h-4 w-4" />
+                      )}
+                      Add to Watchlist
+                    </button>
+                  ) : (
+                    <span className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-green-100 dark:bg-green-900/30 px-3 py-2 text-sm font-medium text-green-700 dark:text-green-400">
+                      <Star className="h-4 w-4 fill-current" />
+                      Watching
+                    </span>
+                  )}
+                  {opportunity.url && (
+                    <a
+                      href={opportunity.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex h-10 w-10 items-center justify-center rounded-lg border hover:bg-muted transition-colors"
+                    >
+                      <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                    </a>
+                  )}
+                </div>
+              </div>
             )}
           </div>
+
+          {/* Desktop description - hidden on mobile unless expanded */}
+          {opportunity.description && (
+            <p className="hidden sm:block mt-3 text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+              {opportunity.description}
+            </p>
+          )}
+          {opportunity.funding_instrument_type && (
+            <span className="hidden sm:inline-block mt-3 rounded-lg bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+              {opportunity.funding_instrument_type}
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -324,12 +412,12 @@ export default function GrantsPage() {
         </div>
       </header>
 
-      {/* Tabs */}
-      <nav className="flex items-center gap-2 animate-fade-in stagger-1">
+      {/* Tabs - Horizontally scrollable on mobile */}
+      <nav className="flex items-center gap-2 overflow-x-auto pb-2 -mb-2 scrollbar-hide animate-fade-in stagger-1">
         <button
           onClick={() => setActiveTab("discover")}
           className={cn(
-            "flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium transition-all duration-200",
+            "flex items-center gap-2 rounded-xl px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-medium transition-all duration-200 whitespace-nowrap shrink-0",
             activeTab === "discover"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -341,7 +429,7 @@ export default function GrantsPage() {
         <button
           onClick={() => setActiveTab("watchlist")}
           className={cn(
-            "flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium transition-all duration-200",
+            "flex items-center gap-2 rounded-xl px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-medium transition-all duration-200 whitespace-nowrap shrink-0",
             activeTab === "watchlist"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -363,62 +451,66 @@ export default function GrantsPage() {
         <button
           onClick={() => setActiveTab("saved")}
           className={cn(
-            "flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium transition-all duration-200",
+            "flex items-center gap-2 rounded-xl px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-medium transition-all duration-200 whitespace-nowrap shrink-0",
             activeTab === "saved"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
         >
           <Bell className="h-4 w-4" />
-          Saved Searches
+          <span className="hidden sm:inline">Saved Searches</span>
+          <span className="sm:hidden">Saved</span>
         </button>
       </nav>
 
       {/* Discover Tab */}
       {activeTab === "discover" && (
-        <section className="space-y-5 animate-fade-in stagger-2">
-          {/* Search Bar */}
-          <div className="flex gap-3">
+        <section className="space-y-4 sm:space-y-5 animate-fade-in stagger-2">
+          {/* Search Bar - Stacked on mobile */}
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search grants by keyword, agency, topic..."
-                className="input-base pl-11"
+                placeholder="Search grants..."
+                className="input-base pl-11 py-2.5 sm:py-2"
               />
             </div>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={cn(
-                "flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all duration-200",
-                showFilters
-                  ? "border-primary bg-primary/10 text-primary shadow-sm"
-                  : "hover:bg-muted hover:border-border"
-              )}
-            >
-              <Filter className="h-4 w-4" />
-              Filters
-              <ChevronDown className={cn(
-                "h-4 w-4 transition-transform duration-200",
-                showFilters && "rotate-180"
-              )} />
-            </button>
-            {hasActiveSearch && (
+            <div className="flex gap-2">
               <button
-                onClick={() => setShowSaveModal(true)}
-                className="btn-primary inline-flex items-center gap-2"
+                onClick={() => setShowFilters(!showFilters)}
+                className={cn(
+                  "flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all duration-200",
+                  showFilters
+                    ? "border-primary bg-primary/10 text-primary shadow-sm"
+                    : "hover:bg-muted hover:border-border"
+                )}
               >
-                <BookmarkPlus className="h-4 w-4" />
-                Save Search
+                <Filter className="h-4 w-4" />
+                <span className="sm:inline">Filters</span>
+                <ChevronDown className={cn(
+                  "h-4 w-4 transition-transform duration-200 hidden sm:block",
+                  showFilters && "rotate-180"
+                )} />
               </button>
-            )}
+              {hasActiveSearch && (
+                <button
+                  onClick={() => setShowSaveModal(true)}
+                  className="flex-1 sm:flex-none btn-primary inline-flex items-center justify-center gap-2"
+                >
+                  <BookmarkPlus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Save Search</span>
+                  <span className="sm:hidden">Save</span>
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Filters Panel */}
+          {/* Filters Panel - Horizontally scrollable on mobile */}
           {showFilters && (
-            <div className="rounded-2xl border bg-card p-5 animate-slide-down">
+            <div className="rounded-2xl border bg-card p-4 sm:p-5 animate-slide-down">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold">Filters</h3>
                 {Object.keys(filters).length > 0 && (
@@ -431,18 +523,19 @@ export default function GrantsPage() {
                   </button>
                 )}
               </div>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="space-y-2">
+              {/* Mobile: Horizontal scroll, Desktop: Grid */}
+              <div className="flex gap-3 overflow-x-auto pb-2 -mb-2 scrollbar-hide sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 sm:mb-0 lg:grid-cols-4">
+                <div className="space-y-2 min-w-[180px] sm:min-w-0 shrink-0 sm:shrink">
                   <label className="text-sm font-medium">Agency</label>
                   <input
                     type="text"
                     value={filters.agency || ""}
                     onChange={(e) => setFilters({ ...filters, agency: e.target.value || undefined })}
                     placeholder="e.g., NSF, NIH, DOE"
-                    className="input-base py-2"
+                    className="input-base py-2.5 sm:py-2 text-base sm:text-sm"
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-[150px] sm:min-w-0 shrink-0 sm:shrink">
                   <label className="text-sm font-medium">Min Amount</label>
                   <input
                     type="number"
@@ -451,10 +544,10 @@ export default function GrantsPage() {
                       setFilters({ ...filters, amount_min: e.target.value ? Number(e.target.value) : undefined })
                     }
                     placeholder="$0"
-                    className="input-base py-2"
+                    className="input-base py-2.5 sm:py-2 text-base sm:text-sm"
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-[150px] sm:min-w-0 shrink-0 sm:shrink">
                   <label className="text-sm font-medium">Max Amount</label>
                   <input
                     type="number"
@@ -463,16 +556,16 @@ export default function GrantsPage() {
                       setFilters({ ...filters, amount_max: e.target.value ? Number(e.target.value) : undefined })
                     }
                     placeholder="No limit"
-                    className="input-base py-2"
+                    className="input-base py-2.5 sm:py-2 text-base sm:text-sm"
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-[150px] sm:min-w-0 shrink-0 sm:shrink">
                   <label className="text-sm font-medium">Deadline After</label>
                   <input
                     type="date"
                     value={filters.deadline_from || ""}
                     onChange={(e) => setFilters({ ...filters, deadline_from: e.target.value || undefined })}
-                    className="input-base py-2"
+                    className="input-base py-2.5 sm:py-2 text-base sm:text-sm"
                   />
                 </div>
               </div>
