@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import type { User } from "@supabase/supabase-js";
@@ -99,23 +99,33 @@ export function Sidebar({ user }: SidebarProps) {
     NAV_SECTIONS.filter((s) => s.defaultExpanded).map((s) => s.label)
   );
 
-  // Calculate badge counts
-  const today = new Date().toISOString().split("T")[0];
-  const todayCount = tasks.filter(
-    (t) => t.due === today && t.status !== "done"
-  ).length;
-  const overdueCount = tasks.filter(
-    (t) => t.due && t.due < today && t.status !== "done"
-  ).length;
-  const upcomingCount = tasks.filter(
-    (t) => t.due && t.due > today && t.status !== "done"
-  ).length;
+  // Calculate badge counts - memoized to avoid recomputing on every render
+  const badgeCounts = useMemo(() => {
+    const today = new Date().toISOString().split("T")[0];
+    let todayCount = 0;
+    let overdueCount = 0;
+    let upcomingCount = 0;
 
-  const badgeCounts: Record<string, number> = {
-    today: todayCount + overdueCount,
-    overdue: overdueCount,
-    upcoming: Math.min(upcomingCount, 99),
-  };
+    // Single pass through tasks array for better performance
+    for (const task of tasks) {
+      if (task.status === "done") continue;
+      if (!task.due) continue;
+
+      if (task.due === today) {
+        todayCount++;
+      } else if (task.due < today) {
+        overdueCount++;
+      } else {
+        upcomingCount++;
+      }
+    }
+
+    return {
+      today: todayCount + overdueCount,
+      overdue: overdueCount,
+      upcoming: Math.min(upcomingCount, 99),
+    } as Record<string, number>;
+  }, [tasks]);
 
   const toggleSection = (label: string) => {
     setExpandedSections((prev) =>
@@ -264,7 +274,7 @@ export function Sidebar({ user }: SidebarProps) {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
                   const badgeCount = item.badgeKey ? badgeCounts[item.badgeKey] : 0;
-                  const hasOverdue = item.badgeKey === "today" && overdueCount > 0;
+                  const hasOverdue = item.badgeKey === "today" && badgeCounts.overdue > 0;
 
                   return (
                     <li key={item.href}>

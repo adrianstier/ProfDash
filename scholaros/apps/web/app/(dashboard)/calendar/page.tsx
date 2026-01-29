@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -386,6 +386,21 @@ export default function CalendarPage() {
     return events;
   }, [tasks, calendarEvents, showTasks, showCalendarEvents]);
 
+  // Pre-compute events grouped by date string for O(1) lookups
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, CalendarDisplayEvent[]>();
+    for (const event of displayEvents) {
+      const dateKey = event.date.toDateString();
+      const existing = map.get(dateKey);
+      if (existing) {
+        existing.push(event);
+      } else {
+        map.set(dateKey, [event]);
+      }
+    }
+    return map;
+  }, [displayEvents]);
+
   const prevMonth = () => {
     setCurrentDate(new Date(year, month - 1, 1));
   };
@@ -398,11 +413,10 @@ export default function CalendarPage() {
     setCurrentDate(new Date());
   };
 
-  const getEventsForDate = (date: Date): CalendarDisplayEvent[] => {
-    return displayEvents.filter(
-      (event) => event.date.toDateString() === date.toDateString()
-    );
-  };
+  // O(1) lookup using pre-computed map
+  const getEventsForDate = useCallback((date: Date): CalendarDisplayEvent[] => {
+    return eventsByDate.get(date.toDateString()) || [];
+  }, [eventsByDate]);
 
   const isToday = (date: Date) => {
     const today = new Date();

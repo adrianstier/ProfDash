@@ -1,6 +1,6 @@
 # ScholarOS Development Progress
 
-**Last Updated:** January 14, 2026
+**Last Updated:** January 29, 2026
 **Current Phase:** Phase 9B (UX Optimization) - Ready to Start
 
 ---
@@ -19,6 +19,7 @@
 | Phase 7: Polish & Launch | ✅ Complete | 100% |
 | Phase 8: Enhanced Collaboration & Insights | ✅ Complete | 100% |
 | **Phase 9A: Critical Bug Fixes** | ✅ Complete | 100% (3/3) |
+| **Phase 9A.1: Security & Performance Fixes** | ✅ Complete | 100% |
 | Phase 9B: UX Optimization | 📋 Planned | 0% |
 | Phase 9C: Performance & Polish | 📋 Planned | 0% |
 
@@ -711,6 +712,47 @@ scholaros/
 - `scholaros/packages/shared/src/utils/index.ts` - Quick-add parser fix
 - `scholaros/apps/web/app/(dashboard)/grants/page.tsx` - Filter persistence
 - `docs/TECH-LEAD-PLAN.md` - Comprehensive technical plan (new, 25,000+ words)
+
+---
+
+### Phase 9A.1: Security & Performance Fixes ✅ COMPLETE
+
+**Status:** Complete (January 29, 2026)
+**Priority:** Critical - Security vulnerabilities and performance issues
+
+**Completed Security Fixes:**
+
+1. **Overly Permissive RLS Policies** - Analytics tables had policies allowing any authenticated user to insert/update data
+   - Fixed: `analytics_events` - Added user-scoped INSERT policy, blocked direct UPDATE/DELETE
+   - Fixed: `experiment_assignments` - Blocked all direct user writes (service role only)
+   - Fixed: `feature_metrics` - Blocked all direct user writes (service role only)
+   - **Migration:** `supabase/migrations/20260129000000_fix_analytics_rls_policies.sql`
+
+2. **Missing DELETE Policies** - Several tables lacked DELETE policies
+   - Added: `document_extractions` - Users can delete extractions for their documents
+   - Added: `ai_interactions` - Users can delete their own AI interactions
+   - Added: `workspaces` - Only owners can delete workspaces
+
+**Completed Performance Fixes:**
+
+1. **React.memo for High-Frequency Components:**
+   - `TaskCard` (`components/tasks/task-card.tsx`) - Prevents re-renders in task lists
+   - `DroppableColumn` (`app/(dashboard)/board/page.tsx`) - Prevents re-renders during drag operations
+
+2. **Memoized Calculations:**
+   - Sidebar badge counts (`components/layout/sidebar.tsx`) - Single-pass useMemo calculation
+   - Calendar events by date (`app/(dashboard)/calendar/page.tsx`) - Pre-computed Map for O(1) lookups
+
+3. **Race Condition Fix:**
+   - `useTypingIndicator` (`lib/hooks/use-presence.ts`) - Fixed stale closures with useRef, added cleanup
+
+**Key Files Changed:**
+- `supabase/migrations/20260129000000_fix_analytics_rls_policies.sql` (NEW)
+- `apps/web/components/tasks/task-card.tsx`
+- `apps/web/components/layout/sidebar.tsx`
+- `apps/web/app/(dashboard)/board/page.tsx`
+- `apps/web/app/(dashboard)/calendar/page.tsx`
+- `apps/web/lib/hooks/use-presence.ts`
 
 ---
 

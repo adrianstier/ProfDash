@@ -219,7 +219,7 @@ Python FastAPI microservice:
 - `app/services/llm.py` - LLM service abstraction (Anthropic)
 
 ### `scholaros/supabase/migrations/`
-Database migrations applied in order (16 total):
+Database migrations applied in order (17 total):
 1. `20241217000000_initial_schema.sql` - Profiles, workspaces, tasks
 2. `20241217000001_workspace_invites.sql` - Invite system, RLS
 3. `20241217000002_project_milestones_notes.sql` - Projects hierarchy
@@ -236,6 +236,7 @@ Database migrations applied in order (16 total):
 14. `20260118000000_search_history.sql` - Search history
 15. `20260120000000_recurring_tasks.sql` - Recurring tasks
 16. `20260122000000_analytics_events.sql` - Usage analytics
+17. `20260129000000_fix_analytics_rls_policies.sql` - Security fix for overly permissive RLS policies
 
 ## Development Commands
 
@@ -422,6 +423,20 @@ Located in `tests/e2e/`. Run with `pnpm test:e2e`.
 6. **Use React Query** - Don't fetch data directly; use hooks in `lib/hooks/`
 7. **Prefer shadcn/ui** - Use existing UI primitives from `components/ui/`
 8. **Check migrations** - Database schema is in `supabase/migrations/`
+
+### Security Best Practices
+- **RLS policy naming** - Avoid "Service role can..." naming; service_role bypasses RLS entirely
+- **User-scoped writes** - Use `auth.uid() = user_id` for INSERT/UPDATE policies
+- **Immutable data** - Analytics events should be immutable; use `USING(false)` for UPDATE/DELETE
+- **Workspace authorization** - All API routes must verify workspace membership before operations
+- **Input sanitization** - Escape `%` and `_` in ILIKE patterns to prevent SQL pattern injection
+
+### Performance Best Practices
+- **Use React.memo** - Wrap list item components (TaskCard, DroppableColumn) that render frequently
+- **Memoize calculations** - Use `useMemo` for expensive computations like filtering/grouping
+- **Pre-compute lookups** - Convert arrays to Maps for O(1) lookups in render loops
+- **Use useCallback** - Wrap functions passed as props to memoized components
+- **Avoid stale closures** - Use `useRef` for values accessed in setTimeout/setInterval callbacks
 
 ## Links
 

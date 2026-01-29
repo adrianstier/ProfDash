@@ -19,7 +19,7 @@ import type { TaskFromAPI } from "@/lib/hooks/use-tasks";
 import { useTaskStore } from "@/lib/stores/task-store";
 import { ARIA_LABELS, DATE_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 
 // Priority styles with refined colors
 const priorityConfig: Record<
@@ -104,7 +104,7 @@ interface TaskCardProps {
   showSelectionCheckbox?: boolean;
 }
 
-export function TaskCard({
+export const TaskCard = memo(function TaskCard({
   task,
   onToggleComplete,
   onEdit,
@@ -470,4 +470,6 @@ export function TaskCard({
       </div>
     </div>
   );
-}
+});
+
+TaskCard.displayName = "TaskCard";

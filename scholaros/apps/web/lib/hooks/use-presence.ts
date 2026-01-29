@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { UserPresenceWithProfile, PresenceStatus } from "@scholaros/shared";
 import { chatKeys } from "./use-chat";
@@ -104,39 +105,58 @@ export function useTypingIndicator(
   conversationKey: string // 'workspace' or recipient user_id
 ) {
   const updateTyping = useUpdateTyping();
-  let typingTimeout: NodeJS.Timeout | null = null;
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const startTyping = () => {
+  // Use refs to avoid stale closures in setTimeout
+  const workspaceIdRef = useRef(workspaceId);
+  const conversationKeyRef = useRef(conversationKey);
+
+  // Keep refs in sync with props
+  useEffect(() => {
+    workspaceIdRef.current = workspaceId;
+    conversationKeyRef.current = conversationKey;
+  }, [workspaceId, conversationKey]);
+
+  const stopTyping = useCallback(() => {
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+
+    updateTyping.mutate({
+      workspaceId: workspaceIdRef.current,
+      isTyping: false,
+      typingInConversation: null,
+    });
+  }, [updateTyping]);
+
+  const startTyping = useCallback(() => {
     // Clear existing timeout
-    if (typingTimeout) {
-      clearTimeout(typingTimeout);
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
     }
 
     // Broadcast typing
     updateTyping.mutate({
-      workspaceId,
+      workspaceId: workspaceIdRef.current,
       isTyping: true,
-      typingInConversation: conversationKey,
+      typingInConversation: conversationKeyRef.current,
     });
 
     // Auto-stop typing after 3 seconds of no activity
-    typingTimeout = setTimeout(() => {
+    typingTimeoutRef.current = setTimeout(() => {
       stopTyping();
     }, 3000);
-  };
+  }, [updateTyping, stopTyping]);
 
-  const stopTyping = () => {
-    if (typingTimeout) {
-      clearTimeout(typingTimeout);
-      typingTimeout = null;
-    }
-
-    updateTyping.mutate({
-      workspaceId,
-      isTyping: false,
-      typingInConversation: null,
-    });
-  };
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return { startTyping, stopTyping };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -95,7 +95,7 @@ interface DroppableColumnProps {
   onAddTask: (status: TaskStatus) => void;
 }
 
-function DroppableColumn({
+const DroppableColumn = memo(function DroppableColumn({
   id,
   label,
   icon: Icon,
@@ -188,7 +188,9 @@ function DroppableColumn({
       </div>
     </div>
   );
-}
+});
+
+DroppableColumn.displayName = "DroppableColumn";
 
 function InlineQuickAdd({
   status,
