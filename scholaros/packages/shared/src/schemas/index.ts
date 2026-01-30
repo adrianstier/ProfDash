@@ -6,6 +6,15 @@ export * from "./analytics";
 // Re-export research schemas
 export * from "./research";
 
+// Subtask schema (stored as JSONB array on tasks)
+export const SubtaskSchema = z.object({
+  id: z.string(),
+  text: z.string().min(1).max(500),
+  completed: z.boolean().default(false),
+  priority: z.enum(["p1", "p2", "p3", "p4"]).optional(),
+  estimatedMinutes: z.number().min(1).max(480).optional(),
+});
+
 // Task schemas
 export const TaskPrioritySchema = z.enum(["p1", "p2", "p3", "p4"]);
 export const TaskStatusSchema = z.enum(["todo", "progress", "done"]);
@@ -17,6 +26,15 @@ export const TaskCategorySchema = z.enum([
   "undergrad-mentorship",
   "admin",
   "misc",
+  // Academic categories (ported from academic-to-do-app)
+  "meeting",
+  "analysis",
+  "submission",
+  "revision",
+  "presentation",
+  "writing",
+  "reading",
+  "coursework",
 ]);
 
 export const TaskSchema = z.object({
@@ -39,6 +57,7 @@ export const TaskSchema = z.object({
   recurrence_parent_id: z.string().uuid().nullable().optional(),
   recurrence_date: z.coerce.date().nullable().optional(),
   recurrence_exceptions: z.array(z.string()).default([]),
+  subtasks: z.array(SubtaskSchema).default([]),
   created_at: z.coerce.date(),
   updated_at: z.coerce.date(),
 });
@@ -60,6 +79,7 @@ export const CreateTaskSchema = z.object({
   recurrence_parent_id: z.string().uuid().nullable().optional(),
   recurrence_date: z.coerce.date().nullable().optional(),
   recurrence_exceptions: z.array(z.string()).default([]),
+  subtasks: z.array(SubtaskSchema).default([]),
 });
 
 export const UpdateTaskSchema = CreateTaskSchema.partial();
@@ -562,6 +582,7 @@ export const CreatePublicationAuthorSchema = z.object({
 
 // Export inferred types
 export type TaskSchemaType = z.infer<typeof TaskSchema>;
+export type SubtaskSchemaType = z.infer<typeof SubtaskSchema>;
 export type CreateTaskSchemaType = z.infer<typeof CreateTaskSchema>;
 export type UpdateTaskSchemaType = z.infer<typeof UpdateTaskSchema>;
 export type ProjectSchemaType = z.infer<typeof ProjectSchema>;
@@ -607,6 +628,51 @@ export type ProjectTemplateSchemaType = z.infer<typeof ProjectTemplateSchema>;
 export type CreateProjectTemplateSchemaType = z.infer<typeof CreateProjectTemplateSchema>;
 export type UpdateProjectTemplateSchemaType = z.infer<typeof UpdateProjectTemplateSchema>;
 export type ApplyTemplateSchemaType = z.infer<typeof ApplyTemplateSchema>;
+
+// =============================================================================
+// Task Template Schemas (academic task templates for quick creation)
+// =============================================================================
+
+export const TaskTemplateSubtaskSchema = z.object({
+  text: z.string().min(1).max(500),
+  priority: TaskPrioritySchema.default("p3"),
+  estimated_minutes: z.number().min(1).max(480).optional(),
+});
+
+export const TaskTemplateSchema = z.object({
+  id: z.string().uuid(),
+  workspace_id: z.string().uuid(),
+  name: z.string().min(1).max(200),
+  description: z.string().nullable().optional(),
+  default_category: TaskCategorySchema.nullable().optional(),
+  default_priority: TaskPrioritySchema.default("p3"),
+  default_assigned_to: z.string().uuid().nullable().optional(),
+  subtasks: z.array(TaskTemplateSubtaskSchema).default([]),
+  is_shared: z.boolean().default(true),
+  is_builtin: z.boolean().default(false),
+  created_by: z.string().uuid().nullable().optional(),
+  created_at: z.coerce.date(),
+  updated_at: z.coerce.date(),
+});
+
+export const CreateTaskTemplateSchema = z.object({
+  workspace_id: z.string().uuid(),
+  name: z.string().min(1).max(200),
+  description: z.string().nullable().optional(),
+  default_category: TaskCategorySchema.nullable().optional(),
+  default_priority: TaskPrioritySchema.default("p3"),
+  default_assigned_to: z.string().uuid().nullable().optional(),
+  subtasks: z.array(TaskTemplateSubtaskSchema).default([]),
+  is_shared: z.boolean().default(true),
+});
+
+export const UpdateTaskTemplateSchema = CreateTaskTemplateSchema.omit({ workspace_id: true }).partial();
+
+// Export inferred task template types
+export type TaskTemplateSchemaType = z.infer<typeof TaskTemplateSchema>;
+export type CreateTaskTemplateSchemaType = z.infer<typeof CreateTaskTemplateSchema>;
+export type UpdateTaskTemplateSchemaType = z.infer<typeof UpdateTaskTemplateSchema>;
+export type TaskTemplateSubtaskSchemaType = z.infer<typeof TaskTemplateSubtaskSchema>;
 
 // Chat and messaging schemas
 export const MessageReactionTypeSchema = z.enum([

@@ -5,6 +5,7 @@
 // API Configuration
 export const API_ROUTES = {
   tasks: "/api/tasks",
+  taskTemplates: "/api/task-templates",
   workspaces: "/api/workspaces",
   projects: "/api/projects",
   grants: "/api/grants",
@@ -87,6 +88,112 @@ export const CATEGORY_LABELS = {
   "undergrad-mentorship": "Undergrad Mentorship",
   admin: "Admin",
   misc: "Misc",
+  // Academic categories (ported from academic-to-do-app)
+  meeting: "Meeting",
+  analysis: "Analysis",
+  submission: "Submission",
+  revision: "Revision",
+  presentation: "Presentation",
+  writing: "Writing",
+  reading: "Reading",
+  coursework: "Coursework",
+} as const;
+
+// Category display configuration with colors and icons (Lucide icon names)
+export const CATEGORY_CONFIG: Record<
+  string,
+  { label: string; color: string; bgColor: string; iconName: string }
+> = {
+  research: {
+    label: "Research",
+    color: "#7C3AED",
+    bgColor: "rgba(124, 58, 237, 0.1)",
+    iconName: "BookOpen",
+  },
+  teaching: {
+    label: "Teaching",
+    color: "#059669",
+    bgColor: "rgba(5, 150, 105, 0.1)",
+    iconName: "GraduationCap",
+  },
+  grants: {
+    label: "Grants",
+    color: "#D97706",
+    bgColor: "rgba(217, 119, 6, 0.1)",
+    iconName: "Banknote",
+  },
+  "grad-mentorship": {
+    label: "Grad Mentorship",
+    color: "#0891B2",
+    bgColor: "rgba(8, 145, 178, 0.1)",
+    iconName: "Users",
+  },
+  "undergrad-mentorship": {
+    label: "Undergrad Mentorship",
+    color: "#6366F1",
+    bgColor: "rgba(99, 102, 241, 0.1)",
+    iconName: "Users",
+  },
+  admin: {
+    label: "Admin",
+    color: "#64748B",
+    bgColor: "rgba(100, 116, 139, 0.1)",
+    iconName: "ClipboardList",
+  },
+  misc: {
+    label: "Misc",
+    color: "#9CA3AF",
+    bgColor: "rgba(156, 163, 175, 0.1)",
+    iconName: "FileText",
+  },
+  meeting: {
+    label: "Meeting",
+    color: "#0891B2",
+    bgColor: "rgba(8, 145, 178, 0.1)",
+    iconName: "Users",
+  },
+  analysis: {
+    label: "Analysis",
+    color: "#059669",
+    bgColor: "rgba(5, 150, 105, 0.1)",
+    iconName: "BarChart3",
+  },
+  submission: {
+    label: "Submission",
+    color: "#DC2626",
+    bgColor: "rgba(220, 38, 38, 0.1)",
+    iconName: "Send",
+  },
+  revision: {
+    label: "Revision",
+    color: "#D97706",
+    bgColor: "rgba(217, 119, 6, 0.1)",
+    iconName: "RotateCcw",
+  },
+  presentation: {
+    label: "Presentation",
+    color: "#E87722",
+    bgColor: "rgba(232, 119, 34, 0.1)",
+    iconName: "Presentation",
+  },
+  writing: {
+    label: "Writing",
+    color: "#3B82F6",
+    bgColor: "rgba(59, 130, 246, 0.1)",
+    iconName: "PenTool",
+  },
+  reading: {
+    label: "Reading",
+    color: "#6366F1",
+    bgColor: "rgba(99, 102, 241, 0.1)",
+    iconName: "BookMarked",
+  },
+  coursework: {
+    label: "Coursework",
+    color: "#EC4899",
+    bgColor: "rgba(236, 72, 153, 0.1)",
+    iconName: "GraduationCap",
+  },
 } as const;
 
 // Accessibility

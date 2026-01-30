@@ -1,13 +1,17 @@
 "use client";
 
-import { useMemo } from "react";
-import { LayoutList, CheckCircle, Circle, Clock, ListTodo } from "lucide-react";
+import { useMemo, useState, useCallback } from "react";
+import { LayoutList, CheckCircle, Circle, Clock, ListTodo, Layers, List, Loader2 } from "lucide-react";
 import { QuickAdd } from "@/components/tasks/quick-add";
 import { TaskList } from "@/components/tasks/task-list";
 import { TaskFilters } from "@/components/tasks/task-filters";
 import { BulkActionsToolbar } from "@/components/tasks/bulk-actions-toolbar";
-import { useTasks } from "@/lib/hooks/use-tasks";
+import { TaskSectionsList } from "@/components/tasks/task-section-header";
+import { groupTasksBySections, sortByUrgency } from "@/lib/utils/task-grouping";
+import { useTasks, useToggleTaskComplete, useDeleteTask, type TaskFromAPI } from "@/lib/hooks/use-tasks";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
+import { useTaskStore, filterTasks } from "@/lib/stores/task-store";
+import { MESSAGES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 const statCards = [
@@ -43,9 +47,16 @@ const statCards = [
 
 export default function ListPage() {
   const { currentWorkspaceId } = useWorkspaceStore();
-  const { data: tasks = [] } = useTasks({
+  const { data: tasks = [], isLoading } = useTasks({
     workspace_id: currentWorkspaceId,
   });
+
+  const [sectionedView, setSectionedView] = useState(false);
+  const [urgencySort, setUrgencySort] = useState(false);
+
+  const toggleComplete = useToggleTaskComplete();
+  const deleteTask = useDeleteTask();
+  const { filters, openTaskDetail, setEditingTask } = useTaskStore();
 
   const stats = useMemo(() => {
     const total = tasks.length;
@@ -54,6 +65,41 @@ export default function ListPage() {
     const done = tasks.filter((t) => t.status === "done").length;
     return { total, todo, progress, done };
   }, [tasks]);
+
+  // Apply store filters then optionally urgency sort / section
+  const filteredTasks = useMemo(() => {
+    return filterTasks(tasks, filters);
+  }, [tasks, filters]);
+
+  const sections = useMemo(() => {
+    if (!sectionedView) return [];
+    const sorted = urgencySort ? sortByUrgency(filteredTasks) : filteredTasks;
+    return groupTasksBySections(sorted);
+  }, [sectionedView, urgencySort, filteredTasks]);
+
+  const handleToggleComplete = useCallback(
+    (task: TaskFromAPI) => {
+      toggleComplete.mutate(task);
+    },
+    [toggleComplete]
+  );
+
+  const handleEdit = useCallback(
+    (task: TaskFromAPI) => {
+      setEditingTask(task.id);
+      openTaskDetail(task.id);
+    },
+    [setEditingTask, openTaskDetail]
+  );
+
+  const handleDelete = useCallback(
+    (task: TaskFromAPI) => {
+      if (confirm(MESSAGES.confirmations.deleteTask)) {
+        deleteTask.mutate(task.id);
+      }
+    },
+    [deleteTask]
+  );
 
   return (
     <div className="space-y-8">
@@ -122,9 +168,44 @@ export default function ListPage() {
         <QuickAdd />
       </section>
 
-      {/* Filters */}
-      <section className="animate-fade-in stagger-3">
+      {/* Filters + View Toggles */}
+      <section className="animate-fade-in stagger-3 space-y-4">
         <TaskFilters />
+
+        {/* View mode and urgency sort toggles */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Urgency Sort Toggle */}
+          <button
+            onClick={() => setUrgencySort(!urgencySort)}
+            className={cn(
+              "flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all duration-200",
+              urgencySort
+                ? "border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-400 shadow-sm"
+                : "hover:bg-muted hover:border-border"
+            )}
+          >
+            <Clock className="h-4 w-4" />
+            Urgency Sort
+          </button>
+
+          {/* Sectioned View Toggle */}
+          <button
+            onClick={() => setSectionedView(!sectionedView)}
+            className={cn(
+              "flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all duration-200",
+              sectionedView
+                ? "border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-400 shadow-sm"
+                : "hover:bg-muted hover:border-border"
+            )}
+          >
+            {sectionedView ? (
+              <Layers className="h-4 w-4" />
+            ) : (
+              <List className="h-4 w-4" />
+            )}
+            {sectionedView ? "Sectioned View" : "Flat View"}
+          </button>
+        </div>
       </section>
 
       {/* Bulk Actions */}
@@ -132,9 +213,28 @@ export default function ListPage() {
         <BulkActionsToolbar allTaskIds={tasks.map(t => t.id)} />
       </section>
 
-      {/* Task List */}
+      {/* Task List - Sectioned or Flat */}
       <section className="animate-fade-in stagger-5">
-        <TaskList filter="all" useStoreFilters paginate pageSize={20} />
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : sectionedView ? (
+          <TaskSectionsList
+            sections={sections}
+            onToggleComplete={handleToggleComplete}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            emptyMessage="No tasks match your filters"
+          />
+        ) : (
+          <TaskList
+            filter="all"
+            useStoreFilters
+            paginate
+            pageSize={20}
+          />
+        )}
       </section>
     </div>
   );

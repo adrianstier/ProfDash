@@ -3,14 +3,19 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Plus, Loader2, Sparkles, HelpCircle, FileText } from "lucide-react";
 import { parseQuickAdd } from "@scholaros/shared";
-import { useCreateTask } from "@/lib/hooks/use-tasks";
+import { useCreateTask, useTasks } from "@/lib/hooks/use-tasks";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
+import { useTaskStore } from "@/lib/stores/task-store";
 import type { TaskCategory, TaskPriority } from "@scholaros/shared";
 import { PLACEHOLDERS, KEYBOARD_SHORTCUTS } from "@/lib/constants";
 import { VoiceInputInline } from "@/components/voice";
 import { cn } from "@/lib/utils";
 import { QuickAddHelper } from "@/components/learning/quick-add-helper";
 import { SpotlightTrigger } from "@/components/learning/feature-spotlight";
+import { DuplicateWarning } from "@/components/tasks/duplicate-warning";
+import { detectAcademicPattern } from "@/lib/utils/academic-patterns";
+import { CategorySuggestion } from "@/components/tasks/category-suggestion";
+import type { PatternMatch } from "@/lib/utils/academic-patterns";
 
 interface QuickAddProps {
   onAdd?: (task: ReturnType<typeof parseQuickAdd>) => void;
@@ -22,10 +27,55 @@ export function QuickAdd({ onAdd, workspaceId: propWorkspaceId }: QuickAddProps)
   const [isFocused, setIsFocused] = useState(false);
   const [showHelper, setShowHelper] = useState(false);
   const [showPasteSuggestion, setShowPasteSuggestion] = useState(false);
+  const [dismissedDuplicates, setDismissedDuplicates] = useState(false);
+  const [patternMatch, setPatternMatch] = useState<PatternMatch | null>(null);
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { currentWorkspaceId } = useWorkspaceStore();
+  const { openTaskDetail } = useTaskStore();
   const createTask = useCreateTask();
+
+  // Fetch existing tasks for duplicate detection
+  const wsId = propWorkspaceId !== undefined ? propWorkspaceId : currentWorkspaceId;
+  const { data: existingTasks = [] } = useTasks({ workspace_id: wsId });
+
+  // Reset dismissed state when input changes
+  useEffect(() => {
+    setDismissedDuplicates(false);
+  }, [value]);
+
+  // Debounced academic pattern detection (300ms)
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    // Reset if input is too short or suggestion was dismissed for this input
+    if (value.trim().length < 8) {
+      setPatternMatch(null);
+      return;
+    }
+
+    debounceRef.current = setTimeout(() => {
+      if (!suggestionDismissed) {
+        const match = detectAcademicPattern(value);
+        setPatternMatch(match);
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [value, suggestionDismissed]);
+
+  // Reset suggestion dismissed state when input changes significantly
+  useEffect(() => {
+    setSuggestionDismissed(false);
+  }, [value]);
 
   // Detect multi-line paste to suggest AI content importer
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
@@ -195,6 +245,40 @@ export function QuickAdd({ onAdd, workspaceId: propWorkspaceId }: QuickAddProps)
           inputRef.current?.focus();
         }}
       />
+
+      {/* Duplicate detection warning */}
+      {!dismissedDuplicates && (
+        <DuplicateWarning
+          inputValue={value}
+          existingTasks={existingTasks}
+          onCreateAnyway={() => setDismissedDuplicates(true)}
+          onGoToTask={(taskId) => {
+            openTaskDetail(taskId);
+            setValue("");
+          }}
+        />
+      )}
+
+      {/* Academic pattern category suggestion */}
+      {!suggestionDismissed && patternMatch && (
+        <CategorySuggestion
+          patternMatch={patternMatch}
+          onApplyCategory={(category) => {
+            // Append #category to the input if not already present
+            const categoryTag = `#${category}`;
+            if (!value.includes(categoryTag)) {
+              setValue((prev) => `${prev.trimEnd()} ${categoryTag}`);
+            }
+            setPatternMatch(null);
+            setSuggestionDismissed(true);
+            inputRef.current?.focus();
+          }}
+          onDismiss={() => {
+            setPatternMatch(null);
+            setSuggestionDismissed(true);
+          }}
+        />
+      )}
 
       {/* Paste suggestion for AI content importer */}
       {showPasteSuggestion && (

@@ -10,6 +10,15 @@ export * from "./analytics";
 // Re-export research types
 export * from "./research";
 
+// Subtask type (stored as JSONB array on tasks)
+export interface Subtask {
+  id: string;
+  text: string;
+  completed: boolean;
+  priority?: TaskPriority;
+  estimatedMinutes?: number;
+}
+
 // Task types
 export type TaskPriority = "p1" | "p2" | "p3" | "p4";
 export type TaskStatus = "todo" | "progress" | "done";
@@ -20,7 +29,16 @@ export type TaskCategory =
   | "grad-mentorship"
   | "undergrad-mentorship"
   | "admin"
-  | "misc";
+  | "misc"
+  // Academic categories (ported from academic-to-do-app)
+  | "meeting"
+  | "analysis"
+  | "submission"
+  | "revision"
+  | "presentation"
+  | "writing"
+  | "reading"
+  | "coursework";
 
 export interface Task {
   id: string;
@@ -42,6 +60,7 @@ export interface Task {
   recurrence_parent_id?: string | null;
   recurrence_date?: Date | null;
   recurrence_exceptions?: string[];
+  subtasks?: Subtask[];
   created_at: Date;
   updated_at: Date;
 }
@@ -70,12 +89,44 @@ export interface TaskFromAPI {
   recurrence_parent_id?: string | null;
   recurrence_date?: string | null;
   recurrence_exceptions?: string[];
+  subtasks?: Subtask[];
   created_at: string;
   updated_at: string;
 }
 
 export type CreateTask = Omit<Task, "id" | "created_at" | "updated_at">;
 export type UpdateTask = Partial<CreateTask>;
+
+// Task template types
+export interface TaskTemplateSubtask {
+  text: string;
+  priority: TaskPriority;
+  estimated_minutes?: number;
+}
+
+export interface TaskTemplate {
+  id: string;
+  workspace_id: string;
+  name: string;
+  description?: string | null;
+  default_category?: TaskCategory | null;
+  default_priority: TaskPriority;
+  default_assigned_to?: string | null;
+  subtasks: TaskTemplateSubtask[];
+  is_shared: boolean;
+  is_builtin: boolean;
+  created_by?: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface TaskTemplateFromAPI extends Omit<TaskTemplate, "created_at" | "updated_at"> {
+  created_at: string;
+  updated_at: string;
+}
+
+export type CreateTaskTemplate = Omit<TaskTemplate, "id" | "is_builtin" | "created_by" | "created_at" | "updated_at">;
+export type UpdateTaskTemplate = Partial<Omit<CreateTaskTemplate, "workspace_id">>;
 
 // Project types
 export type ProjectType = "manuscript" | "grant" | "general" | "research";

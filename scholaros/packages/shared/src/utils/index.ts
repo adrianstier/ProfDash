@@ -32,6 +32,21 @@ const CATEGORY_MAP: Record<string, TaskCategory> = {
   "undergrad-mentorship": "undergrad-mentorship",
   admin: "admin",
   misc: "misc",
+  // Academic categories (ported from academic-to-do-app)
+  meeting: "meeting",
+  analysis: "analysis",
+  submission: "submission",
+  submit: "submission",
+  revision: "revision",
+  revise: "revision",
+  presentation: "presentation",
+  present: "presentation",
+  writing: "writing",
+  write: "writing",
+  reading: "reading",
+  read: "reading",
+  coursework: "coursework",
+  course: "coursework",
 };
 
 const DAY_MAP: Record<string, number> = {
@@ -242,6 +257,15 @@ export const CATEGORY_LABELS: Record<TaskCategory, string> = {
   "undergrad-mentorship": "Undergrad Mentorship",
   admin: "Admin",
   misc: "Misc",
+  // Academic categories (ported from academic-to-do-app)
+  meeting: "Meeting",
+  analysis: "Analysis",
+  submission: "Submission",
+  revision: "Revision",
+  presentation: "Presentation",
+  writing: "Writing",
+  reading: "Reading",
+  coursework: "Coursework",
 };
 
 export const CATEGORY_COLORS: Record<TaskCategory, string> = {
@@ -252,6 +276,15 @@ export const CATEGORY_COLORS: Record<TaskCategory, string> = {
   "undergrad-mentorship": "text-pink-600 bg-pink-100",
   admin: "text-gray-600 bg-gray-100",
   misc: "text-gray-500 bg-gray-50",
+  // Academic categories (ported from academic-to-do-app)
+  meeting: "text-cyan-600 bg-cyan-100",
+  analysis: "text-emerald-600 bg-emerald-100",
+  submission: "text-red-600 bg-red-100",
+  revision: "text-amber-600 bg-amber-100",
+  presentation: "text-orange-600 bg-orange-100",
+  writing: "text-blue-600 bg-blue-100",
+  reading: "text-indigo-600 bg-indigo-100",
+  coursework: "text-pink-600 bg-pink-100",
 };
 
 // Publication status utilities

@@ -23,6 +23,7 @@ import {
   Settings,
   Sparkles,
   Sunrise,
+  Target,
   Users,
   Wallet,
   Command,
@@ -32,7 +33,9 @@ import {
   X,
 } from "lucide-react";
 import { useAgentStore } from "@/lib/stores/agent-store";
+import { useTaskStore } from "@/lib/stores/task-store";
 import { OnlineUsersList } from "@/components/presence/user-presence-indicator";
+import { FocusModeToggle } from "@/components/tasks/focus-mode-toggle";
 
 // Mobile bottom nav items
 const MOBILE_NAV_ITEMS = [
@@ -97,11 +100,16 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
+// Navigation sections visible in focus mode
+const FOCUS_MODE_SECTIONS = new Set(["Tasks"]);
+const FOCUS_MODE_ITEMS = new Set(["Today", "Board", "Projects"]);
+
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: tasks = [] } = useTasks();
   const { openChat, isOpen: isAgentChatOpen } = useAgentStore();
+  const focusMode = useTaskStore((state) => state.focusMode);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -251,9 +259,41 @@ export function Sidebar({ user }: SidebarProps) {
         </button>
       </div>
 
+      {/* Focus Mode Toggle */}
+      {!isCollapsed && (
+        <div className="px-3 pt-3 animate-fade-in">
+          <FocusModeToggle showLabel className="w-full justify-start" />
+        </div>
+      )}
+      {isCollapsed && (
+        <div className="flex justify-center pt-3">
+          <FocusModeToggle />
+        </div>
+      )}
+
+      {/* Focus Mode Indicator */}
+      {focusMode && !isCollapsed && (
+        <div className="mx-3 mt-2 flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/20 px-3 py-2 animate-fade-in">
+          <Target className="h-3.5 w-3.5 text-primary" />
+          <span className="text-xs font-medium text-primary">Focus Mode Active</span>
+        </div>
+      )}
+
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 scrollbar-hide" aria-label="Main menu">
-        {NAV_SECTIONS.map((section, sectionIndex) => (
+        {NAV_SECTIONS.filter((section) => {
+          // In focus mode, only show Tasks section and Projects from Research
+          if (!focusMode) return true;
+          return FOCUS_MODE_SECTIONS.has(section.label) || section.items.some((item) => FOCUS_MODE_ITEMS.has(item.label));
+        }).map((section, sectionIndex) => {
+          // Filter items within sections when in focus mode
+          const visibleItems = focusMode
+            ? section.items.filter((item) => FOCUS_MODE_ITEMS.has(item.label))
+            : section.items;
+
+          if (visibleItems.length === 0) return null;
+
+          return (
           <div
             key={section.label}
             className={cn("animate-fade-in", sectionIndex > 0 && "mt-6")}
@@ -283,7 +323,7 @@ export function Sidebar({ user }: SidebarProps) {
                 id={`nav-section-${section.label.toLowerCase()}`}
                 role="list"
               >
-                {section.items.map((item, itemIndex) => {
+                {visibleItems.map((item, itemIndex) => {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
                   const badgeCount = item.badgeKey ? badgeCounts[item.badgeKey] : 0;
@@ -365,7 +405,8 @@ export function Sidebar({ user }: SidebarProps) {
               </ul>
             )}
           </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* Online users */}
@@ -397,13 +438,15 @@ export function Sidebar({ user }: SidebarProps) {
             </div>
 
             <div className="flex gap-1.5">
-              <Link
-                href="/settings"
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                <Settings className="h-4 w-4" aria-hidden="true" />
-                <span className="text-xs font-medium">Settings</span>
-              </Link>
+              {!focusMode && (
+                <Link
+                  href="/settings"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <Settings className="h-4 w-4" aria-hidden="true" />
+                  <span className="text-xs font-medium">Settings</span>
+                </Link>
+              )}
               <button
                 onClick={handleSignOut}
                 className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

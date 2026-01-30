@@ -27,6 +27,14 @@ const CATEGORY_CONFIG: Record<TaskCategory, { label: string; emoji: string }> = 
   "undergrad-mentorship": { label: "Undergrad Mentoring", emoji: "📖" },
   admin: { label: "Admin", emoji: "📋" },
   misc: { label: "Misc", emoji: "📌" },
+  meeting: { label: "Meeting", emoji: "👥" },
+  analysis: { label: "Analysis", emoji: "📊" },
+  submission: { label: "Submission", emoji: "📤" },
+  revision: { label: "Revision", emoji: "🔄" },
+  presentation: { label: "Presentation", emoji: "🎤" },
+  writing: { label: "Writing", emoji: "✍️" },
+  reading: { label: "Reading", emoji: "📖" },
+  coursework: { label: "Coursework", emoji: "📝" },
 };
 
 interface SmartParseModalProps {

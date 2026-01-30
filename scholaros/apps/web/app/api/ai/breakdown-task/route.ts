@@ -2,6 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
+import {
+  detectAcademicPattern,
+  getAcademicPatternsContext,
+} from "@/lib/utils/academic-patterns";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -82,12 +86,26 @@ export async function POST(request: Request) {
       .eq("status", "active")
       .limit(10);
 
+    // Detect academic pattern for richer context
+    const patternMatch = detectAcademicPattern(task_title + (task_description ? ` ${task_description}` : ""));
+    const patternContext = patternMatch
+      ? `\nDetected academic category: ${patternMatch.category.toUpperCase()} (${Math.round(patternMatch.confidence * 100)}% confidence)
+Matched keywords: ${patternMatch.keywords.join(", ")}
+${patternMatch.tip ? `Tip: ${patternMatch.tip}` : ""}
+Category-specific suggested subtasks to consider:
+${patternMatch.suggestedSubtasks.map((s) => `- ${s}`).join("\n")}`
+      : "";
+
     const prompt = `You are an expert task planner for academic research teams. Break down the following task into actionable subtasks.
 
 Task Title: "${task_title}"
 ${task_description ? `Task Description: "${task_description}"` : ""}
 ${context ? `Additional Context: "${context}"` : ""}
 ${projects && projects.length > 0 ? `Active Projects: ${projects.map(p => `${p.title} (${p.type})`).join(", ")}` : ""}
+${patternContext}
+
+ACADEMIC WORKFLOW REFERENCE:
+${getAcademicPatternsContext()}
 
 Guidelines:
 - Create ${max_subtasks} or fewer subtasks (only as many as needed)
@@ -95,7 +113,11 @@ Guidelines:
 - Order subtasks logically (sequential steps)
 - Include time estimates in minutes when possible
 - Identify dependencies between subtasks
-- Consider academic context (research, grants, publications, teaching)
+- Use the detected academic category and suggested subtasks as a starting point, but customize for the specific task
+- Consider academic context (research, grants, publications, teaching, mentorship)
+- For research tasks, include documentation and reproducibility steps
+- For grant tasks, include compliance and submission verification steps
+- For teaching tasks, include student communication and feedback steps
 
 Respond with a JSON object matching this exact structure:
 {

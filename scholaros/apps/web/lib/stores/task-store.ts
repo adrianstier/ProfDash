@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { TaskFromAPI } from "@/lib/hooks/use-tasks";
+import { sortByUrgency } from "@/lib/utils/task-grouping";
 
 interface TaskUIState {
   // Selected task for detail view
@@ -13,6 +14,9 @@ interface TaskUIState {
   selectedTaskIds: Set<string>;
   isSelectionMode: boolean;
 
+  // Focus mode - shows only high-priority, due-today, or overdue incomplete tasks
+  focusMode: boolean;
+
   // Filters
   filters: {
     status: string | null;
@@ -22,7 +26,7 @@ interface TaskUIState {
   };
 
   // View preferences
-  sortBy: "priority" | "due" | "created_at" | "title";
+  sortBy: "priority" | "due" | "created_at" | "title" | "urgency";
   sortDirection: "asc" | "desc";
 
   // Actions
@@ -33,6 +37,10 @@ interface TaskUIState {
   clearFilters: () => void;
   setSort: (sortBy: TaskUIState["sortBy"], direction?: TaskUIState["sortDirection"]) => void;
 
+  // Focus mode actions
+  toggleFocusMode: () => void;
+  setFocusMode: (enabled: boolean) => void;
+
   // Bulk selection actions
   toggleSelectionMode: () => void;
   toggleTaskSelection: (taskId: string) => void;
@@ -42,6 +50,16 @@ interface TaskUIState {
   isTaskSelected: (taskId: string) => boolean;
 }
 
+// Read initial focus mode from localStorage (safe for SSR)
+function getInitialFocusMode(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem("scholaros-focus-mode") === "true";
+  } catch {
+    return false;
+  }
+}
+
 export const useTaskStore = create<TaskUIState>((set, get) => ({
   // Initial state
   selectedTaskId: null,
@@ -49,6 +67,7 @@ export const useTaskStore = create<TaskUIState>((set, get) => ({
   editingTaskId: null,
   selectedTaskIds: new Set<string>(),
   isSelectionMode: false,
+  focusMode: getInitialFocusMode(),
   filters: {
     status: null,
     category: null,
@@ -88,6 +107,27 @@ export const useTaskStore = create<TaskUIState>((set, get) => ({
       sortBy,
       sortDirection: direction ?? state.sortDirection,
     })),
+
+  // Focus mode actions
+  toggleFocusMode: () =>
+    set((state) => {
+      const newValue = !state.focusMode;
+      try {
+        localStorage.setItem("scholaros-focus-mode", String(newValue));
+      } catch {
+        // localStorage might not be available
+      }
+      return { focusMode: newValue };
+    }),
+
+  setFocusMode: (enabled) => {
+    try {
+      localStorage.setItem("scholaros-focus-mode", String(enabled));
+    } catch {
+      // localStorage might not be available
+    }
+    set({ focusMode: enabled });
+  },
 
   // Bulk selection actions
   toggleSelectionMode: () =>
@@ -135,12 +175,41 @@ export function filterTasks(tasks: TaskFromAPI[], filters: TaskUIState["filters"
   });
 }
 
+/**
+ * Apply focus mode filtering to tasks.
+ * Focus mode shows only:
+ * - Incomplete tasks (not done)
+ * - With high priority (p1 or p2)
+ * - OR tasks due today or overdue
+ */
+export function applyFocusModeFilter(tasks: TaskFromAPI[]): TaskFromAPI[] {
+  const today = new Date().toISOString().split("T")[0];
+
+  return tasks.filter((task) => {
+    // Must be incomplete
+    if (task.status === "done") return false;
+
+    // High or urgent priority
+    if (task.priority === "p1" || task.priority === "p2") return true;
+
+    // Due today or overdue
+    if (task.due && task.due <= today) return true;
+
+    return false;
+  });
+}
+
 // Helper function to sort tasks
 export function sortTasks(
   tasks: TaskFromAPI[],
   sortBy: TaskUIState["sortBy"],
   direction: TaskUIState["sortDirection"]
 ): TaskFromAPI[] {
+  // Urgency sort is handled separately since it has its own multi-factor logic
+  if (sortBy === "urgency") {
+    return sortByUrgency(tasks);
+  }
+
   const sorted = [...tasks].sort((a, b) => {
     let comparison = 0;
 

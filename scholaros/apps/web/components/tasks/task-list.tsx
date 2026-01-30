@@ -4,7 +4,7 @@ import { useMemo, useRef, useCallback } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Check, Loader2 } from "lucide-react";
 import { useTasks, useToggleTaskComplete, useDeleteTask, type TaskFromAPI } from "@/lib/hooks/use-tasks";
-import { useTaskStore, filterTasks, sortTasks } from "@/lib/stores/task-store";
+import { useTaskStore, filterTasks, sortTasks, applyFocusModeFilter } from "@/lib/stores/task-store";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
 import { usePagination } from "@/lib/hooks/use-pagination";
 import { Pagination } from "@/components/ui/pagination";
@@ -127,7 +127,7 @@ export function TaskList({
 
   const toggleComplete = useToggleTaskComplete();
   const deleteTask = useDeleteTask();
-  const { filters, sortBy, sortDirection, openTaskDetail, setEditingTask } = useTaskStore();
+  const { filters, sortBy, sortDirection, openTaskDetail, setEditingTask, focusMode } = useTaskStore();
 
   // Determine which tasks to display - prioritize initialTasks for SSR hydration
   const rawTasks: TaskFromAPI[] = useMockData
@@ -154,14 +154,20 @@ export function TaskList({
     return rawTasks;
   }, [rawTasks, filter, initialTasks, useMockData]);
 
+  // Apply focus mode filtering
+  const focusFilteredTasks = useMemo(() => {
+    if (!focusMode) return dateFilteredTasks;
+    return applyFocusModeFilter(dateFilteredTasks);
+  }, [dateFilteredTasks, focusMode]);
+
   // Apply store filters and sorting
   const processedTasks = useMemo(() => {
     if (!useStoreFilters) {
-      return dateFilteredTasks;
+      return focusFilteredTasks;
     }
-    const filtered = filterTasks(dateFilteredTasks, filters);
+    const filtered = filterTasks(focusFilteredTasks, filters);
     return sortTasks(filtered, sortBy, sortDirection);
-  }, [dateFilteredTasks, useStoreFilters, filters, sortBy, sortDirection]);
+  }, [focusFilteredTasks, useStoreFilters, filters, sortBy, sortDirection]);
 
   // Pagination
   const pagination = usePagination<TaskFromAPI>({

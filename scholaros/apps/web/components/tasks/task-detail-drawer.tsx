@@ -15,14 +15,19 @@ import {
   Folder,
   ExternalLink,
   Repeat,
+  ListChecks,
+  Plus,
+  Clock,
 } from "lucide-react";
-import type { TaskCategory, TaskPriority, TaskStatus } from "@scholaros/shared";
+import type { TaskCategory, TaskPriority, TaskStatus, Subtask } from "@scholaros/shared";
 import { useTaskStore } from "@/lib/stores/task-store";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
 import { useTasks, useUpdateTask, useDeleteTask } from "@/lib/hooks/use-tasks";
 import { useProjects } from "@/lib/hooks/use-projects";
 import type { TaskFromAPI } from "@/lib/hooks/use-tasks";
 import { ARIA_LABELS } from "@/lib/constants";
+import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 import { FocusTrap } from "@/components/accessibility/focus-trap";
 import { RecurrencePicker, RecurrenceBadge } from "@/components/tasks/recurrence-picker";
 import { rruleToText } from "@/lib/utils/recurrence";
@@ -66,6 +71,9 @@ export function TaskDetailDrawer() {
 
   // Local form state for editing
   const [formData, setFormData] = useState<Partial<TaskFromAPI>>({});
+
+  // Subtask state
+  const [newSubtaskText, setNewSubtaskText] = useState("");
 
   // Handle Escape key to close drawer
   const handleEscape = useCallback(() => {
@@ -128,6 +136,46 @@ export function TaskDetailDrawer() {
       year: "numeric",
       month: "long",
       day: "numeric",
+    });
+  };
+
+  // Subtask helpers
+  const subtasks: Subtask[] = task.subtasks ?? [];
+  const completedSubtasks = subtasks.filter((s) => s.completed).length;
+  const totalSubtasks = subtasks.length;
+  const subtaskProgress = totalSubtasks > 0 ? Math.round((completedSubtasks / totalSubtasks) * 100) : 0;
+
+  const handleAddSubtask = async () => {
+    if (!newSubtaskText.trim() || !selectedTaskId) return;
+    const newSubtask: Subtask = {
+      id: crypto.randomUUID(),
+      text: newSubtaskText.trim(),
+      completed: false,
+    };
+    await updateTask.mutateAsync({
+      id: selectedTaskId,
+      subtasks: [...subtasks, newSubtask],
+    });
+    setNewSubtaskText("");
+  };
+
+  const handleToggleSubtask = async (subtaskId: string) => {
+    if (!selectedTaskId) return;
+    const updated = subtasks.map((s) =>
+      s.id === subtaskId ? { ...s, completed: !s.completed } : s
+    );
+    await updateTask.mutateAsync({
+      id: selectedTaskId,
+      subtasks: updated,
+    });
+  };
+
+  const handleDeleteSubtask = async (subtaskId: string) => {
+    if (!selectedTaskId) return;
+    const updated = subtasks.filter((s) => s.id !== subtaskId);
+    await updateTask.mutateAsync({
+      id: selectedTaskId,
+      subtasks: updated,
     });
   };
 
@@ -489,6 +537,113 @@ export function TaskDetailDrawer() {
                   </span>
                 ) : (
                   <span className="text-sm text-muted-foreground">Does not repeat</span>
+                )}
+              </div>
+            </div>
+
+            {/* Subtasks Section */}
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <ListChecks className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  <span className="text-sm font-medium">Subtasks</span>
+                  {totalSubtasks > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      ({completedSubtasks}/{totalSubtasks})
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              {totalSubtasks > 0 && (
+                <div className="mb-3">
+                  <Progress value={subtaskProgress} className="h-2" />
+                </div>
+              )}
+
+              {/* Subtask list */}
+              <div className="space-y-1.5 mb-3">
+                {subtasks.map((subtask) => (
+                  <div
+                    key={subtask.id}
+                    className={cn(
+                      "group/subtask flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors",
+                      "hover:bg-muted/50"
+                    )}
+                  >
+                    {/* Subtask checkbox */}
+                    <button
+                      onClick={() => handleToggleSubtask(subtask.id)}
+                      className={cn(
+                        "flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded border-2 transition-all",
+                        subtask.completed
+                          ? "border-green-500 bg-green-500 text-white"
+                          : "border-muted-foreground/30 hover:border-primary"
+                      )}
+                      role="checkbox"
+                      aria-checked={subtask.completed}
+                      aria-label={`${subtask.completed ? "Mark incomplete" : "Mark complete"}: ${subtask.text}`}
+                    >
+                      {subtask.completed && (
+                        <Check className="h-3 w-3" strokeWidth={3} aria-hidden="true" />
+                      )}
+                    </button>
+
+                    {/* Subtask text */}
+                    <span
+                      className={cn(
+                        "flex-1 text-sm",
+                        subtask.completed && "line-through text-muted-foreground"
+                      )}
+                    >
+                      {subtask.text}
+                    </span>
+
+                    {/* Estimated time */}
+                    {subtask.estimatedMinutes && (
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" aria-hidden="true" />
+                        {subtask.estimatedMinutes}m
+                      </span>
+                    )}
+
+                    {/* Delete button */}
+                    <button
+                      onClick={() => handleDeleteSubtask(subtask.id)}
+                      className="opacity-0 group-hover/subtask:opacity-100 p-1 rounded transition-all hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-primary"
+                      aria-label={`Delete subtask: ${subtask.text}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add subtask input */}
+              <div className="flex items-center gap-2">
+                <Plus className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+                <input
+                  type="text"
+                  value={newSubtaskText}
+                  onChange={(e) => setNewSubtaskText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddSubtask();
+                    }
+                  }}
+                  placeholder="Add a subtask..."
+                  className="flex-1 rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground"
+                  aria-label="New subtask text"
+                />
+                {newSubtaskText.trim() && (
+                  <button
+                    onClick={handleAddSubtask}
+                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                  >
+                    Add
+                  </button>
                 )}
               </div>
             </div>

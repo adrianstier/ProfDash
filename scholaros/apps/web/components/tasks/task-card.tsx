@@ -14,6 +14,7 @@ import {
   Clock,
   Sparkles,
   Repeat,
+  ListChecks,
 } from "lucide-react";
 import type { TaskPriority, TaskCategory } from "@scholaros/shared";
 import type { TaskFromAPI } from "@/lib/hooks/use-tasks";
@@ -92,6 +93,47 @@ const categoryConfig: Record<
     bg: "bg-muted",
     text: "text-muted-foreground",
     border: "border-border",
+  },
+  // Academic categories
+  meeting: {
+    bg: "bg-cyan-100 dark:bg-cyan-900/20",
+    text: "text-cyan-700 dark:text-cyan-300",
+    border: "border-cyan-200 dark:border-cyan-800",
+  },
+  analysis: {
+    bg: "bg-emerald-100 dark:bg-emerald-900/20",
+    text: "text-emerald-700 dark:text-emerald-300",
+    border: "border-emerald-200 dark:border-emerald-800",
+  },
+  submission: {
+    bg: "bg-red-100 dark:bg-red-900/20",
+    text: "text-red-700 dark:text-red-300",
+    border: "border-red-200 dark:border-red-800",
+  },
+  revision: {
+    bg: "bg-amber-100 dark:bg-amber-900/20",
+    text: "text-amber-700 dark:text-amber-300",
+    border: "border-amber-200 dark:border-amber-800",
+  },
+  presentation: {
+    bg: "bg-orange-100 dark:bg-orange-900/20",
+    text: "text-orange-700 dark:text-orange-300",
+    border: "border-orange-200 dark:border-orange-800",
+  },
+  writing: {
+    bg: "bg-blue-100 dark:bg-blue-900/20",
+    text: "text-blue-700 dark:text-blue-300",
+    border: "border-blue-200 dark:border-blue-800",
+  },
+  reading: {
+    bg: "bg-indigo-100 dark:bg-indigo-900/20",
+    text: "text-indigo-700 dark:text-indigo-300",
+    border: "border-indigo-200 dark:border-indigo-800",
+  },
+  coursework: {
+    bg: "bg-pink-100 dark:bg-pink-900/20",
+    text: "text-pink-700 dark:text-pink-300",
+    border: "border-pink-200 dark:border-pink-800",
   },
 };
 
@@ -410,6 +452,35 @@ export const TaskCard = memo(function TaskCard({
                 <Repeat className="h-3 w-3" />
               </span>
             )}
+
+            {/* Subtask progress indicator */}
+            {task.subtasks && task.subtasks.length > 0 && (() => {
+              const completed = task.subtasks.filter((s) => s.completed).length;
+              const total = task.subtasks.length;
+              const allDone = completed === total;
+              return (
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 text-[11px]",
+                    allDone ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
+                  )}
+                  title={`${completed} of ${total} subtasks completed`}
+                >
+                  <ListChecks className="h-3 w-3" />
+                  <span>{completed}/{total}</span>
+                  {/* Mini progress bar */}
+                  <span className="inline-block w-8 h-1 rounded-full bg-muted overflow-hidden">
+                    <span
+                      className={cn(
+                        "block h-full rounded-full transition-all",
+                        allDone ? "bg-green-500" : "bg-primary"
+                      )}
+                      style={{ width: `${Math.round((completed / total) * 100)}%` }}
+                    />
+                  </span>
+                </span>
+              );
+            })()}
           </div>
         </div>
 

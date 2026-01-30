@@ -44,7 +44,8 @@ const categoryOptions: { value: TaskCategory | "all"; label: string }[] = [
   { value: "misc", label: "Misc" },
 ];
 
-const sortOptions: { value: "priority" | "due" | "created_at" | "title"; label: string }[] = [
+const sortOptions: { value: "priority" | "due" | "created_at" | "title" | "urgency"; label: string }[] = [
+  { value: "urgency", label: "Urgency" },
   { value: "priority", label: "Priority" },
   { value: "due", label: "Due Date" },
   { value: "created_at", label: "Created" },

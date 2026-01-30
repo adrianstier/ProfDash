@@ -2,10 +2,10 @@ import { Suspense } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { QuickAdd } from "@/components/tasks/quick-add";
-import { TaskList } from "@/components/tasks/task-list";
 import { AIQuickActions } from "@/components/ai";
 import { TodayProgress } from "@/components/tasks/today-progress";
 import { TodayAIInsights } from "@/components/ai/today-ai-insights";
+import { TodaySectionedTasks } from "@/components/tasks/today-sectioned-tasks";
 import { Calendar, Flame, Target } from "lucide-react";
 
 export const metadata = {
@@ -34,11 +34,15 @@ async function getUserProfile() {
 async function getTodayTasks() {
   const supabase = await createClient();
   const today = new Date().toISOString().split("T")[0];
+  // Fetch overdue + today + next 3 days for the "Coming Up" section
+  const comingUpDate = new Date();
+  comingUpDate.setDate(comingUpDate.getDate() + 3);
+  const comingUp = comingUpDate.toISOString().split("T")[0];
 
   const { data, error } = await supabase
     .from("tasks")
     .select("*")
-    .or(`due.eq.${today},due.is.null`)
+    .or(`due.lte.${comingUp},due.is.null`)
     .order("priority", { ascending: true })
     .order("created_at", { ascending: false });
 
@@ -175,7 +179,7 @@ export default async function TodayPage() {
         </div>
       </section>
 
-      {/* Task List Section */}
+      {/* Task List Section - Sectioned by deadline proximity */}
       <section className="space-y-4 animate-fade-in stagger-3">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-xl font-semibold tracking-tight flex items-center gap-2">
@@ -187,11 +191,9 @@ export default async function TodayPage() {
           </span>
         </div>
 
-        <div className="rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm p-4">
-          <Suspense fallback={<TaskListSkeleton />}>
-            <TaskList initialTasks={tasks} />
-          </Suspense>
-        </div>
+        <Suspense fallback={<TaskListSkeleton />}>
+          <TodaySectionedTasks initialTasks={tasks} />
+        </Suspense>
       </section>
     </div>
   );
