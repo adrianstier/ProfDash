@@ -221,7 +221,7 @@ describe("ProjectCard", () => {
 
     it("does not render due date when absent", () => {
       render(<ProjectCard project={defaultProject} />);
-      expect(screen.queryByTagName?.("time")).toBeFalsy();
+      expect(screen.queryByRole("time")).toBeFalsy();
     });
   });
 

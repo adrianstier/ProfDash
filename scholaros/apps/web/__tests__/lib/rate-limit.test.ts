@@ -199,7 +199,7 @@ describe("Rate Limiter", () => {
         remaining: 0,
         reset: 123456,
       };
-      const headers = getRateLimitHeaders(result);
+      const headers = getRateLimitHeaders(result) as Record<string, string>;
       expect(headers["X-RateLimit-Limit"]).toBe("10");
       expect(headers["X-RateLimit-Remaining"]).toBe("0");
       expect(headers["X-RateLimit-Reset"]).toBe("123456");

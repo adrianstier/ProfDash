@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useAnalyticsStore } from "@/lib/stores/analytics-store";
+import type { OnboardingStep } from "@scholaros/shared/types/analytics";
 
 const initialSearchSession = {
   isOpen: false,
@@ -14,7 +15,7 @@ const initialSearchSession = {
 const initialOnboardingSession = {
   isActive: false,
   startedAt: null,
-  currentStep: 0,
+  currentStep: 0 as OnboardingStep,
   stepStartedAt: null,
   interactionCount: 0,
   completedSteps: [],

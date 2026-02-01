@@ -262,7 +262,7 @@ describe("filterTasks", () => {
     createTask({ id: "1", title: "Write paper", status: "todo", category: "research", priority: "p1" }),
     createTask({ id: "2", title: "Grade exams", status: "done", category: "teaching", priority: "p2" }),
     createTask({ id: "3", title: "Submit grant", status: "todo", category: "grants", priority: "p1", description: "NSF grant proposal" }),
-    createTask({ id: "4", title: "Lab meeting", status: "in_progress", category: "research", priority: "p3" }),
+    createTask({ id: "4", title: "Lab meeting", status: "progress", category: "research", priority: "p3" }),
   ];
 
   it("should return all tasks with empty filters", () => {

@@ -242,9 +242,9 @@ describe("TaskCard", () => {
       const taskWithSubtasks = createMockTask({
         title: "Parent task",
         subtasks: [
-          { id: "s1", title: "Sub 1", completed: true },
-          { id: "s2", title: "Sub 2", completed: false },
-          { id: "s3", title: "Sub 3", completed: true },
+          { id: "s1", text: "Sub 1", completed: true },
+          { id: "s2", text: "Sub 2", completed: false },
+          { id: "s3", text: "Sub 3", completed: true },
         ],
       });
       render(<TaskCard task={taskWithSubtasks} />);

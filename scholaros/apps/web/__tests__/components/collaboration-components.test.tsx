@@ -257,17 +257,17 @@ describe("PresenceAvatars", () => {
     createPresenceUser({
       user_id: "user-1",
       status: "online",
-      user: { id: "user-1", full_name: "Alice", avatar_url: null, email: "a@t.com" },
+      user: { id: "user-1", full_name: "Alice", avatar_url: null },
     }),
     createPresenceUser({
       user_id: "user-2",
       status: "online",
-      user: { id: "user-2", full_name: "Bob", avatar_url: null, email: "b@t.com" },
+      user: { id: "user-2", full_name: "Bob", avatar_url: null },
     }),
     createPresenceUser({
       user_id: "user-3",
       status: "away",
-      user: { id: "user-3", full_name: "Charlie", avatar_url: null, email: "c@t.com" },
+      user: { id: "user-3", full_name: "Charlie", avatar_url: null },
     }),
   ];
 
@@ -305,7 +305,6 @@ describe("PresenceAvatars", () => {
           id: `user-${i}`,
           full_name: `User ${i}`,
           avatar_url: null,
-          email: `u${i}@t.com`,
         },
       })
     );
@@ -320,7 +319,7 @@ describe("PresenceAvatars", () => {
       createPresenceUser({
         user_id: "user-4",
         status: "offline",
-        user: { id: "user-4", full_name: "Dave", avatar_url: null, email: "d@t.com" },
+        user: { id: "user-4", full_name: "Dave", avatar_url: null },
       }),
     ];
     render(

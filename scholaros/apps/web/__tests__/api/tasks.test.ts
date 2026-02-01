@@ -34,7 +34,7 @@ function createChainableMock(terminal?: Record<string, unknown>) {
       // If this call has a queued terminal value, return it
       if (chain._terminal) {
         const val = chain._terminal;
-        chain._terminal = undefined;
+        chain._terminal = undefined as unknown as ReturnType<typeof vi.fn>;
         return val;
       }
       return chain;

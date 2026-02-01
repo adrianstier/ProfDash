@@ -86,7 +86,7 @@ describe("Middleware", () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://test.supabase.co");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "test-anon-key");
     const mod = await import("@/middleware");
-    middleware = mod.middleware as typeof middleware;
+    middleware = mod.middleware as unknown as typeof middleware;
     config = mod.config;
   });
 

@@ -101,7 +101,7 @@ describe("useAgentStore", () => {
 
     it("should clear session and related state", () => {
       useAgentStore.getState().addMessage(createMessage());
-      useAgentStore.getState().setSuggestedActions([{ id: "a1", label: "Test", type: "quick_reply" } as SuggestedAction]);
+      useAgentStore.getState().setSuggestedActions([{ label: "Test", action: "quick_reply" } as SuggestedAction]);
       useAgentStore.getState().setSession({
         id: "s1",
         workspaceId: "ws-1",
@@ -158,7 +158,7 @@ describe("useAgentStore", () => {
 
     it("should clear messages and suggested actions", () => {
       useAgentStore.getState().addMessage(createMessage());
-      useAgentStore.getState().setSuggestedActions([{ id: "a1", label: "X", type: "quick_reply" } as SuggestedAction]);
+      useAgentStore.getState().setSuggestedActions([{ label: "X", action: "quick_reply" } as SuggestedAction]);
       useAgentStore.getState().clearMessages();
       expect(useAgentStore.getState().messages).toEqual([]);
       expect(useAgentStore.getState().suggestedActions).toEqual([]);
@@ -308,8 +308,8 @@ describe("useAgentStore", () => {
 
     it("should set suggested actions", () => {
       const actions = [
-        { id: "a1", label: "Create task", type: "quick_reply" },
-        { id: "a2", label: "Search grants", type: "quick_reply" },
+        { label: "Create task", action: "create_task" },
+        { label: "Search grants", action: "search_grants" },
       ] as SuggestedAction[];
       useAgentStore.getState().setSuggestedActions(actions);
       expect(useAgentStore.getState().suggestedActions).toHaveLength(2);
