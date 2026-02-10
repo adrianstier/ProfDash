@@ -73,6 +73,7 @@ export function StepFirstTask({ onNext, onBack }: StepFirstTaskProps) {
       }
     } else if (taskInput.trim()) {
       const parsed = parseQuickAdd(taskInput);
+      if (!parsed) return;
       taskData = {
         title: parsed.title,
         category: (parsed.category as TaskCategory) || "misc",

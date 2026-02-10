@@ -195,10 +195,10 @@ export async function PATCH(
     );
   }
 
-  // Verify schedule exists and belongs to this experiment
+  // Verify schedule exists and belongs to this experiment, fetching current dates for validation
   const { data: existingSchedule, error: scheduleError } = await supabase
     .from("fieldwork_schedules")
-    .select("id, experiment_id")
+    .select("id, experiment_id, start_date, end_date")
     .eq("id", scheduleId)
     .eq("experiment_id", experimentId)
     .single();
@@ -251,6 +251,17 @@ export async function PATCH(
   }
   if (parsed.data.end_date !== undefined) {
     updateData.end_date = parsed.data.end_date.toISOString().split("T")[0];
+  }
+
+  // Validate date range: use the provided date or fall back to the existing record's date
+  const effectiveStartDate = (updateData.start_date as string) || existingSchedule.start_date;
+  const effectiveEndDate = (updateData.end_date as string) || existingSchedule.end_date;
+
+  if (effectiveStartDate && effectiveEndDate && effectiveStartDate > effectiveEndDate) {
+    return NextResponse.json(
+      { error: "End date must be on or after start date" },
+      { status: 400 }
+    );
   }
 
   const { data: schedule, error } = await supabase

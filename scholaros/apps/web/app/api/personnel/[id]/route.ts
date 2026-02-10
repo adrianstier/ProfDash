@@ -1,14 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-
-const PersonnelRoleSchema = z.enum([
-  "phd-student",
-  "postdoc",
-  "undergrad",
-  "staff",
-  "collaborator",
-]);
+import { PersonnelRoleSchema } from "@scholaros/shared";
 
 const UpdatePersonnelSchema = z.object({
   name: z.string().min(1).optional(),

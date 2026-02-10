@@ -31,19 +31,26 @@ async function getUserProfile() {
   };
 }
 
-async function getTodayTasks() {
+async function getTodayTasks(workspaceId?: string | null) {
   const supabase = await createClient();
   // Fetch overdue + today + next 3 days for the "Coming Up" section
   const comingUpDate = new Date();
   comingUpDate.setDate(comingUpDate.getDate() + 3);
   const comingUp = comingUpDate.toISOString().split("T")[0];
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("tasks")
     .select("*")
     .or(`due.lte.${comingUp},due.is.null`)
     .order("priority", { ascending: true })
     .order("created_at", { ascending: false });
+
+  // Filter by workspace_id when provided; personal tasks have workspace_id IS NULL
+  if (workspaceId) {
+    query = query.eq("workspace_id", workspaceId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching tasks:", error);
@@ -82,8 +89,14 @@ function getGreeting() {
   return "Good evening";
 }
 
-export default async function TodayPage() {
-  const [tasks, userProfile] = await Promise.all([getTodayTasks(), getUserProfile()]);
+export default async function TodayPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ workspace_id?: string }>;
+}) {
+  const params = await searchParams;
+  const workspaceId = params.workspace_id || null;
+  const [tasks, userProfile] = await Promise.all([getTodayTasks(workspaceId), getUserProfile()]);
   const today = new Date();
   const greeting = getGreeting();
   const completedCount = tasks.filter(t => t.status === "done").length;

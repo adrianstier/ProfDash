@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Plus, Loader2, Sparkles, HelpCircle, FileText } from "lucide-react";
 import { parseQuickAdd } from "@scholaros/shared";
+import type { ParsedQuickAdd } from "@scholaros/shared";
 import { useCreateTask, useTasks } from "@/lib/hooks/use-tasks";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
 import { useTaskStore } from "@/lib/stores/task-store";
@@ -18,7 +19,7 @@ import { CategorySuggestion } from "@/components/tasks/category-suggestion";
 import type { PatternMatch } from "@/lib/utils/academic-patterns";
 
 interface QuickAddProps {
-  onAdd?: (task: ReturnType<typeof parseQuickAdd>) => void;
+  onAdd?: (task: ParsedQuickAdd) => void;
   workspaceId?: string | null;
 }
 
@@ -114,6 +115,7 @@ export function QuickAdd({ onAdd, workspaceId: propWorkspaceId }: QuickAddProps)
     if (!value.trim() || createTask.isPending) return;
 
     const parsed = parseQuickAdd(value);
+    if (!parsed) return;
 
     // Call the callback if provided (for parent component updates)
     onAdd?.(parsed);

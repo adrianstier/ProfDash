@@ -136,11 +136,18 @@ export const useAgentStore = create<AgentStore>()(
           suggestedActions: [],
         }),
 
-      // Messages
+      // Messages (capped at 500 per session to prevent unbounded growth)
       addMessage: (message) =>
-        set((state) => ({
-          messages: [...state.messages, message],
-        })),
+        set((state) => {
+          const MAX_MESSAGES = 500;
+          const updated = [...state.messages, message];
+          return {
+            messages:
+              updated.length > MAX_MESSAGES
+                ? updated.slice(updated.length - MAX_MESSAGES)
+                : updated,
+          };
+        }),
 
       updateMessage: (messageId, updates) =>
         set((state) => ({

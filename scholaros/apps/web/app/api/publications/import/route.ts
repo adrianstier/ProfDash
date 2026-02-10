@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 const ImportDOISchema = z.object({
-  doi: z.string().min(1, "DOI is required"),
+  doi: z.string().min(1, "DOI is required").regex(/^(https?:\/\/(dx\.)?doi\.org\/)?10\.\d{4,}\/.+$/, "Invalid DOI format (expected 10.XXXX/... or https://doi.org/10.XXXX/...)"),
   workspace_id: z.string().uuid().optional(),
 });
 

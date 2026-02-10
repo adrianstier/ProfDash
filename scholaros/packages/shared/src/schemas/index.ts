@@ -462,6 +462,15 @@ export const UpdateProfileSchema = z.object({
   avatar_url: z.string().url().nullable().optional(),
 });
 
+// Personnel schemas
+export const PersonnelRoleSchema = z.enum([
+  "phd-student",
+  "postdoc",
+  "undergrad",
+  "staff",
+  "collaborator",
+]);
+
 // Publication schemas
 export const PublicationStatusSchema = z.enum([
   "idea",
@@ -508,7 +517,7 @@ export const PublicationSchema = z.object({
   issue: z.string().nullable().optional(),
   pages: z.string().nullable().optional(),
   year: z.number().int().min(1900).max(2100).nullable().optional(),
-  doi: z.string().nullable().optional(),
+  doi: z.string().regex(/^10\.\d{4,}\/.+$/, "Invalid DOI format (expected 10.XXXX/...)").nullable().optional(),
   url: z.string().url().nullable().optional(),
   pmid: z.string().nullable().optional(),
   arxiv_id: z.string().nullable().optional(),
@@ -540,7 +549,7 @@ export const CreatePublicationSchema = z.object({
   issue: z.string().nullable().optional(),
   pages: z.string().nullable().optional(),
   year: z.number().int().min(1900).max(2100).nullable().optional(),
-  doi: z.string().nullable().optional(),
+  doi: z.string().regex(/^10\.\d{4,}\/.+$/, "Invalid DOI format (expected 10.XXXX/...)").nullable().optional(),
   url: z.string().url().nullable().optional(),
   pmid: z.string().nullable().optional(),
   arxiv_id: z.string().nullable().optional(),

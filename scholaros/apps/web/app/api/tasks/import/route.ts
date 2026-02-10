@@ -285,36 +285,94 @@ function normalizeCategory(value: string | undefined): "research" | "teaching" |
   return categoryMap[normalized] || "misc";
 }
 
-// Normalize date values
+/**
+ * Normalize date values to YYYY-MM-DD format.
+ *
+ * Accepted formats:
+ *   - ISO 8601: "2024-03-15", "2024-03-15T10:00:00Z" (preferred)
+ *   - YYYY/MM/DD: "2024/03/15"
+ *   - Unambiguous MM/DD/YYYY: where day > 12, e.g. "03/25/2024" (day=25 cannot be a month)
+ *   - Unambiguous DD/MM/YYYY: where day > 12, e.g. "25/03/2024" (first part=25 cannot be a month)
+ *
+ * Rejected (ambiguous) formats:
+ *   - Dates like "03/04/2024" where both first and second parts are <= 12,
+ *     making it impossible to distinguish MM/DD/YYYY from DD/MM/YYYY.
+ *
+ * Returns null for unparseable or ambiguous dates.
+ */
 function normalizeDate(value: string): string | null {
   if (!value) return null;
 
-  // Try parsing as ISO date
-  const isoDate = new Date(value);
-  if (!isNaN(isoDate.getTime())) {
-    return isoDate.toISOString().split("T")[0];
+  const trimmed = value.trim();
+
+  // Preferred: ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss...)
+  const isoMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:T.*)?$/);
+  if (isoMatch) {
+    const [, yearStr, monthStr, dayStr] = isoMatch;
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10);
+    const day = parseInt(dayStr, 10);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1900) {
+      const date = new Date(year, month - 1, day);
+      if (!isNaN(date.getTime()) && date.getMonth() === month - 1) {
+        return date.toISOString().split("T")[0];
+      }
+    }
+    return null;
   }
 
-  // Try parsing common formats (MM/DD/YYYY, DD/MM/YYYY)
-  const parts = value.split(/[/\-]/);
-  if (parts.length === 3) {
-    const [a, b, c] = parts.map((p) => parseInt(p, 10));
+  // YYYY/MM/DD format
+  const ymdSlashMatch = trimmed.match(/^(\d{4})[/](\d{1,2})[/](\d{1,2})$/);
+  if (ymdSlashMatch) {
+    const [, yearStr, monthStr, dayStr] = ymdSlashMatch;
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10);
+    const day = parseInt(dayStr, 10);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1900) {
+      const date = new Date(year, month - 1, day);
+      if (!isNaN(date.getTime()) && date.getMonth() === month - 1) {
+        return date.toISOString().split("T")[0];
+      }
+    }
+    return null;
+  }
 
-    // Try MM/DD/YYYY
-    if (a <= 12 && b <= 31 && c > 1900) {
+  // Handle A/B/YYYY or A-B-YYYY where A and B are 1-2 digit numbers
+  const ambiguousMatch = trimmed.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})$/);
+  if (ambiguousMatch) {
+    const [, aStr, bStr, cStr] = ambiguousMatch;
+    const a = parseInt(aStr, 10);
+    const b = parseInt(bStr, 10);
+    const c = parseInt(cStr, 10);
+
+    if (c < 1900) return null;
+
+    const aCouldBeMonth = a >= 1 && a <= 12;
+    const bCouldBeMonth = b >= 1 && b <= 12;
+
+    // If both a and b could be months (both <= 12), the format is ambiguous
+    // e.g. 03/04/2024 could be March 4 or April 3 -- reject
+    if (aCouldBeMonth && bCouldBeMonth) {
+      return null;
+    }
+
+    // Unambiguous MM/DD/YYYY: a <= 12 and b > 12 means a=month, b=day
+    if (aCouldBeMonth && !bCouldBeMonth && b >= 1 && b <= 31) {
       const date = new Date(c, a - 1, b);
-      if (!isNaN(date.getTime())) {
+      if (!isNaN(date.getTime()) && date.getMonth() === a - 1) {
         return date.toISOString().split("T")[0];
       }
     }
 
-    // Try YYYY/MM/DD
-    if (a > 1900 && b <= 12 && c <= 31) {
-      const date = new Date(a, b - 1, c);
-      if (!isNaN(date.getTime())) {
+    // Unambiguous DD/MM/YYYY: a > 12 means a=day, b=month
+    if (!aCouldBeMonth && bCouldBeMonth && a >= 1 && a <= 31) {
+      const date = new Date(c, b - 1, a);
+      if (!isNaN(date.getTime()) && date.getMonth() === b - 1) {
         return date.toISOString().split("T")[0];
       }
     }
+
+    return null;
   }
 
   return null;

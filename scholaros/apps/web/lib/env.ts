@@ -39,6 +39,7 @@ const serverEnvSchema = clientEnvSchema.extend({
   AI_SERVICE_URL: z.string().url().optional(),
   AI_SERVICE_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
+  OPENAI_API_KEY: z.string().optional(),
 
   // Node environment
   NODE_ENV: z

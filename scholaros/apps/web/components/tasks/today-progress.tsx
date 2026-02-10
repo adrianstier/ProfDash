@@ -3,10 +3,12 @@
 import { useMemo } from "react";
 import { PartyPopper, Sunrise, AlertTriangle } from "lucide-react";
 import { useTasks } from "@/lib/hooks/use-tasks";
+import { useWorkspaceStore } from "@/lib/stores/workspace-store";
 import { cn } from "@/lib/utils";
 
 export function TodayProgress() {
-  const { data: tasks = [] } = useTasks();
+  const { currentWorkspaceId } = useWorkspaceStore();
+  const { data: tasks = [] } = useTasks({ workspace_id: currentWorkspaceId });
 
   const today = new Date().toISOString().split("T")[0];
 

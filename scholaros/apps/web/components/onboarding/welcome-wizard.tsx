@@ -511,6 +511,7 @@ function StepFirstTaskGuide({ onNext, onBack }: StepFirstTaskGuideProps) {
     if (!taskInput.trim()) return;
 
     const parsed = parseQuickAdd(taskInput);
+    if (!parsed) return;
     try {
       await createTask.mutateAsync({
         title: parsed.title,

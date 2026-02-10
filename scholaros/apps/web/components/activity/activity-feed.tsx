@@ -180,19 +180,27 @@ function ActivityItem({ activity }: ActivityItemProps) {
 interface ActivityFeedProps {
   className?: string;
   maxHeight?: string;
+  maxItems?: number;
   showHeader?: boolean;
   filterUserId?: string;
   filterTaskId?: string;
   filterProjectId?: string;
+  /** @deprecated Use filterTaskId instead */
+  taskId?: string;
+  /** @deprecated Use filterProjectId instead */
+  projectId?: string;
 }
 
 export function ActivityFeed({
   className,
   maxHeight = "500px",
+  maxItems,
   showHeader = true,
   filterUserId,
   filterTaskId,
   filterProjectId,
+  taskId,
+  projectId,
 }: ActivityFeedProps) {
   const supabase = createClient();
   const { currentWorkspaceId } = useWorkspaceStore();
@@ -207,8 +215,8 @@ export function ActivityFeed({
     refetch,
   } = useActivityFeed(currentWorkspaceId || "", {
     userId: filterUserId,
-    taskId: filterTaskId,
-    projectId: filterProjectId,
+    taskId: filterTaskId || taskId,
+    projectId: filterProjectId || projectId,
   });
 
   // Real-time subscription
@@ -237,7 +245,8 @@ export function ActivityFeed({
     };
   }, [currentWorkspaceId, supabase, refetch]);
 
-  const activities = data?.pages.flatMap((page) => page.data) || [];
+  const allActivities = data?.pages.flatMap((page) => page.data) || [];
+  const activities = maxItems ? allActivities.slice(0, maxItems) : allActivities;
 
   if (!currentWorkspaceId) {
     return (

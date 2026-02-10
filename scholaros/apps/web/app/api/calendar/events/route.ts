@@ -198,7 +198,19 @@ export async function GET(request: Request) {
 
     if (needsRefresh) {
       if (connection.refresh_token_encrypted) {
-        const refreshResult = await refreshAccessToken(connection.refresh_token_encrypted);
+        // Attempt refresh up to 2 times before giving up
+        let refreshResult: RefreshTokenResult | null = null;
+        const maxRefreshAttempts = 2;
+
+        for (let attempt = 1; attempt <= maxRefreshAttempts; attempt++) {
+          refreshResult = await refreshAccessToken(connection.refresh_token_encrypted);
+          if (refreshResult) break;
+          if (attempt < maxRefreshAttempts) {
+            // Wait 1 second before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.warn(`Token refresh attempt ${attempt} failed, retrying...`);
+          }
+        }
 
         if (refreshResult) {
           accessToken = refreshResult.accessToken;
@@ -218,30 +230,22 @@ export async function GET(request: Request) {
             console.error("Failed to update refreshed token:", updateError);
           }
         } else {
-          // Token refresh failed - delete connection to force re-auth
-          console.error("Token refresh failed, deleting connection");
-          await supabase
-            .from("calendar_connections")
-            .delete()
-            .eq("id", connection.id);
+          // Token refresh failed after retries - return error without deleting connection
+          console.error(`Token refresh failed after ${maxRefreshAttempts} attempts`);
 
           return NextResponse.json({
-            error: "Calendar token expired",
-            message: "Your Google Calendar connection has expired. Please reconnect in Settings → Integrations.",
+            error: "Calendar token refresh failed",
+            message: "Unable to refresh your Google Calendar connection. Please try again, or reconnect in Settings → Integrations if the issue persists.",
             needsReconnect: true,
           }, { status: 401 });
         }
       } else {
-        // No refresh token - delete connection
-        console.error("No refresh token available, deleting connection");
-        await supabase
-          .from("calendar_connections")
-          .delete()
-          .eq("id", connection.id);
+        // No refresh token available - return error without deleting connection
+        console.error("No refresh token available for calendar connection");
 
         return NextResponse.json({
           error: "Calendar token expired",
-          message: "Your Google Calendar connection has expired. Please reconnect in Settings → Integrations.",
+          message: "Your Google Calendar connection is missing a refresh token. Please reconnect in Settings → Integrations.",
           needsReconnect: true,
         }, { status: 401 });
       }
@@ -286,15 +290,10 @@ export async function GET(request: Request) {
 
       // Provide user-friendly error messages
       if (eventsResponse.status === 401) {
-        // Unauthorized - token is invalid
-        await supabase
-          .from("calendar_connections")
-          .delete()
-          .eq("id", connection.id);
-
+        // Unauthorized - token is invalid, suggest reconnection without deleting
         return NextResponse.json({
           error: "Calendar token invalid",
-          message: "Your Google Calendar connection is invalid. Please reconnect in Settings → Integrations.",
+          message: "Your Google Calendar access token was rejected. Please try again, or reconnect in Settings → Integrations if the issue persists.",
           needsReconnect: true,
         }, { status: 401 });
       } else if (eventsResponse.status === 403) {

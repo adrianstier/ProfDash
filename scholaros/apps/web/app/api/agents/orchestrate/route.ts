@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { getAIServiceURL } from "@/lib/ai-service";
 
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
 const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY;
 
 const WorkflowStepSchema = z.object({
@@ -129,6 +129,14 @@ export async function POST(request: NextRequest) {
     };
 
     // Forward to AI service
+    const AI_SERVICE_URL = getAIServiceURL();
+    if (!AI_SERVICE_URL) {
+      return NextResponse.json(
+        { error: "AI service not configured" },
+        { status: 503 }
+      );
+    }
+
     const response = await fetch(`${AI_SERVICE_URL}/api/agents/orchestrate`, {
       method: "POST",
       headers: {

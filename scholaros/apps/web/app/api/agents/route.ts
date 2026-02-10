@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getAIServiceURL } from "@/lib/ai-service";
 
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
 const AI_SERVICE_KEY = process.env.AI_SERVICE_KEY;
 
 /**
@@ -20,6 +20,14 @@ export async function GET(_request: NextRequest) {
   }
 
   try {
+    const AI_SERVICE_URL = getAIServiceURL();
+    if (!AI_SERVICE_URL) {
+      return NextResponse.json(
+        { error: "AI service not configured" },
+        { status: 503 }
+      );
+    }
+
     const response = await fetch(`${AI_SERVICE_URL}/api/agents/`, {
       headers: {
         "X-API-Key": AI_SERVICE_KEY || "",

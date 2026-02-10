@@ -121,6 +121,13 @@ const initialState: ChatState = {
   lastReadTimestamps: {},
 };
 
+// Track typing indicator timeouts outside the store to avoid serialization issues
+const typingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+
+function getTypingKey(conversation: ConversationKey, userId: string): string {
+  return `${conversation}::${userId}`;
+}
+
 export const useChatStore = create<ChatState & ChatActions>()(
   persist(
     (set, get) => ({
@@ -274,7 +281,21 @@ export const useChatStore = create<ChatState & ChatActions>()(
           },
         })),
 
-      addTypingUser: (conversation, userId) =>
+      addTypingUser: (conversation, userId) => {
+        // Clear any existing timeout for this user+conversation
+        const key = getTypingKey(conversation, userId);
+        const existingTimeout = typingTimeouts.get(key);
+        if (existingTimeout) {
+          clearTimeout(existingTimeout);
+        }
+
+        // Set a timeout to auto-remove after 5 seconds
+        const timeout = setTimeout(() => {
+          typingTimeouts.delete(key);
+          get().removeTypingUser(conversation, userId);
+        }, 5000);
+        typingTimeouts.set(key, timeout);
+
         set((state) => {
           const current = state.typingUsers[conversation] || [];
           if (current.includes(userId)) return state;
@@ -284,9 +305,18 @@ export const useChatStore = create<ChatState & ChatActions>()(
               [conversation]: [...current, userId],
             },
           };
-        }),
+        });
+      },
 
-      removeTypingUser: (conversation, userId) =>
+      removeTypingUser: (conversation, userId) => {
+        // Clear the timeout when explicitly removing
+        const key = getTypingKey(conversation, userId);
+        const existingTimeout = typingTimeouts.get(key);
+        if (existingTimeout) {
+          clearTimeout(existingTimeout);
+          typingTimeouts.delete(key);
+        }
+
         set((state) => {
           const current = state.typingUsers[conversation] || [];
           return {
@@ -295,7 +325,8 @@ export const useChatStore = create<ChatState & ChatActions>()(
               [conversation]: current.filter((id) => id !== userId),
             },
           };
-        }),
+        });
+      },
 
       // UI actions
       setReplyingTo: (message) => set({ replyingTo: message }),

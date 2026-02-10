@@ -162,6 +162,16 @@ export function useUpdateTask() {
       const previousData = queryClient.getQueriesData({ queryKey: queryKeys.tasks.all });
 
       // Optimistically update to the new value (handle paginated response)
+      // Include completed_at logic: set timestamp when marking done, clear when unmarking
+      const optimisticUpdates = { ...updatedTask };
+      if ("status" in optimisticUpdates) {
+        if (optimisticUpdates.status === "done") {
+          optimisticUpdates.completed_at = new Date().toISOString();
+        } else {
+          optimisticUpdates.completed_at = null;
+        }
+      }
+
       queryClient.setQueriesData(
         { queryKey: queryKeys.tasks.all },
         (old: TasksResponse | undefined) => {
@@ -169,7 +179,7 @@ export function useUpdateTask() {
           return {
             ...old,
             data: old.data.map((task) =>
-              task.id === updatedTask.id ? { ...task, ...updatedTask } : task
+              task.id === updatedTask.id ? { ...task, ...optimisticUpdates } : task
             ),
           };
         }

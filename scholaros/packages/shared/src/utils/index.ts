@@ -78,8 +78,13 @@ const DAY_MAP: Record<string, number> = {
  *
  * Example: "NSF report fri #grants p1"
  */
-export function parseQuickAdd(input: string): ParsedQuickAdd {
-  const tokens = input.trim().split(/\s+/);
+export function parseQuickAdd(input: string): ParsedQuickAdd | null {
+  const trimmed = input.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const tokens = trimmed.split(/\s+/);
   const titleTokens: string[] = [];
 
   let priority: TaskPriority | undefined;
@@ -140,8 +145,16 @@ export function parseQuickAdd(input: string): ParsedQuickAdd {
     titleTokens.push(token);
   }
 
+  const title = titleTokens.join(" ");
+
+  // If no title was extracted (e.g., input was only modifiers like "p1 #grants"),
+  // return null to signal invalid/incomplete input
+  if (!title) {
+    return null;
+  }
+
   return {
-    title: titleTokens.join(" "),
+    title,
     priority,
     category,
     due,
