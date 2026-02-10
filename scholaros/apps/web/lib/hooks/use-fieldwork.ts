@@ -1,4 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  parseLocalDate,
+} from "@scholaros/shared";
 import type {
   FieldworkScheduleWithDetails,
   CreateFieldworkSchedule,
@@ -238,7 +241,7 @@ export function isUpcomingFieldwork(
 ): boolean {
   if (!startDate) return false;
 
-  const start = typeof startDate === "string" ? new Date(startDate) : new Date(startDate);
+  const start = typeof startDate === "string" ? parseLocalDate(startDate) : new Date(startDate);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   start.setHours(0, 0, 0, 0);
@@ -257,7 +260,7 @@ export function getDaysUntilFieldwork(
 ): number | null {
   if (!startDate) return null;
 
-  const start = typeof startDate === "string" ? new Date(startDate) : new Date(startDate);
+  const start = typeof startDate === "string" ? parseLocalDate(startDate) : new Date(startDate);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   start.setHours(0, 0, 0, 0);
@@ -275,8 +278,8 @@ export function getFieldworkDuration(
 ): number | null {
   if (!startDate || !endDate) return null;
 
-  const start = typeof startDate === "string" ? new Date(startDate) : new Date(startDate);
-  const end = typeof endDate === "string" ? new Date(endDate) : new Date(endDate);
+  const start = typeof startDate === "string" ? parseLocalDate(startDate) : new Date(startDate);
+  const end = typeof endDate === "string" ? parseLocalDate(endDate) : new Date(endDate);
 
   const diffTime = end.getTime() - start.getTime();
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end days

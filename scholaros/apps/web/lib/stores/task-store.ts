@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { parseLocalDate } from "@scholaros/shared";
 import type { TaskFromAPI } from "@/lib/hooks/use-tasks";
 import { sortByUrgency } from "@/lib/utils/task-grouping";
 
@@ -222,7 +223,7 @@ export function sortTasks(
         if (!a.due && !b.due) comparison = 0;
         else if (!a.due) comparison = 1;
         else if (!b.due) comparison = -1;
-        else comparison = new Date(a.due).getTime() - new Date(b.due).getTime();
+        else comparison = parseLocalDate(a.due).getTime() - parseLocalDate(b.due).getTime();
         break;
       case "created_at":
         comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();

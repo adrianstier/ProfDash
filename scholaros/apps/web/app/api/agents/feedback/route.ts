@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifyWorkspaceMembership } from "@/lib/auth/workspace";
 import { z } from "zod";
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
@@ -47,6 +48,23 @@ export async function POST(request: NextRequest) {
     }
 
     const feedback = validationResult.data;
+
+    // Look up agent session to get workspace_id
+    const { data: session } = await supabase
+      .from("agent_sessions")
+      .select("workspace_id")
+      .eq("id", feedback.sessionId)
+      .single();
+
+    if (!session) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+
+    // Verify workspace membership
+    const membership = await verifyWorkspaceMembership(supabase, user.id, session.workspace_id);
+    if (!membership) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     // Forward to AI service
     const response = await fetch(`${AI_SERVICE_URL}/api/agents/feedback`, {

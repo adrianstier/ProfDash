@@ -21,6 +21,7 @@ import {
   type CalendarEventFromAPI,
 } from "@/lib/hooks/use-calendar";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
+import { parseLocalDate } from "@scholaros/shared";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useToastActions } from "@/components/ui/toast";
@@ -353,7 +354,7 @@ export default function CalendarPage() {
           events.push({
             id: `task-${task.id}`,
             title: task.title,
-            date: new Date(task.due),
+            date: parseLocalDate(task.due),
             color: colors.color,
             bgColor: colors.bgColor,
             textColor: colors.textColor,

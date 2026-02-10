@@ -17,7 +17,7 @@ import { DocumentUpload } from "@/components/documents/document-upload";
 import { useProcessDocument } from "@/lib/hooks/use-documents";
 import { useCreateTask } from "@/lib/hooks/use-tasks";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
-import { PRIORITY_LABELS, CATEGORY_LABELS } from "@scholaros/shared";
+import { PRIORITY_LABELS, CATEGORY_LABELS, parseLocalDate } from "@scholaros/shared";
 import type { TaskPriority, TaskCategory } from "@scholaros/shared";
 
 interface ExtractTasksFromDocumentModalProps {
@@ -299,7 +299,7 @@ export function ExtractTasksFromDocumentModal({
                             {task.due_date && (
                               <span className="flex items-center gap-1 text-xs text-muted-foreground">
                                 <Calendar className="h-3 w-3" />
-                                {new Date(task.due_date).toLocaleDateString()}
+                                {parseLocalDate(task.due_date).toLocaleDateString()}
                               </span>
                             )}
                             {task.assignee && (

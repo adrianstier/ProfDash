@@ -6,6 +6,7 @@
  * adapted for ScholarOS's TaskFromAPI type.
  */
 
+import { parseLocalDate } from "@scholaros/shared";
 import type { TaskFromAPI } from "@scholaros/shared";
 
 // Priority weight mapping for urgency sort (lower = more urgent)
@@ -26,19 +27,6 @@ function startOfDay(date: Date): Date {
   return d;
 }
 
-/**
- * Parse a date-only string (YYYY-MM-DD) as local midnight.
- * new Date("2026-02-09") is parsed as UTC, which can shift the day
- * in negative-UTC-offset timezones. By appending "T00:00:00" we
- * force local-time interpretation.
- */
-function parseLocalDate(dateStr: string): Date {
-  // If it's a date-only string (YYYY-MM-DD), parse as local time
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return new Date(dateStr + "T00:00:00");
-  }
-  return new Date(dateStr);
-}
 
 function isToday(dateStr: string): boolean {
   const date = startOfDay(parseLocalDate(dateStr));
@@ -370,7 +358,7 @@ export function sortByUrgency(tasks: TaskFromAPI[]): TaskFromAPI[] {
 
     // Sort by due date (earliest first), tasks without dates go last
     if (a.due && b.due) {
-      return new Date(a.due).getTime() - new Date(b.due).getTime();
+      return parseLocalDate(a.due).getTime() - parseLocalDate(b.due).getTime();
     }
     if (a.due) return -1;
     if (b.due) return 1;

@@ -14,7 +14,7 @@ import {
 import { useExtractTasks } from "@/lib/hooks/use-ai";
 import { useCreateTask } from "@/lib/hooks/use-tasks";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
-import { PRIORITY_LABELS, CATEGORY_LABELS } from "@scholaros/shared";
+import { PRIORITY_LABELS, CATEGORY_LABELS, parseLocalDate } from "@scholaros/shared";
 import { FocusTrap } from "@/components/accessibility/focus-trap";
 import { ARIA_LABELS } from "@/lib/constants";
 
@@ -262,7 +262,7 @@ export function ExtractTasksModal({ isOpen, onClose }: ExtractTasksModalProps) {
                           {task.due_date && (
                             <span className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Calendar className="h-3 w-3" />
-                              {new Date(task.due_date).toLocaleDateString()}
+                              {parseLocalDate(task.due_date).toLocaleDateString()}
                             </span>
                           )}
                           <span className="text-xs text-muted-foreground">

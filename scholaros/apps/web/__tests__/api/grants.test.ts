@@ -36,6 +36,12 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(() => Promise.resolve(mockSupabase)),
 }));
 
+vi.mock("@/lib/auth/workspace", () => ({
+  verifyWorkspaceMembership: vi.fn(() =>
+    Promise.resolve({ id: "mem-1", role: "member" })
+  ),
+}));
+
 import { GET as searchGET } from "@/app/api/grants/search/route";
 import { GET as watchlistGET, POST as watchlistPOST } from "@/app/api/grants/watchlist/route";
 

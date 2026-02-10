@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { parseLocalDate } from "@scholaros/shared";
 import { z } from "zod";
 
 interface RouteParams {
@@ -131,7 +132,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       // Calculate next occurrence
       const nextDue = calculateNextOccurrence(
         task.recurrence_rule,
-        task.due ? new Date(task.due) : new Date(),
+        task.due ? parseLocalDate(task.due) : new Date(),
         task.recurrence_exceptions || []
       );
 

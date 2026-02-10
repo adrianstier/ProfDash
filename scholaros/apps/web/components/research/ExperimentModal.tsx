@@ -9,6 +9,7 @@ import {
   EXPERIMENT_STATUS_CONFIG,
 } from "@/lib/hooks/use-experiments";
 import { SiteSelect } from "./SiteSelect";
+import { parseLocalDate } from "@scholaros/shared";
 import type {
   ExperimentWithDetails,
   ExperimentStatus,
@@ -54,16 +55,16 @@ export function ExperimentModal({
     site_id: experiment?.site_id ?? null,
     lead_id: experiment?.lead_id ?? null,
     start_date: experiment?.start_date
-      ? new Date(experiment.start_date).toISOString().split("T")[0]
+      ? experiment.start_date.split("T")[0]
       : "",
     end_date: experiment?.end_date
-      ? new Date(experiment.end_date).toISOString().split("T")[0]
+      ? experiment.end_date.split("T")[0]
       : "",
     fieldwork_start: experiment?.fieldwork_start
-      ? new Date(experiment.fieldwork_start).toISOString().split("T")[0]
+      ? experiment.fieldwork_start.split("T")[0]
       : "",
     fieldwork_end: experiment?.fieldwork_end
-      ? new Date(experiment.fieldwork_end).toISOString().split("T")[0]
+      ? experiment.fieldwork_end.split("T")[0]
       : "",
     hypothesis: experiment?.hypothesis ?? "",
     objectives: experiment?.objectives ?? [],
@@ -96,10 +97,10 @@ export function ExperimentModal({
         description: formData.description || undefined,
         site_id: formData.site_id || undefined,
         lead_id: formData.lead_id || undefined,
-        start_date: formData.start_date ? new Date(formData.start_date) : undefined,
-        end_date: formData.end_date ? new Date(formData.end_date) : undefined,
-        fieldwork_start: formData.fieldwork_start ? new Date(formData.fieldwork_start) : undefined,
-        fieldwork_end: formData.fieldwork_end ? new Date(formData.fieldwork_end) : undefined,
+        start_date: formData.start_date ? parseLocalDate(formData.start_date) : undefined,
+        end_date: formData.end_date ? parseLocalDate(formData.end_date) : undefined,
+        fieldwork_start: formData.fieldwork_start ? parseLocalDate(formData.fieldwork_start) : undefined,
+        fieldwork_end: formData.fieldwork_end ? parseLocalDate(formData.fieldwork_end) : undefined,
         hypothesis: formData.hypothesis || undefined,
       };
 

@@ -31,6 +31,7 @@ function createMockChain(result: { data: unknown; error: unknown }) {
 const mockSupabase = {
   auth: { getUser: vi.fn() },
   from: vi.fn(() => createMockChain({ data: null, error: null })),
+  rpc: vi.fn(() => Promise.resolve({ data: null as unknown, error: null as unknown })),
 };
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -694,7 +695,7 @@ describe("Messages API - POST /api/messages/[id]/read", () => {
 
     // Message found
     mockSupabase.from.mockReturnValueOnce(
-      createMockChain({ data: { workspace_id: workspaceId, read_by: [] }, error: null })
+      createMockChain({ data: { workspace_id: workspaceId }, error: null })
     );
     // Membership check fails
     mockSupabase.from.mockReturnValueOnce(
@@ -715,18 +716,19 @@ describe("Messages API - POST /api/messages/[id]/read", () => {
       error: null,
     });
 
-    // Message found (user not in read_by)
+    // Message found
     mockSupabase.from.mockReturnValueOnce(
-      createMockChain({ data: { workspace_id: workspaceId, read_by: [] }, error: null })
+      createMockChain({ data: { workspace_id: workspaceId }, error: null })
     );
     // Membership check
     mockSupabase.from.mockReturnValueOnce(
       createMockChain({ data: { id: "member-1" }, error: null })
     );
-    // Update read_by
-    mockSupabase.from.mockReturnValueOnce(
-      createMockChain({ data: null, error: null })
-    );
+    // RPC mark_message_read
+    mockSupabase.rpc.mockResolvedValueOnce({
+      data: [mockUser.id],
+      error: null,
+    });
 
     const { POST } = await import("@/app/api/messages/[id]/read/route");
     const res = await POST(
@@ -738,20 +740,25 @@ describe("Messages API - POST /api/messages/[id]/read", () => {
     expect(body.success).toBe(true);
   });
 
-  it("skips update when already read", async () => {
+  it("handles idempotent read via atomic RPC", async () => {
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
       error: null,
     });
 
-    // Message found (user already in read_by)
+    // Message found
     mockSupabase.from.mockReturnValueOnce(
-      createMockChain({ data: { workspace_id: workspaceId, read_by: [mockUser.id] }, error: null })
+      createMockChain({ data: { workspace_id: workspaceId }, error: null })
     );
     // Membership check
     mockSupabase.from.mockReturnValueOnce(
       createMockChain({ data: { id: "member-1" }, error: null })
     );
+    // RPC mark_message_read (idempotent - user already in read_by)
+    mockSupabase.rpc.mockResolvedValueOnce({
+      data: [mockUser.id],
+      error: null,
+    });
 
     const { POST } = await import("@/app/api/messages/[id]/read/route");
     const res = await POST(

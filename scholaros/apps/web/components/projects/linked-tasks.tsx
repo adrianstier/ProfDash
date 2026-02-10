@@ -2,6 +2,7 @@
 
 import { Plus, Check, Link2, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { parseLocalDate } from "@scholaros/shared";
 import { useTasks, useUpdateTask, type TaskFromAPI } from "@/lib/hooks/use-tasks";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
 
@@ -125,7 +126,7 @@ function LinkedTaskItem({ task }: LinkedTaskItemProps) {
         </p>
         {task.due && (
           <p className="text-xs text-muted-foreground">
-            Due: {new Date(task.due).toLocaleDateString()}
+            Due: {parseLocalDate(task.due).toLocaleDateString()}
           </p>
         )}
       </div>

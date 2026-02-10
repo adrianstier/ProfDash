@@ -11,6 +11,7 @@ import {
 } from "@/lib/hooks/use-permits";
 import { useFieldSites } from "@/lib/hooks/use-field-sites";
 import { useExperiments } from "@/lib/hooks/use-experiments";
+import { parseLocalDate } from "@scholaros/shared";
 import type {
   PermitWithDetails,
   PermitStatus,
@@ -45,10 +46,10 @@ export function PermitModal({
     pi_name: permit?.pi_name ?? "",
     status: permit?.status ?? ("pending" as PermitStatus),
     start_date: permit?.start_date
-      ? new Date(permit.start_date).toISOString().split("T")[0]
+      ? permit.start_date.split("T")[0]
       : "",
     expiration_date: permit?.expiration_date
-      ? new Date(permit.expiration_date).toISOString().split("T")[0]
+      ? permit.expiration_date.split("T")[0]
       : "",
     renewal_reminder_days: permit?.renewal_reminder_days ?? 60,
     site_id: permit?.site_id ?? null,
@@ -75,9 +76,9 @@ export function PermitModal({
         permit_number: formData.permit_number || undefined,
         issuing_authority: formData.issuing_authority || undefined,
         pi_name: formData.pi_name || undefined,
-        start_date: formData.start_date ? new Date(formData.start_date) : undefined,
+        start_date: formData.start_date ? parseLocalDate(formData.start_date) : undefined,
         expiration_date: formData.expiration_date
-          ? new Date(formData.expiration_date)
+          ? parseLocalDate(formData.expiration_date)
           : undefined,
         site_id: formData.site_id || undefined,
         experiment_id: formData.experiment_id || undefined,

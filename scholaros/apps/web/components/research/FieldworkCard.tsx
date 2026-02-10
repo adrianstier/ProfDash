@@ -13,6 +13,7 @@ import {
   Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { parseLocalDate } from "@scholaros/shared";
 import {
   getFieldworkStatusConfig,
   getDaysUntilFieldwork,
@@ -40,7 +41,7 @@ export function FieldworkCard({
 
   const formatDate = (date: Date | string | null | undefined) => {
     if (!date) return "TBD";
-    const d = typeof date === "string" ? new Date(date) : new Date(date);
+    const d = typeof date === "string" ? parseLocalDate(date) : date;
     return d.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifyWorkspaceMembership } from "@/lib/auth/workspace";
 import { z } from "zod";
 
 const AddToWatchlistSchema = z.object({
@@ -32,6 +33,12 @@ export async function GET(request: Request) {
         { error: "workspace_id is required" },
         { status: 400 }
       );
+    }
+
+    // Verify workspace membership
+    const membership = await verifyWorkspaceMembership(supabase, user.id, workspaceId);
+    if (!membership) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Fetch watchlist with opportunity details
@@ -82,6 +89,12 @@ export async function POST(request: Request) {
     }
 
     const { workspace_id, opportunity_id, notes, priority } = validationResult.data;
+
+    // Verify workspace membership
+    const membership = await verifyWorkspaceMembership(supabase, user.id, workspace_id);
+    if (!membership) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     // Check if already in watchlist
     const { data: existing } = await supabase

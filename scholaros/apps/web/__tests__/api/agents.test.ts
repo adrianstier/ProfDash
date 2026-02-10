@@ -37,6 +37,12 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(() => Promise.resolve(mockSupabase)),
 }));
 
+vi.mock("@/lib/auth/workspace", () => ({
+  verifyWorkspaceMembership: vi.fn(() =>
+    Promise.resolve({ id: "mem-1", role: "member" })
+  ),
+}));
+
 // Mock global fetch for AI service calls
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -399,6 +405,14 @@ describe("Agents API - POST /api/agents/feedback", () => {
       data: { user: mockUser },
       error: null,
     });
+
+    // Mock agent_sessions lookup for workspace verification
+    mockSupabase.from.mockReturnValueOnce(
+      createMockChain({
+        data: { workspace_id: "ws-1" },
+        error: null,
+      })
+    );
 
     mockFetch.mockResolvedValue({
       ok: true,

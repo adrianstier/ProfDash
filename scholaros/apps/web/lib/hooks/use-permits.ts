@@ -1,4 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  parseLocalDate,
+} from "@scholaros/shared";
 import type {
   PermitWithDetails,
   CreatePermit,
@@ -287,7 +290,7 @@ export function getDaysUntilExpiration(
   if (!expirationDate) return null;
 
   const expDate =
-    typeof expirationDate === "string" ? new Date(expirationDate) : new Date(expirationDate);
+    typeof expirationDate === "string" ? parseLocalDate(expirationDate) : new Date(expirationDate);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   expDate.setHours(0, 0, 0, 0);

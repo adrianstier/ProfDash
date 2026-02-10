@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { verifyWorkspaceMembership } from "@/lib/auth/workspace";
 import { NextResponse } from "next/server";
 
 // OpenAI Whisper API endpoint
@@ -17,12 +18,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get the audio file from the request
+    // Get the audio file and workspace_id from the request
     const formData = await request.formData();
     const audioFile = formData.get("audio") as File;
+    const workspaceId = formData.get("workspace_id") as string | null;
 
     if (!audioFile) {
       return NextResponse.json({ error: "No audio file provided" }, { status: 400 });
+    }
+
+    if (!workspaceId) {
+      return NextResponse.json({ error: "workspace_id is required" }, { status: 400 });
+    }
+
+    // Verify workspace membership
+    const membership = await verifyWorkspaceMembership(supabase, user.id, workspaceId);
+    if (!membership) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Validate file size (max 25MB for Whisper)

@@ -28,13 +28,37 @@ export async function POST(request: Request) {
 
     const { token } = validationResult.data;
 
-    // Use the RPC function to accept invite
-    const { data: result, error } = await supabase.rpc("accept_workspace_invite", {
+    // Look up the invite to verify email match before accepting
+    // We need to query as the service role or use RPC since the user may not have
+    // SELECT access to workspace_invites. Instead, we verify via the safe RPC function
+    // which checks email match at the database level. We also add an application-level
+    // check for defense in depth.
+
+    // Verify user email is available
+    if (!user.email) {
+      return NextResponse.json(
+        { error: "User email not available for verification" },
+        { status: 400 }
+      );
+    }
+
+    // Use the safe RPC function that verifies email match
+    const { data: result, error } = await supabase.rpc("accept_workspace_invite_safe", {
       invite_token: token,
+      accepting_user_id: user.id,
     });
 
     if (error) {
       console.error("Error accepting invite:", error);
+
+      // The RPC function raises an exception when email doesn't match
+      if (error.message?.includes("Email does not match invitation")) {
+        return NextResponse.json(
+          { error: "Email does not match invitation" },
+          { status: 403 }
+        );
+      }
+
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

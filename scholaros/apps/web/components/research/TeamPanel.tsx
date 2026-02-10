@@ -11,6 +11,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { parseLocalDate } from "@scholaros/shared";
 import {
   useExperimentTeam,
   useAddTeamMember,
@@ -321,8 +322,8 @@ function AddMemberModal({
         personnel_id: formData.personnel_id,
         role: formData.role,
         site_access: formData.site_access.length > 0 ? formData.site_access : undefined,
-        start_date: formData.start_date ? new Date(formData.start_date) : undefined,
-        end_date: formData.end_date ? new Date(formData.end_date) : undefined,
+        start_date: formData.start_date ? parseLocalDate(formData.start_date) : undefined,
+        end_date: formData.end_date ? parseLocalDate(formData.end_date) : undefined,
         notes: formData.notes || undefined,
       });
       onClose();

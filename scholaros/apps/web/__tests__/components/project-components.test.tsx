@@ -31,6 +31,12 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("@scholaros/shared", () => ({
+  parseLocalDate: (dateStr: string) => {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return new Date(dateStr + "T00:00:00");
+    }
+    return new Date(dateStr);
+  },
   PROJECT_TYPE_CONFIG: {
     manuscript: { color: "bg-blue-500", label: "Manuscript" },
     grant: { color: "bg-green-500", label: "Grant" },
@@ -212,9 +218,8 @@ describe("ProjectCard", () => {
     it("renders due date when present", () => {
       const project = createMockProject({ due_date: "2025-06-15" });
       render(<ProjectCard project={project} />);
-      // The component uses new Date(due_date).toLocaleDateString() which may
-      // shift the date depending on timezone, so match the actual output
-      const expectedText = new Date("2025-06-15").toLocaleDateString();
+      // parseLocalDate("2025-06-15") parses as local midnight, avoiding UTC shift
+      const expectedText = new Date("2025-06-15T00:00:00").toLocaleDateString();
       const timeEl = screen.getByText(expectedText);
       expect(timeEl).toBeInTheDocument();
     });

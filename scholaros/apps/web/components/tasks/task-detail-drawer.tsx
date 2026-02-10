@@ -19,6 +19,7 @@ import {
   Plus,
   Clock,
 } from "lucide-react";
+import { parseLocalDate } from "@scholaros/shared";
 import type { TaskCategory, TaskPriority, TaskStatus, Subtask } from "@scholaros/shared";
 import { useTaskStore } from "@/lib/stores/task-store";
 import { useWorkspaceStore } from "@/lib/stores/workspace-store";
@@ -131,7 +132,7 @@ export function TaskDetailDrawer() {
 
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "No due date";
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return parseLocalDate(dateString).toLocaleDateString("en-US", {
       weekday: "long",
       year: "numeric",
       month: "long",
@@ -529,7 +530,7 @@ export function TaskDetailDrawer() {
                       recurrence_rule: rrule,
                       is_recurring: !!rrule,
                     })}
-                    startDate={formData.due ? new Date(formData.due) : null}
+                    startDate={formData.due ? parseLocalDate(formData.due) : null}
                   />
                 ) : task.is_recurring && task.recurrence_rule ? (
                   <span className="text-sm">

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Calendar, CheckCircle2, FileText, DollarSign, Folder, FlaskConical, Trash2, Edit } from "lucide-react";
-import { PROJECT_TYPE_CONFIG, getStageLabel, getStageColor, PROJECT_STATUS_CONFIG } from "@scholaros/shared";
+import { PROJECT_TYPE_CONFIG, getStageLabel, getStageColor, PROJECT_STATUS_CONFIG, parseLocalDate } from "@scholaros/shared";
 import type { ProjectFromAPI } from "@/lib/hooks/use-projects";
 import { ARIA_LABELS } from "@/lib/constants";
 
@@ -105,7 +105,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
             <div className="flex items-center gap-1">
               <Calendar className="h-4 w-4" aria-hidden="true" />
               <time dateTime={project.due_date}>
-                {new Date(project.due_date).toLocaleDateString()}
+                {parseLocalDate(project.due_date).toLocaleDateString()}
               </time>
             </div>
           )}

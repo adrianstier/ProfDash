@@ -18,6 +18,12 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(() => Promise.resolve(mockSupabase)),
 }));
 
+vi.mock("@/lib/auth/workspace", () => ({
+  verifyWorkspaceMembership: vi.fn(() =>
+    Promise.resolve({ id: "mem-1", role: "member" })
+  ),
+}));
+
 const MOCK_USER = { id: "user-123", email: "test@example.com" };
 
 /**
@@ -116,6 +122,7 @@ describe("Voice Transcribe API - POST /api/voice/transcribe", () => {
         audio: new File(["fake-audio"], "recording.webm", {
           type: "audio/webm",
         }),
+        workspace_id: "550e8400-e29b-41d4-a716-446655440000",
       }
     );
     const response = await POST(request);
@@ -148,6 +155,7 @@ describe("Voice Transcribe API - POST /api/voice/transcribe", () => {
           audio: new File(["fake-audio"], "recording.webm", {
             type: "audio/webm",
           }),
+          workspace_id: "550e8400-e29b-41d4-a716-446655440000",
         }
       );
       const response = await POST(request);
@@ -192,6 +200,7 @@ describe("Voice Transcribe API - POST /api/voice/transcribe", () => {
           audio: new File(["fake-audio"], "recording.webm", {
             type: "audio/webm",
           }),
+          workspace_id: "550e8400-e29b-41d4-a716-446655440000",
         }
       );
       const response = await POST(request);
@@ -228,6 +237,7 @@ describe("Voice Transcribe API - POST /api/voice/transcribe", () => {
           audio: new File(["fake-audio"], "recording.webm", {
             type: "audio/webm",
           }),
+          workspace_id: "550e8400-e29b-41d4-a716-446655440000",
         }
       );
       const response = await POST(request);

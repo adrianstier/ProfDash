@@ -19,10 +19,10 @@ export async function POST(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get the message
+    // Verify user has access to the message's workspace
     const { data: message, error: fetchError } = await supabase
       .from("workspace_messages")
-      .select("workspace_id, read_by")
+      .select("workspace_id")
       .eq("id", id)
       .single();
 
@@ -30,7 +30,6 @@ export async function POST(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Message not found" }, { status: 404 });
     }
 
-    // Verify user is member of workspace
     const { data: membership } = await supabase
       .from("workspace_members")
       .select("id")
@@ -45,20 +44,18 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
     }
 
-    // Add user to read_by if not already present
-    const currentReadBy = message.read_by || [];
-    if (!currentReadBy.includes(user.id)) {
-      const newReadBy = [...currentReadBy, user.id];
-
-      const { error } = await supabase
-        .from("workspace_messages")
-        .update({ read_by: newReadBy })
-        .eq("id", id);
-
-      if (error) {
-        console.error("Error marking message as read:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    // Atomically mark as read via Postgres function (no read-modify-write race)
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
+      "mark_message_read",
+      {
+        p_message_id: id,
+        p_user_id: user.id,
       }
+    );
+
+    if (rpcError) {
+      console.error("Error marking message as read:", rpcError);
+      return NextResponse.json({ error: rpcError.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
@@ -94,10 +91,10 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Get all messages
+    // Get all messages to verify workspace access
     const { data: messages, error: fetchError } = await supabase
       .from("workspace_messages")
-      .select("id, workspace_id, read_by")
+      .select("id, workspace_id")
       .in("id", message_ids);
 
     if (fetchError) {
@@ -127,25 +124,22 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Update each message that doesn't already have user in read_by
-    const updates = messages
-      .filter((m) => !(m.read_by || []).includes(user.id))
-      .map((m) => ({
-        id: m.id,
-        read_by: [...(m.read_by || []), user.id],
-      }));
+    // Atomically mark each message as read via Postgres function
+    let updated = 0;
+    for (const msg of messages) {
+      const { error: rpcError } = await supabase.rpc("mark_message_read", {
+        p_message_id: msg.id,
+        p_user_id: user.id,
+      });
 
-    if (updates.length > 0) {
-      // Use upsert to update multiple rows
-      for (const update of updates) {
-        await supabase
-          .from("workspace_messages")
-          .update({ read_by: update.read_by })
-          .eq("id", update.id);
+      if (rpcError) {
+        console.error(`Error marking message ${msg.id} as read:`, rpcError);
+      } else {
+        updated++;
       }
     }
 
-    return NextResponse.json({ success: true, updated: updates.length });
+    return NextResponse.json({ success: true, updated });
   } catch (error) {
     console.error("Unexpected error:", error);
     return NextResponse.json(

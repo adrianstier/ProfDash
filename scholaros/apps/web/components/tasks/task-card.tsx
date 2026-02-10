@@ -16,6 +16,7 @@ import {
   Repeat,
   ListChecks,
 } from "lucide-react";
+import { parseLocalDate } from "@scholaros/shared";
 import type { TaskPriority, TaskCategory } from "@scholaros/shared";
 import type { TaskFromAPI } from "@/lib/hooks/use-tasks";
 import { useTaskStore } from "@/lib/stores/task-store";
@@ -230,10 +231,7 @@ export const TaskCard = memo(function TaskCard({
   };
 
   const formatDueDate = useCallback((dateString: string) => {
-    // Parse date-only strings as local time to avoid timezone shift
-    const date = /^\d{4}-\d{2}-\d{2}$/.test(dateString)
-      ? new Date(dateString + "T00:00:00")
-      : new Date(dateString);
+    const date = parseLocalDate(dateString);
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -253,10 +251,11 @@ export const TaskCard = memo(function TaskCard({
 
   const isOverdue = useMemo(() => {
     if (!task.due || task.status === "done") return false;
-    // Compare date strings (YYYY-MM-DD) to avoid timezone issues
-    // task.due is already a date-only string from the API
-    const today = new Date().toISOString().split("T")[0];
-    return task.due < today;
+    const dueDate = parseLocalDate(task.due);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate < today;
   }, [task.due, task.status]);
 
   const priorityStyle = task.priority

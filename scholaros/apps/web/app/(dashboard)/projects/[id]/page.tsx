@@ -21,7 +21,7 @@ import {
   Users,
 } from "lucide-react";
 import { useAgentStore } from "@/lib/stores/agent-store";
-import { PROJECT_TYPE_CONFIG, PROJECT_STATUS_CONFIG } from "@scholaros/shared";
+import { PROJECT_TYPE_CONFIG, PROJECT_STATUS_CONFIG, parseLocalDate } from "@scholaros/shared";
 import {
   useProject,
   useUpdateProject,
@@ -191,7 +191,7 @@ export default function ProjectDetailPage() {
                 {project.due_date && (
                   <span className="flex items-center gap-1 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
-                    {new Date(project.due_date).toLocaleDateString()}
+                    {parseLocalDate(project.due_date).toLocaleDateString()}
                   </span>
                 )}
               </div>

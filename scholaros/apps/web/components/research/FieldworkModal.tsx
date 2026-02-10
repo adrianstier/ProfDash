@@ -8,6 +8,7 @@ import {
   FIELDWORK_STATUS_CONFIG,
 } from "@/lib/hooks/use-fieldwork";
 import { useFieldSites } from "@/lib/hooks/use-field-sites";
+import { parseLocalDate } from "@scholaros/shared";
 import type { FieldworkScheduleWithDetails, FieldworkStatus } from "@scholaros/shared";
 
 interface FieldworkModalProps {
@@ -36,10 +37,10 @@ export function FieldworkModal({
     status: schedule?.status ?? ("planned" as FieldworkStatus),
     site_id: schedule?.site_id ?? null,
     start_date: schedule?.start_date
-      ? new Date(schedule.start_date).toISOString().split("T")[0]
+      ? schedule.start_date.split("T")[0]
       : "",
     end_date: schedule?.end_date
-      ? new Date(schedule.end_date).toISOString().split("T")[0]
+      ? schedule.end_date.split("T")[0]
       : "",
     travel_booked: schedule?.travel_booked ?? false,
     accommodation_booked: schedule?.accommodation_booked ?? false,
@@ -56,8 +57,8 @@ export function FieldworkModal({
         ...formData,
         description: formData.description || undefined,
         site_id: formData.site_id || undefined,
-        start_date: formData.start_date ? new Date(formData.start_date) : new Date(),
-        end_date: formData.end_date ? new Date(formData.end_date) : new Date(),
+        start_date: formData.start_date ? parseLocalDate(formData.start_date) : new Date(),
+        end_date: formData.end_date ? parseLocalDate(formData.end_date) : new Date(),
         logistics_notes: formData.logistics_notes || undefined,
         team_member_ids:
           formData.team_member_ids.length > 0 ? formData.team_member_ids : undefined,

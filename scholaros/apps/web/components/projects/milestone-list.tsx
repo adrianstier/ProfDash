@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Check, Calendar, Trash2, GripVertical } from "lucide-react";
+import { parseLocalDate } from "@scholaros/shared";
 import {
   useMilestones,
   useCreateMilestone,
@@ -200,7 +201,7 @@ function MilestoneItem({ milestone, onToggleComplete, onDelete }: MilestoneItemP
       {milestone.due_date && (
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Calendar className="h-3 w-3" />
-          {new Date(milestone.due_date).toLocaleDateString()}
+          {parseLocalDate(milestone.due_date).toLocaleDateString()}
         </div>
       )}
 

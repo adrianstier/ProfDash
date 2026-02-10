@@ -10,6 +10,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { parseLocalDate } from "@scholaros/shared";
 import {
   useFieldworkSchedules,
   useDeleteFieldworkSchedule,
@@ -273,8 +274,8 @@ function TimelineView({
   const getBarPosition = (schedule: FieldworkScheduleWithDetails) => {
     if (!schedule.start_date) return null;
 
-    const start = new Date(schedule.start_date);
-    const end = schedule.end_date ? new Date(schedule.end_date) : start;
+    const start = parseLocalDate(schedule.start_date);
+    const end = schedule.end_date ? parseLocalDate(schedule.end_date) : start;
 
     const startOffset = Math.max(
       0,

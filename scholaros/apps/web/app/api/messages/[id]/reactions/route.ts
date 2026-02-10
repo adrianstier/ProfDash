@@ -33,10 +33,10 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     const { reaction } = validationResult.data;
 
-    // Get the message and verify access
+    // Verify user has access to the message's workspace
     const { data: message, error: fetchError } = await supabase
       .from("workspace_messages")
-      .select("workspace_id, reactions")
+      .select("workspace_id")
       .eq("id", id)
       .single();
 
@@ -44,7 +44,6 @@ export async function POST(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Message not found" }, { status: 404 });
     }
 
-    // Verify user is member of workspace
     const { data: membership } = await supabase
       .from("workspace_members")
       .select("id")
@@ -59,53 +58,35 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
     }
 
-    // Update reactions array
-    const currentReactions = (message.reactions || []) as Array<{
-      user_id: string;
-      reaction: string;
-      created_at: string;
-    }>;
-
-    // Remove existing reaction from this user (if any) to toggle/replace
-    const filteredReactions = currentReactions.filter(
-      (r) => r.user_id !== user.id
+    // Atomically add reaction via Postgres function (no read-modify-write race)
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
+      "add_message_reaction",
+      {
+        p_message_id: id,
+        p_user_id: user.id,
+        p_reaction: reaction,
+      }
     );
 
-    // Check if user is toggling off the same reaction
-    const existingReaction = currentReactions.find(
-      (r) => r.user_id === user.id && r.reaction === reaction
-    );
-
-    let newReactions;
-    if (existingReaction) {
-      // Toggle off - just use filtered reactions (removes the reaction)
-      newReactions = filteredReactions;
-    } else {
-      // Add new reaction
-      newReactions = [
-        ...filteredReactions,
-        {
-          user_id: user.id,
-          reaction,
-          created_at: new Date().toISOString(),
-        },
-      ];
+    if (rpcError) {
+      console.error("Error adding reaction:", rpcError);
+      return NextResponse.json({ error: rpcError.message }, { status: 500 });
     }
 
+    // Re-fetch the full message with user profile for the response
     const { data, error } = await supabase
       .from("workspace_messages")
-      .update({ reactions: newReactions })
-      .eq("id", id)
       .select(
         `
         *,
         user:profiles!workspace_messages_user_id_profiles_fkey(id, full_name, avatar_url)
       `
       )
+      .eq("id", id)
       .single();
 
     if (error) {
-      console.error("Error updating reactions:", error);
+      console.error("Error fetching updated message:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -133,10 +114,10 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get the message
+    // Verify user has access to the message's workspace
     const { data: message, error: fetchError } = await supabase
       .from("workspace_messages")
-      .select("workspace_id, reactions")
+      .select("workspace_id")
       .eq("id", id)
       .single();
 
@@ -144,7 +125,6 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Message not found" }, { status: 404 });
     }
 
-    // Verify user is member of workspace
     const { data: membership } = await supabase
       .from("workspace_members")
       .select("id")
@@ -159,28 +139,34 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       );
     }
 
-    // Remove all reactions from this user
-    const currentReactions = (message.reactions || []) as Array<{
-      user_id: string;
-      reaction: string;
-      created_at: string;
-    }>;
-    const newReactions = currentReactions.filter((r) => r.user_id !== user.id);
+    // Atomically remove all reactions by this user via Postgres function
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
+      "remove_all_user_reactions",
+      {
+        p_message_id: id,
+        p_user_id: user.id,
+      }
+    );
 
+    if (rpcError) {
+      console.error("Error removing reactions:", rpcError);
+      return NextResponse.json({ error: rpcError.message }, { status: 500 });
+    }
+
+    // Re-fetch the full message with user profile for the response
     const { data, error } = await supabase
       .from("workspace_messages")
-      .update({ reactions: newReactions })
-      .eq("id", id)
       .select(
         `
         *,
         user:profiles!workspace_messages_user_id_profiles_fkey(id, full_name, avatar_url)
       `
       )
+      .eq("id", id)
       .single();
 
     if (error) {
-      console.error("Error removing reactions:", error);
+      console.error("Error fetching updated message:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

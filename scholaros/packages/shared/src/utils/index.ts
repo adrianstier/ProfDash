@@ -169,10 +169,23 @@ function getNextDayOfWeek(dayIndex: number): Date {
   return nextDay;
 }
 
+/**
+ * Parse a date-only string (YYYY-MM-DD) as local midnight instead of UTC.
+ * Fixes timezone off-by-one: new Date("2026-02-09") = UTC midnight = Feb 8 in US timezones.
+ */
+export function parseLocalDate(dateStr: string): Date {
+  // Date-only strings like "2026-02-09" are parsed as UTC by spec.
+  // Adding T00:00:00 (no Z suffix) forces local timezone interpretation.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return new Date(dateStr + "T00:00:00");
+  }
+  return new Date(dateStr);
+}
+
 // Date formatting utilities
 export function formatDate(date: Date | string | null | undefined): string {
   if (!date) return "";
-  const d = typeof date === "string" ? new Date(date) : date;
+  const d = typeof date === "string" ? parseLocalDate(date) : date;
   return d.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -184,7 +197,7 @@ export function formatRelativeDate(
   date: Date | string | null | undefined
 ): string {
   if (!date) return "";
-  const d = typeof date === "string" ? new Date(date) : date;
+  const d = typeof date === "string" ? parseLocalDate(date) : date;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -207,7 +220,7 @@ export function formatRelativeDate(
 
 export function isOverdue(date: Date | string | null | undefined): boolean {
   if (!date) return false;
-  const d = new Date(typeof date === "string" ? date : date.getTime());
+  const d = typeof date === "string" ? parseLocalDate(date) : new Date(date.getTime());
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   d.setHours(0, 0, 0, 0);
@@ -216,7 +229,7 @@ export function isOverdue(date: Date | string | null | undefined): boolean {
 
 export function isDueToday(date: Date | string | null | undefined): boolean {
   if (!date) return false;
-  const d = typeof date === "string" ? new Date(date) : date;
+  const d = typeof date === "string" ? parseLocalDate(date) : date;
   const today = new Date();
   return (
     d.getDate() === today.getDate() &&
