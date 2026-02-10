@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { encryptToken } from "@/lib/crypto";
+import { verifyState } from "@/lib/oauth-state";
 import { z } from "zod";
 
 const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID;
@@ -46,10 +47,17 @@ export async function GET(request: Request) {
       );
     }
 
-    // Verify state and get user info
+    // Verify state HMAC signature and get user info
+    const verifiedPayload = verifyState(state);
+    if (!verifiedPayload) {
+      return NextResponse.redirect(
+        new URL("/settings?error=invalid_state", request.url)
+      );
+    }
+
     let stateData: { userId: string; timestamp: number };
     try {
-      stateData = JSON.parse(Buffer.from(state, "base64").toString());
+      stateData = JSON.parse(Buffer.from(verifiedPayload, "base64").toString());
     } catch {
       return NextResponse.redirect(
         new URL("/settings?error=invalid_state", request.url)

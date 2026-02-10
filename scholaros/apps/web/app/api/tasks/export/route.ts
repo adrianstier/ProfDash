@@ -55,6 +55,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ data: tasks });
     }
 
+    // Sanitize CSV field to prevent CSV injection (formula injection)
+    // Prefix dangerous characters with a single quote to neutralize them
+    function sanitizeCsvField(value: string): string {
+      const escaped = value.replace(/"/g, '""');
+      // Prefix with single quote if starts with =, +, -, @, tab, or carriage return
+      if (/^[=+\-@\t\r]/.test(escaped)) {
+        return `"'${escaped}"`;
+      }
+      return `"${escaped}"`;
+    }
+
     // Generate CSV
     const headers = [
       "ID",
@@ -75,8 +86,8 @@ export async function GET(request: NextRequest) {
       ...(tasks || []).map((task) => {
         return [
           task.id,
-          `"${(task.title || "").replace(/"/g, '""')}"`,
-          `"${(task.description || "").replace(/"/g, '""')}"`,
+          sanitizeCsvField(task.title || ""),
+          sanitizeCsvField(task.description || ""),
           task.status,
           task.priority,
           task.category,

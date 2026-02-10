@@ -7,6 +7,11 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get("code");
   const next = requestUrl.searchParams.get("next") ?? "/today";
 
+  // Validate redirect target to prevent open redirect attacks.
+  // Only allow relative paths starting with "/" and not "//".
+  const isRelativePath = next.startsWith("/") && !next.startsWith("//");
+  const safeNext = isRelativePath ? next : "/today";
+
   if (code) {
     const cookieStore = await cookies();
 
@@ -30,7 +35,7 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      return NextResponse.redirect(new URL(next, requestUrl.origin));
+      return NextResponse.redirect(new URL(safeNext, requestUrl.origin));
     }
 
     console.error("Auth callback error:", error.message);

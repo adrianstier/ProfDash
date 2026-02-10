@@ -29,7 +29,7 @@ import { ARIA_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { FocusTrap } from "@/components/accessibility/focus-trap";
-import { RecurrencePicker, RecurrenceBadge } from "@/components/tasks/recurrence-picker";
+import { RecurrencePicker } from "@/components/tasks/recurrence-picker";
 import { rruleToText } from "@/lib/utils/recurrence";
 
 const priorityOptions: { value: TaskPriority; label: string; color: string }[] = [

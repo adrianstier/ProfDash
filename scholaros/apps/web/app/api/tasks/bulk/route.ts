@@ -64,7 +64,7 @@ export async function PATCH(request: NextRequest) {
       updateData.completed_at = null;
     }
 
-    // Update all tasks that match the IDs and belong to the user
+    // Update all tasks that match the IDs
     // RLS will handle workspace-level permissions
     const { data, error } = await supabase
       .from("tasks")
@@ -80,9 +80,15 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // Detect partial failures: some tasks may not have been updated due to RLS
+    const updatedCount = data?.length || 0;
+    const requestedCount = taskIds.length;
+
     return NextResponse.json({
       success: true,
-      updated: data?.length || 0,
+      updated: updatedCount,
+      requested: requestedCount,
+      partialFailure: updatedCount < requestedCount,
       data,
     });
   } catch (error) {
@@ -122,7 +128,7 @@ export async function DELETE(request: NextRequest) {
     // RLS will handle workspace-level permissions
     const { error, count } = await supabase
       .from("tasks")
-      .delete()
+      .delete({ count: "exact" })
       .in("id", taskIds);
 
     if (error) {
@@ -133,9 +139,13 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    const deletedCount = count ?? 0;
+
     return NextResponse.json({
       success: true,
-      deleted: count || taskIds.length,
+      deleted: deletedCount,
+      requested: taskIds.length,
+      partialFailure: deletedCount < taskIds.length,
     });
   } catch (error) {
     console.error("Bulk delete error:", error);

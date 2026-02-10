@@ -16,6 +16,31 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Verify user has access to the project via workspace membership
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("workspace_id")
+      .eq("id", projectId)
+      .single();
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", project.workspace_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Not a member of this workspace" },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
 
     // Validate the request body
@@ -70,12 +95,37 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; roleId: string }> }
 ) {
   try {
-    const { roleId } = await params;
+    const { id: projectId, roleId } = await params;
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify user has access to the project via workspace membership
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("workspace_id")
+      .eq("id", projectId)
+      .single();
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", project.workspace_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Not a member of this workspace" },
+        { status: 403 }
+      );
     }
 
     // First, remove this role from any phase assignments

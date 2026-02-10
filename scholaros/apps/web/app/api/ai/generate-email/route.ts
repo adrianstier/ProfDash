@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
+import { checkRateLimit, getRateLimitIdentifier, RATE_LIMIT_CONFIGS, getRateLimitHeaders } from "@/lib/rate-limit";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -52,6 +53,16 @@ export async function POST(request: Request) {
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Rate limiting
+    const rateLimitId = getRateLimitIdentifier(request, user.id);
+    const rateLimitResult = checkRateLimit(`ai:email:${rateLimitId}`, RATE_LIMIT_CONFIGS.ai);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please try again later." },
+        { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+      );
     }
 
     const body = await request.json();
@@ -210,8 +221,9 @@ Return ONLY valid JSON, no markdown.`;
       const cleanedText = textContent.text.replace(/```json\n?|\n?```/g, "").trim();
       result = JSON.parse(cleanedText);
     } catch {
+      console.error("Failed to parse AI response for generate-email:", textContent.text.substring(0, 500));
       return NextResponse.json(
-        { error: "Failed to parse AI response", raw: textContent.text },
+        { error: "Failed to parse AI response" },
         { status: 500 }
       );
     }

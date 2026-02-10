@@ -301,6 +301,11 @@ describe("Agents API - POST /api/agents/execute", () => {
       error: null,
     });
 
+    // Workspace membership check
+    mockSupabase.from.mockReturnValueOnce(
+      createMockChain({ data: [{ workspace_id: "ws-1" }], error: null })
+    );
+
     mockFetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({
@@ -494,6 +499,11 @@ describe("Agents API - POST /api/agents/orchestrate", () => {
       error: null,
     });
 
+    // Workspace membership check
+    mockSupabase.from.mockReturnValueOnce(
+      createMockChain({ data: [{ workspace_id: "ws-1" }], error: null })
+    );
+
     mockFetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({
@@ -544,6 +554,11 @@ describe("Agents API - POST /api/agents/orchestrate", () => {
       data: { user: mockUser },
       error: null,
     });
+
+    // Workspace membership check
+    mockSupabase.from.mockReturnValueOnce(
+      createMockChain({ data: [{ workspace_id: "ws-1" }], error: null })
+    );
 
     mockFetch.mockRejectedValue(new Error("Service unavailable"));
 

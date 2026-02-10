@@ -212,7 +212,7 @@ export function getNextOccurrences(
 
   const occurrences: Date[] = [];
   const interval = rule.interval || 1;
-  let current = new Date(startDate);
+  const current = new Date(startDate);
   let iterations = 0;
   const maxIterations = count * 10; // Safety limit
 
@@ -259,12 +259,23 @@ export function getNextOccurrences(
         case "WEEKLY":
           current.setDate(current.getDate() + interval * 7);
           break;
-        case "MONTHLY":
-          current.setMonth(current.getMonth() + interval);
+        case "MONTHLY": {
+          // Preserve day-of-month to avoid drift (e.g., Jan 31 -> Feb 28, not Mar 3)
+          const origDay = startDate.getDate();
+          current.setMonth(current.getMonth() + interval, 1);
+          const daysInMonth = new Date(current.getFullYear(), current.getMonth() + 1, 0).getDate();
+          current.setDate(Math.min(origDay, daysInMonth));
           break;
-        case "YEARLY":
-          current.setFullYear(current.getFullYear() + interval);
+        }
+        case "YEARLY": {
+          // Handle Feb 29 -> Feb 28 for non-leap years
+          const origM = startDate.getMonth();
+          const origD = startDate.getDate();
+          current.setFullYear(current.getFullYear() + interval, origM, 1);
+          const dim = new Date(current.getFullYear(), origM + 1, 0).getDate();
+          current.setDate(Math.min(origD, dim));
           break;
+        }
       }
     }
   }

@@ -59,7 +59,19 @@ export async function POST(request: NextRequest) {
       // CSV file upload
       const formData = await request.formData();
       const file = formData.get("file") as File | null;
-      workspaceId = formData.get("workspace_id") as string | null;
+      const rawWorkspaceId = formData.get("workspace_id") as string | null;
+
+      // Validate workspace_id as UUID if provided
+      if (rawWorkspaceId) {
+        const uuidResult = z.string().uuid().safeParse(rawWorkspaceId);
+        if (!uuidResult.success) {
+          return NextResponse.json(
+            { error: "Invalid workspace_id format" },
+            { status: 400 }
+          );
+        }
+        workspaceId = uuidResult.data;
+      }
 
       if (!file) {
         return NextResponse.json(

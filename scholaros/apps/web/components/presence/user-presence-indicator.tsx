@@ -212,11 +212,16 @@ export function PresenceManager() {
     // Handle before unload
     const handleBeforeUnload = () => {
       // Use navigator.sendBeacon for reliable offline status
-      const data = JSON.stringify({
-        workspace_id: currentWorkspaceId,
-        status: "offline",
-      });
-      navigator.sendBeacon("/api/presence", data);
+      // sendBeacon with a Blob and explicit Content-Type so the API route
+      // can parse the JSON body correctly.
+      const blob = new Blob(
+        [JSON.stringify({
+          workspace_id: currentWorkspaceId,
+          status: "offline",
+        })],
+        { type: "application/json" }
+      );
+      navigator.sendBeacon("/api/presence", blob);
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);

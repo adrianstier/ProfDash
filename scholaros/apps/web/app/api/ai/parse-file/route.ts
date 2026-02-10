@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
+import { checkRateLimit, getRateLimitIdentifier, RATE_LIMIT_CONFIGS, getRateLimitHeaders } from "@/lib/rate-limit";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -44,6 +45,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Rate limiting
+    const rateLimitId = getRateLimitIdentifier(request, user.id);
+    const rateLimitResult = checkRateLimit(`ai:parse-file:${rateLimitId}`, RATE_LIMIT_CONFIGS.ai);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please try again later." },
+        { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+      );
+    }
+
     // Parse multipart form data
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
@@ -55,6 +66,12 @@ export async function POST(request: Request) {
 
     if (!workspaceId) {
       return NextResponse.json({ error: "workspace_id is required" }, { status: 400 });
+    }
+
+    // Validate workspace_id format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(workspaceId)) {
+      return NextResponse.json({ error: "Invalid workspace_id format" }, { status: 400 });
     }
 
     // Validate file type
@@ -191,8 +208,9 @@ Return ONLY valid JSON, no markdown.`;
       const cleanedText = textContent.text.replace(/```json\n?|\n?```/g, "").trim();
       result = JSON.parse(cleanedText);
     } catch {
+      console.error("Failed to parse AI response for parse-file:", textContent.text.substring(0, 500));
       return NextResponse.json(
-        { error: "Failed to parse AI response", raw: textContent.text },
+        { error: "Failed to parse AI response" },
         { status: 500 }
       );
     }

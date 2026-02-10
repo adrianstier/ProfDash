@@ -37,7 +37,7 @@ export function PermitAlertBanner({
   });
 
   // Sort by urgency (expired first, then by days until expiration)
-  const sortedAlerts = alertPermits.sort((a, b) => {
+  const sortedAlerts = [...alertPermits].sort((a, b) => {
     const daysA = getDaysUntilExpiration(a.expiration_date) ?? 999;
     const daysB = getDaysUntilExpiration(b.expiration_date) ?? 999;
     return daysA - daysB;

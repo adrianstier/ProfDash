@@ -512,28 +512,17 @@ describe("Task Templates API - PATCH /api/task-templates", () => {
     );
   });
 
-  it("should allow updating built-in templates regardless of ownership", async () => {
+  it("should reject updating built-in templates", async () => {
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: MOCK_USER },
       error: null,
     });
 
-    let callIdx = 0;
     mockSupabase.from.mockImplementation(() => {
-      callIdx++;
-      if (callIdx === 1) {
-        // Ownership check - built-in template owned by someone else
-        const chain = createChainableMock();
-        chain.single = vi.fn().mockResolvedValue({
-          data: { created_by: "system-user", is_builtin: true },
-          error: null,
-        });
-        return chain;
-      }
-      // Update
+      // Ownership check - built-in template owned by someone else
       const chain = createChainableMock();
       chain.single = vi.fn().mockResolvedValue({
-        data: { ...MOCK_TEMPLATE, is_builtin: true, name: "Updated" },
+        data: { created_by: "system-user", is_builtin: true },
         error: null,
       });
       return chain;
@@ -550,7 +539,9 @@ describe("Task Templates API - PATCH /api/task-templates", () => {
     );
 
     const response = await PATCH(request);
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(403);
+    const body = await response.json();
+    expect(body.error).toBe("Built-in templates cannot be modified");
   });
 });
 

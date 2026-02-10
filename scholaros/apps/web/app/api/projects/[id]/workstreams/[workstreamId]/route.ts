@@ -8,12 +8,37 @@ export async function GET(
   { params }: { params: Promise<{ id: string; workstreamId: string }> }
 ) {
   try {
-    const { workstreamId } = await params;
+    const { id: projectId, workstreamId } = await params;
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify user has access to the project via workspace membership
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("workspace_id")
+      .eq("id", projectId)
+      .single();
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", project.workspace_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Not a member of this workspace" },
+        { status: 403 }
+      );
     }
 
     const { data: workstream, error } = await supabase
@@ -130,12 +155,37 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; workstreamId: string }> }
 ) {
   try {
-    const { workstreamId } = await params;
+    const { id: projectId, workstreamId } = await params;
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify user has access to the project via workspace membership
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("workspace_id")
+      .eq("id", projectId)
+      .single();
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", project.workspace_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Not a member of this workspace" },
+        { status: 403 }
+      );
     }
 
     // First, unlink any tasks from this workstream

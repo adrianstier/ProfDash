@@ -1,378 +1,122 @@
-# CLAUDE.md - Project Context for AI Assistants
-
-This file provides context for AI assistants (Claude, Cursor, GitHub Copilot, etc.) working on the ScholarOS codebase.
+# CLAUDE.md - ScholarOS Project Context
 
 ## Project Overview
 
-**ScholarOS** (evolved from ProfDash) is a multi-tenant, AI-native academic operations platform for professors, lab managers, and research teams. It provides task management, manuscript/grant/research project tracking, personnel management, Google Calendar integration, grant discovery, and multi-experiment research project management with fieldwork scheduling and permit tracking.
+**ScholarOS** is a multi-tenant, AI-native academic operations platform for professors, lab managers, and research teams. Task management, manuscript/grant/research project tracking, personnel management, Google Calendar integration, grant discovery, and multi-experiment research project management with fieldwork scheduling and permit tracking.
 
 **Live Site:** https://scholaros-ashen.vercel.app
+
+## Stack
+
+- **Frontend:** Next.js 15 (App Router, Turbopack), React 19, TypeScript 5.3, Tailwind CSS, shadcn/ui
+- **State:** TanStack Query (server state), Zustand (client state)
+- **Backend:** Supabase (Postgres, Auth, RLS, Realtime), Next.js API Routes
+- **AI Service:** Python FastAPI microservice (`services/ai/`) with 8 specialized agents
+- **Monorepo:** Turborepo + pnpm workspaces
+- **Testing:** Vitest (unit), Playwright (E2E)
+- **Deployment:** Vercel
 
 ## Repository Structure
 
 ```
 ProfDash/
-├── scholaros/                    # Main v2.0 monorepo (Turborepo + pnpm)
-│   ├── apps/web/                 # Next.js 15 frontend application
-│   ├── packages/shared/          # Shared TypeScript types & Zod schemas
+├── scholaros/                    # Main monorepo
+│   ├── apps/web/                 # Next.js frontend
+│   │   ├── app/(auth)/           # Login, signup, invite
+│   │   ├── app/(dashboard)/      # All dashboard routes (see below)
+│   │   ├── app/api/              # REST API routes (see below)
+│   │   ├── components/           # 24 feature directories (~159 files)
+│   │   └── lib/                  # Hooks, stores, utils, supabase clients
+│   ├── packages/shared/          # Shared types, Zod schemas, utils
 │   ├── services/ai/              # Python FastAPI AI microservice
-│   └── supabase/                 # Database migrations & config
-├── docs/                         # Documentation
-│   ├── ARCHITECTURE.md           # System architecture
-│   ├── API.md                    # REST API reference
-│   ├── DEPLOYMENT.md             # Deployment guide
-│   ├── PRD.md                    # Product requirements
-│   └── PROGRESS.md               # Implementation status
-├── public/                       # Legacy v1.0 static assets (vanilla JS)
+│   └── supabase/migrations/      # 26 SQL migrations
+├── docs/                         # Architecture, API, PRD, deployment docs
+├── public/                       # Legacy v1.0 static assets
 └── server/                       # Legacy v1.0 Express server
 ```
 
-## Technology Stack
+### Dashboard Routes (`app/(dashboard)/`)
+`today/` `upcoming/` `board/` `list/` `calendar/` `projects/` `publications/` `grants/` `personnel/` `teaching/` `analytics/` `settings/`
 
-### Frontend (`scholaros/apps/web/`)
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| Next.js | 15.1.0 | App Router, Server Components, API routes |
-| React | 19.x | UI components with RSC support |
-| TypeScript | 5.3.x | Type safety |
-| Tailwind CSS | 3.4.16 | Styling |
-| shadcn/ui | Latest | Radix-based accessible components |
-| TanStack Query | 5.60.0 | Server state caching |
-| Zustand | 5.0.0 | Client state management |
-| Zod | 3.23.0 | Runtime validation |
-| @dnd-kit | 6.3.1 / 8.0.0 | Drag-and-drop for Kanban |
-| Framer Motion | 12.x | Animations |
+### API Routes (`app/api/`)
+`tasks/` `projects/` `personnel/` `publications/` `calendar/` `grants/` `documents/` `ai/` `agents/` `analytics/` `search/` `messages/` `activity/` `presence/` `onboarding/` `workspaces/` `auth/` `research/` `templates/` `task-templates/` `voice/`
 
-### Backend & Database
-| Technology | Purpose |
-|------------|---------|
-| Supabase | PostgreSQL database, Auth, RLS, Storage, Realtime |
-| Next.js API Routes | REST API endpoints |
-| FastAPI (Python) | AI microservice for task extraction, summaries, grant scoring |
+### Key Lib Structure (`apps/web/lib/`)
+- `hooks/` - 34 TanStack Query hooks (one per feature domain)
+- `stores/` - 5 Zustand stores: workspace, task, agent, chat, analytics
+- `supabase/` - `client.ts` (browser) and `server.ts` (server)
+- `utils/` - academic-patterns, duplicate-detection, recurrence, task-grouping
+- `realtime/` - Workspace channel management
+- Root files: `utils.ts`, `constants.ts`, `env.ts`, `crypto.ts`, `rate-limit.ts`
 
-### Infrastructure
-| Tool | Purpose |
-|------|---------|
-| Turborepo | Monorepo build orchestration |
-| pnpm | Package manager (workspaces) |
-| Vercel | Hosting & deployment |
-| GitHub Actions | CI/CD pipeline |
-| Vitest | Unit testing |
-| Playwright | E2E testing |
-
-## Key Directories
-
-### `scholaros/apps/web/app/`
-Next.js App Router structure:
-- `(auth)/` - Authentication routes (login, signup, invite)
-- `(dashboard)/` - Protected dashboard routes
-  - `today/`, `upcoming/`, `board/`, `list/`, `calendar/` - Task views
-  - `projects/` - Manuscript & grant projects
-  - `publications/` - Publication management
-  - `grants/` - Grant discovery & tracking
-  - `personnel/` - Team management
-  - `teaching/` - Teaching dashboard
-  - `analytics/` - Usage analytics dashboard
-  - `settings/` - User & workspace settings
-- `api/` - REST API route handlers (see API Routes section)
-
-### `scholaros/apps/web/app/api/` (API Routes)
-- `tasks/` - Task CRUD, bulk operations, recurring tasks
-- `projects/` - Project management
-- `personnel/` - Team member management
-- `publications/` - Publication tracking
-- `calendar/` - Google Calendar sync & events
-- `grants/` - Grant search, watchlist, saved searches
-- `documents/` - Document upload & management
-- `ai/` - AI task extraction, enhancement, breakdown, smart-parse, voice
-- `agents/` - Multi-agent chat, execution, orchestration
-- `analytics/` - Usage analytics events
-- `search/` - Global search with history
-- `messages/` - Workspace messaging
-- `activity/` - Activity feed
-- `presence/` - User presence tracking
-- `onboarding/` - Onboarding progress tracking
-- `workspaces/` - Workspace management & invites
-- `auth/` - Authentication callbacks
-- `research/` - Research project management
-  - `sites/` - Field site CRUD
-  - `projects/[id]/experiments/` - Experiment management
-  - `projects/[id]/permits/` - Permit tracking
-  - `projects/[id]/experiments/[expId]/team/` - Team assignments
-  - `projects/[id]/experiments/[expId]/fieldwork/` - Fieldwork scheduling
-  - `projects/[id]/dashboard/` - Research project dashboard stats
-
-### `scholaros/apps/web/components/`
-React components organized by feature (23 directories):
-- `ui/` - shadcn/ui base components (24 primitives)
-- `tasks/` - Task cards, lists, Kanban, quick-add, detail drawer
-- `projects/` - Project cards, milestones, stages, notes
-- `grants/` - Grant search, watchlist, fit scoring
-- `publications/` - Publication import, cards
-- `layout/` - Sidebar, navigation, workspace switcher
-- `ai/` - Smart parsing, task breakdown, email generation, summaries
-- `analytics/` - Usage charts, metrics dashboards
-- `chat/` - Workspace chat interface
-- `documents/` - Document upload, viewer
-- `learning/` - Progressive onboarding, feature discovery, AI insights
-- `onboarding/` - Welcome modal, setup wizard
-- `presence/` - User presence indicators
-- `search/` - Global search, history, filters
-- `voice/` - Voice input, transcription
-- `activity/` - Activity feed components
-- `dashboard/` - Dashboard-specific components
-- `workspace/` - Workspace management
-- `personnel/` - Personnel cards, forms
-- `accessibility/` - A11y helpers
-- `migration/` - Data migration helpers
-- `research/` - Research project components (12 components)
-  - `ResearchProjectDashboard.tsx` - Main dashboard with tabs
-  - `ExperimentCard.tsx`, `ExperimentList.tsx`, `ExperimentModal.tsx` - Experiment management
-  - `PermitCard.tsx`, `PermitList.tsx`, `PermitModal.tsx`, `PermitAlertBanner.tsx` - Permit tracking
-  - `SiteSelect.tsx`, `SiteManager.tsx` - Field site management
-  - `TeamPanel.tsx` - Team assignments per experiment
-  - `FieldworkCard.tsx`, `FieldworkTimeline.tsx`, `FieldworkModal.tsx` - Fieldwork scheduling
-
-### `scholaros/apps/web/lib/`
-- `supabase/` - Client/server Supabase instances
-- `hooks/` - 24 TanStack Query hooks (see Hooks section)
-- `stores/` - 5 Zustand stores (workspace, task, agent, chat, analytics)
-- `utils.ts` - Utility functions (cn, formatDate, etc.)
-- `constants.ts` - Application constants
-- `env.ts` - Environment variable handling
-- `crypto.ts` - Encryption utilities
-- `rate-limit.ts` - API rate limiting
-- `search-ranking.ts` - Search result ranking
-
-### `scholaros/apps/web/lib/hooks/`
-Data-fetching and utility hooks:
-- `use-tasks.ts` - Task CRUD with optimistic updates
-- `use-projects.ts` - Project management
-- `use-personnel.ts` - Team member operations
-- `use-publications.ts` - Publication tracking
-- `use-calendar.ts` - Calendar sync & events
-- `use-grants.ts` - Grant search & watchlist
-- `use-documents.ts` - Document management
-- `use-workspaces.ts` - Workspace operations
-- `use-ai.ts` - AI feature hooks
-- `use-agents.ts` - Multi-agent interactions
-- `use-chat.ts` - Workspace messaging
-- `use-search.ts` - Global search
-- `use-analytics.ts` - Analytics data
-- `use-analytics-events.ts` - Event tracking
-- `use-onboarding.ts` - Onboarding progress
-- `use-activity.ts` - Activity feed
-- `use-presence.ts` - User presence
-- `use-voice.ts` - Voice transcription
-- `use-smart-parse.ts` - Smart task parsing
-- `use-keyboard-shortcuts.ts` - Keyboard navigation
-- `use-user.ts` - User profile
-- `use-pagination.ts` - List pagination
-- `use-debounce.ts` - Debounce utility
-- `use-experiments.ts` - Research experiment CRUD
-- `use-field-sites.ts` - Field site management
-- `use-permits.ts` - Permit tracking
-- `use-fieldwork.ts` - Fieldwork schedule management
-- `use-experiment-team.ts` - Experiment team assignments
-
-### `scholaros/packages/shared/src/`
-Shared across frontend & backend:
-- `types/` - TypeScript interfaces
-  - `index.ts` - Core types (Task, Project, Workspace, etc.)
-  - `agents.ts` - Multi-agent framework types
-  - `analytics.ts` - Analytics event types
-  - `chat.ts` - Messaging types
-- `schemas/` - Zod validation schemas
-  - `index.ts` - Core validation schemas
-  - `analytics.ts` - Analytics event validation
-- `utils/` - Quick-add parser, shared utilities
-- `config/project-stages.ts` - Project type stage definitions
-
-### `scholaros/services/ai/`
-Python FastAPI microservice:
-- `app/main.py` - FastAPI application entry point
-- `app/config.py` - Service configuration
-- `app/agents/` - Multi-agent framework
-  - `base.py` - Base agent class
-  - `orchestrator.py` - Agent orchestration
-  - `registry.py` - Agent registration
-  - `types.py` - Agent type definitions
-  - `specialized/` - 8 specialized agents:
-    - `task_agent.py` - Task management
-    - `project_agent.py` - Project operations
-    - `grant_agent.py` - Grant discovery & analysis
-    - `calendar_agent.py` - Calendar operations
-    - `personnel_agent.py` - Team management
-    - `research_agent.py` - Research assistance
-    - `writing_agent.py` - Writing assistance
-    - `planner_agent.py` - Planning & scheduling
-- `app/routers/` - API endpoints
-  - `extract.py` - Task extraction from text
-  - `summarize.py` - Content summarization
-  - `grants.py` - Grant search & scoring
-  - `documents.py` - Document processing
-  - `agents.py` - Agent chat & execution
-  - `analytics.py` - Analytics & A/B testing
-- `app/analytics/` - Analytics & experimentation
-- `app/ml/` - ML models (onboarding predictor, search ranker)
-- `app/models/` - Pydantic models
-- `app/services/llm.py` - LLM service abstraction (Anthropic)
-
-### `scholaros/supabase/migrations/`
-Database migrations applied in order (17 total):
-1. `20241217000000_initial_schema.sql` - Profiles, workspaces, tasks
-2. `20241217000001_workspace_invites.sql` - Invite system, RLS
-3. `20241217000002_project_milestones_notes.sql` - Projects hierarchy
-4. `20241217000003_calendar_integrations.sql` - Google Calendar
-5. `20241217000004_funding_opportunities.sql` - Grant discovery
-6. `20241219000000_fix_task_workspace_rls.sql` - RLS policy fixes
-7. `20241221000000_documents_and_ai.sql` - Documents, embeddings
-8. `20241221000001_publications.sql` - Publication tracking
-9. `20241221100000_agent_framework.sql` - Multi-agent infrastructure
-10. `20250108000001_workspace_messages.sql` - Workspace chat
-11. `20250108000002_workspace_activity.sql` - Activity feed
-12. `20250108000003_user_presence.sql` - User presence tracking
-13. `20260115000000_onboarding_tracking.sql` - Onboarding progress
-14. `20260118000000_search_history.sql` - Search history
-15. `20260120000000_recurring_tasks.sql` - Recurring tasks
-16. `20260122000000_analytics_events.sql` - Usage analytics
-17. `20260129000000_fix_analytics_rls_policies.sql` - Security fix for overly permissive RLS policies
+### Shared Package (`packages/shared/src/`)
+- `types/` - Core types (Task, Project, Workspace, etc.), agents, analytics, chat, research
+- `schemas/` - Zod schemas for validation (core, analytics, research)
+- `utils/` - Quick-add parser
+- `config/project-stages.ts` - Project stage definitions
 
 ## Development Commands
 
 ```bash
-# Install dependencies (from scholaros/)
-pnpm install
-
-# Start development server
-pnpm dev
-
-# Build all packages
-pnpm build
-
-# Run type checking
-pnpm typecheck
-
-# Run linting
-pnpm lint
-
-# Run unit tests
-pnpm test
-
-# Run E2E tests
-pnpm test:e2e
-
-# Start specific package
-pnpm --filter @scholaros/web dev
+# From scholaros/ directory
+pnpm install          # Install dependencies
+pnpm dev              # Start dev server (port 4567)
+pnpm build            # Build all packages
+pnpm typecheck        # Type checking
+pnpm lint             # Linting
+pnpm test             # Unit tests (Vitest)
+pnpm test:e2e         # E2E tests (Playwright)
 ```
 
 ## Architecture Patterns
 
-### Multi-Tenancy
-- Workspace-based isolation using PostgreSQL Row Level Security (RLS)
-- Every table has `workspace_id` column
-- RLS policies check `workspace_members` for access
-
-### Authentication
+### Multi-Tenancy & Auth
+- Workspace-based isolation via PostgreSQL RLS
+- Every table has `workspace_id`; RLS policies check `workspace_members`
 - Supabase Auth (Email/Password + Google OAuth)
-- Session management via HTTP-only cookies
-- Middleware refreshes tokens on each request
-
-### Authorization (RBAC)
-- Roles: `owner`, `admin`, `member`, `limited`
-- Permission helpers in `stores/workspace-store.ts`
+- RBAC roles: `owner`, `admin`, `member`, `limited`
 
 ### Data Flow
-1. React Query hooks fetch data via API routes
-2. API routes validate with Zod schemas
-3. Supabase client executes query with RLS
-4. Results cached by React Query
-5. Optimistic updates for mutations
+1. React Query hooks call API routes
+2. API routes validate with Zod, call Supabase with RLS
+3. Optimistic updates for mutations
+4. Realtime subscriptions for live updates
 
-### API Pattern
+### API Route Pattern
 ```typescript
-// API route structure
 export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  // Query with RLS
-  const { data, error } = await supabase.from('tasks').select('*');
+  const { data, error } = await supabase.from('table').select('*');
   return NextResponse.json(data);
 }
 ```
 
-## Database Schema (Key Tables)
-
-### Core Tables
-- `profiles` - User profiles (links to auth.users)
-- `workspaces` - Multi-tenant workspaces
-- `workspace_members` - User-workspace associations with roles
-- `workspace_invites` - Magic link invitations
-- `tasks` - Task management with categories, priorities, assignees
-- `recurring_tasks` - Recurring task definitions
-- `projects` - Unified manuscripts, grants, general projects
-- `project_milestones` - Project milestone tracking
-- `project_notes` - Project notes
-- `publications` - Publication tracking
-- `personnel` - Team member records
-
-### Collaboration
-- `workspace_messages` - Workspace chat messages
-- `workspace_activity` - Activity feed events
-- `user_presence` - Real-time user presence
-
-### Integrations
-- `calendar_connections` - Google Calendar OAuth tokens
-- `calendar_events_cache` - Cached calendar events
-- `funding_opportunities` - Grant opportunities from APIs
-- `opportunity_watchlist` - User grant watchlists
-- `saved_searches` - Saved grant search queries
-
-### AI Features
-- `documents` - Uploaded documents
-- `document_chunks` - Document chunks with embeddings
-- `ai_actions_log` - AI action history and feedback
-- `agent_executions` - Agent framework logs
-
-### Analytics & UX
-- `analytics_events` - Usage analytics events
-- `onboarding_tracking` - User onboarding progress
-- `search_history` - Search query history
-
-## Quick Add Syntax
-
-The quick-add parser supports natural language task entry:
+### Quick Add Syntax
 ```
 NSF report fri #grants p1 @craig +project-123
 ```
-- `fri` - Due date (relative or absolute)
-- `#grants` - Category (research, teaching, grants, etc.)
-- `p1` - Priority (p1-p4)
-- `@craig` - Assignee
-- `+project-123` - Link to project
+`fri` = due date, `#grants` = category, `p1` = priority, `@craig` = assignee, `+project-123` = project link
 
-## Environment Variables
+## Key Conventions
 
-Required variables (see `.env.example`):
-```
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-ANTHROPIC_API_KEY=
-AI_SERVICE_URL=
-```
+- Server components by default; `'use client'` only for interactivity
+- Always `supabase.auth.getUser()` in server components, never `getSession()`
+- RLS always on; soft deletes with `.eq('is_deleted', false)`
+- `@/` path alias for all imports
+- Add shadcn/ui via CLI (`npx shadcn-ui@latest add`), never manually
+- Zod for all API validation
+- One React Query hook per feature domain in `lib/hooks/`
+- `cn()` utility for conditional Tailwind classes
 
-## Testing
+## Security
 
-### Unit Tests (Vitest)
-Located in `*.test.ts` files alongside source code.
-
-### E2E Tests (Playwright)
-Located in `tests/e2e/`. Run with `pnpm test:e2e`.
+- RLS on every table; user-scoped writes with `auth.uid() = user_id`
+- Analytics events are immutable (`USING(false)` for UPDATE/DELETE)
+- All API routes verify workspace membership
+- Escape `%` and `_` in ILIKE patterns
+- Never commit `.env.local` or service role keys
 
 ## Common Tasks
 
@@ -382,65 +126,17 @@ Located in `tests/e2e/`. Run with `pnpm test:e2e`.
 3. Create React Query hook in `apps/web/lib/hooks/`
 4. Add RLS policy if new table
 
-### Adding a New Component
-1. Create in `apps/web/components/[feature]/`
-2. Use shadcn/ui primitives from `components/ui/`
-3. Follow existing naming conventions
-
 ### Adding a Database Migration
 1. Create SQL file in `supabase/migrations/` with timestamp prefix
-2. Run `supabase db push` or apply in Supabase dashboard
-3. Regenerate types if needed
-
-## Code Style
-
-- TypeScript strict mode enabled
-- ESLint + Prettier for formatting
-- Prefer functional components with hooks
-- Use `cn()` utility for conditional classes
-- Zod for all API validation
-- TanStack Query for all data fetching
-- Zustand for client-only state
+2. Apply via `supabase db push` or Supabase dashboard
 
 ## Important Files
 
 | File | Purpose |
 |------|---------|
 | `apps/web/middleware.ts` | Auth middleware, session refresh |
-| `apps/web/lib/supabase/client.ts` | Browser Supabase client |
 | `apps/web/lib/supabase/server.ts` | Server Supabase client |
-| `packages/shared/src/schemas/index.ts` | All Zod schemas |
-| `packages/shared/src/types/index.ts` | All TypeScript types |
+| `apps/web/lib/supabase/client.ts` | Browser Supabase client |
+| `packages/shared/src/types/index.ts` | Core TypeScript types |
+| `packages/shared/src/schemas/index.ts` | Core Zod schemas |
 | `services/ai/app/main.py` | AI service entry point |
-
-## Notes for AI Assistants
-
-1. **Always check existing patterns** - Look at similar files before creating new ones
-2. **Use the shared package** - Types and schemas live in `packages/shared/`
-3. **RLS is mandatory** - Every table needs proper RLS policies
-4. **Workspace context required** - Most queries filter by `workspace_id`
-5. **Validate with Zod** - Use schemas for all API request/response validation
-6. **Use React Query** - Don't fetch data directly; use hooks in `lib/hooks/`
-7. **Prefer shadcn/ui** - Use existing UI primitives from `components/ui/`
-8. **Check migrations** - Database schema is in `supabase/migrations/`
-
-### Security Best Practices
-- **RLS policy naming** - Avoid "Service role can..." naming; service_role bypasses RLS entirely
-- **User-scoped writes** - Use `auth.uid() = user_id` for INSERT/UPDATE policies
-- **Immutable data** - Analytics events should be immutable; use `USING(false)` for UPDATE/DELETE
-- **Workspace authorization** - All API routes must verify workspace membership before operations
-- **Input sanitization** - Escape `%` and `_` in ILIKE patterns to prevent SQL pattern injection
-
-### Performance Best Practices
-- **Use React.memo** - Wrap list item components (TaskCard, DroppableColumn) that render frequently
-- **Memoize calculations** - Use `useMemo` for expensive computations like filtering/grouping
-- **Pre-compute lookups** - Convert arrays to Maps for O(1) lookups in render loops
-- **Use useCallback** - Wrap functions passed as props to memoized components
-- **Avoid stale closures** - Use `useRef` for values accessed in setTimeout/setInterval callbacks
-
-## Links
-
-- [Architecture Documentation](docs/ARCHITECTURE.md)
-- [API Reference](docs/API.md)
-- [Deployment Guide](docs/DEPLOYMENT.md)
-- [Product Requirements](docs/PRD.md)

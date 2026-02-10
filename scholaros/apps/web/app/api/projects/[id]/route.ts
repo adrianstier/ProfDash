@@ -36,6 +36,21 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Verify user has access to the project via workspace membership
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", data.workspace_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Not a member of this workspace" },
+        { status: 403 }
+      );
+    }
+
     // Calculate task counts
     const taskCount = data.tasks?.length ?? 0;
     const completedTaskCount = data.tasks?.filter((t: { status: string }) => t.status === "done").length ?? 0;
@@ -63,6 +78,31 @@ export async function PATCH(
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify user has access to the project via workspace membership
+    const { data: projectCheck, error: projectCheckError } = await supabase
+      .from("projects")
+      .select("workspace_id")
+      .eq("id", id)
+      .single();
+
+    if (projectCheckError || !projectCheck) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    const { data: membership } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", projectCheck.workspace_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "Not a member of this workspace" },
+        { status: 403 }
+      );
     }
 
     const body = await request.json();
@@ -112,7 +152,7 @@ export async function DELETE(
     // Verify ownership before deletion (defense in depth - RLS also protects)
     const { data: project, error: fetchError } = await supabase
       .from("projects")
-      .select("id, user_id")
+      .select("id, owner_id")
       .eq("id", id)
       .single();
 
@@ -120,7 +160,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    if (project.user_id !== user.id) {
+    if (project.owner_id !== user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

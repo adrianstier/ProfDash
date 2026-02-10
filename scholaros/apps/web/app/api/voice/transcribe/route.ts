@@ -25,6 +25,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No audio file provided" }, { status: 400 });
     }
 
+    // Validate file size (max 25MB for Whisper)
+    const MAX_AUDIO_SIZE = 25 * 1024 * 1024;
+    if (audioFile.size > MAX_AUDIO_SIZE) {
+      return NextResponse.json(
+        { error: "Audio file too large. Maximum size is 25MB." },
+        { status: 400 }
+      );
+    }
+
+    // Validate audio format
+    const SUPPORTED_AUDIO_FORMATS = [
+      "audio/mp3", "audio/mpeg", "audio/mpga", "audio/m4a",
+      "audio/wav", "audio/webm", "audio/ogg", "audio/flac",
+    ];
+    if (audioFile.type && !SUPPORTED_AUDIO_FORMATS.includes(audioFile.type)) {
+      return NextResponse.json(
+        { error: `Unsupported audio format: ${audioFile.type}` },
+        { status: 400 }
+      );
+    }
+
     // Get API key from environment
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {

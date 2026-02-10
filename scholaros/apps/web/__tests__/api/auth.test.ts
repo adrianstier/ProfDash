@@ -49,6 +49,18 @@ vi.mock("@/lib/crypto", () => ({
   encryptToken: vi.fn((token: string) => `encrypted_${token}`),
 }));
 
+vi.mock("@/lib/oauth-state", () => ({
+  signState: vi.fn((payload: string) => `${payload}.test-signature`),
+  verifyState: vi.fn((signedState: string) => {
+    const lastDot = signedState.lastIndexOf(".");
+    if (lastDot === -1) return null;
+    const payload = signedState.substring(0, lastDot);
+    const signature = signedState.substring(lastDot + 1);
+    if (signature !== "test-signature") return null;
+    return payload;
+  }),
+}));
+
 const mockUser = { id: "user-123", email: "prof@example.com" };
 
 function makeRequest(url: string, options?: RequestInit): Request {
@@ -190,10 +202,11 @@ describe("Auth API - GET /api/auth/google/callback", () => {
   });
 
   it("redirects with error for expired state", async () => {
-    const state = Buffer.from(JSON.stringify({
+    const payload = Buffer.from(JSON.stringify({
       userId: mockUser.id,
       timestamp: Date.now() - 20 * 60 * 1000, // 20 minutes ago (>15 min)
     })).toString("base64");
+    const state = `${payload}.test-signature`;
 
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
@@ -202,7 +215,7 @@ describe("Auth API - GET /api/auth/google/callback", () => {
 
     const { GET } = await import("@/app/api/auth/google/callback/route");
     const res = await GET(
-      makeRequest(`http://localhost/api/auth/google/callback?code=abc&state=${state}`)
+      makeRequest(`http://localhost/api/auth/google/callback?code=abc&state=${encodeURIComponent(state)}`)
     );
     expect(res.status).toBe(307);
     const location = res.headers.get("location") || "";
@@ -210,10 +223,11 @@ describe("Auth API - GET /api/auth/google/callback", () => {
   });
 
   it("redirects with error when user mismatch", async () => {
-    const state = Buffer.from(JSON.stringify({
+    const payload = Buffer.from(JSON.stringify({
       userId: "different-user",
       timestamp: Date.now(),
     })).toString("base64");
+    const state = `${payload}.test-signature`;
 
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
@@ -222,7 +236,7 @@ describe("Auth API - GET /api/auth/google/callback", () => {
 
     const { GET } = await import("@/app/api/auth/google/callback/route");
     const res = await GET(
-      makeRequest(`http://localhost/api/auth/google/callback?code=abc&state=${state}`)
+      makeRequest(`http://localhost/api/auth/google/callback?code=abc&state=${encodeURIComponent(state)}`)
     );
     expect(res.status).toBe(307);
     const location = res.headers.get("location") || "";

@@ -230,7 +230,10 @@ export const TaskCard = memo(function TaskCard({
   };
 
   const formatDueDate = useCallback((dateString: string) => {
-    const date = new Date(dateString);
+    // Parse date-only strings as local time to avoid timezone shift
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(dateString)
+      ? new Date(dateString + "T00:00:00")
+      : new Date(dateString);
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -249,7 +252,11 @@ export const TaskCard = memo(function TaskCard({
   }, []);
 
   const isOverdue = useMemo(() => {
-    return task.due && new Date(task.due) < new Date() && task.status !== "done";
+    if (!task.due || task.status === "done") return false;
+    // Compare date strings (YYYY-MM-DD) to avoid timezone issues
+    // task.due is already a date-only string from the API
+    const today = new Date().toISOString().split("T")[0];
+    return task.due < today;
   }, [task.due, task.status]);
 
   const priorityStyle = task.priority

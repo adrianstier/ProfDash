@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { z } from "zod";
+import { checkRateLimit, getRateLimitIdentifier, RATE_LIMIT_CONFIGS, getRateLimitHeaders } from "@/lib/rate-limit";
 
 // Lazy initialization to avoid build-time errors when env vars aren't available
 let anthropic: Anthropic | null = null;
@@ -81,6 +82,16 @@ export async function POST(request: Request) {
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Rate limiting
+    const rateLimitId = getRateLimitIdentifier(request, user.id);
+    const rateLimitResult = checkRateLimit(`ai:transcribe:${rateLimitId}`, RATE_LIMIT_CONFIGS.ai);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please try again later." },
+        { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+      );
     }
 
     // Parse multipart form data
@@ -175,16 +186,10 @@ export async function POST(request: Request) {
     if (mode === "extract_tasks") {
       extractionPrompt = `You are an expert at extracting actionable tasks from spoken content. Analyze this transcription from an academic researcher and extract any tasks or action items mentioned.
 
-Transcription:
-"""
-${transcription}
-"""
-
 Today's date: ${today}
 
 Extract tasks and respond with a JSON object:
 {
-  "transcription": "${transcription.substring(0, 100)}...",
   "tasks": [
     {
       "title": "Clear, actionable task title",
@@ -208,16 +213,10 @@ Return ONLY valid JSON, no markdown.`;
       // extract_subtasks mode
       extractionPrompt = `You are an expert at extracting actionable subtasks from spoken content. This is a voice memo describing steps or subtasks for a larger task.
 
-Transcription:
-"""
-${transcription}
-"""
-
 Today's date: ${today}
 
 Extract subtasks and respond with a JSON object:
 {
-  "transcription": "${transcription.substring(0, 100)}...",
   "subtasks": [
     {
       "text": "Specific actionable subtask",
@@ -237,7 +236,10 @@ Return ONLY valid JSON, no markdown.`;
       messages: [
         {
           role: "user",
-          content: extractionPrompt,
+          content: [
+            { type: "text", text: extractionPrompt },
+            { type: "text", text: `Transcription to analyze:\n"""\n${transcription}\n"""` },
+          ],
         },
       ],
     });

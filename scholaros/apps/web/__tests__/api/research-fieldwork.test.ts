@@ -148,8 +148,13 @@ describe("Fieldwork API - GET /api/research/projects/[id]/experiments/[expId]/fi
     const { GET } = await importFieldworkRoute();
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null });
 
+    // experiment lookup (includes workspace_id)
     mockSupabase.from.mockReturnValueOnce(
-      createMockChain({ data: { id: experimentId, project_id: projectId }, error: null })
+      createMockChain({ data: { id: experimentId, project_id: projectId, workspace_id: workspaceId }, error: null })
+    );
+    // workspace membership check
+    mockSupabase.from.mockReturnValueOnce(
+      createMockChain({ data: { role: "member" }, error: null })
     );
 
     const schedules = [
@@ -196,8 +201,13 @@ describe("Fieldwork API - GET /api/research/projects/[id]/experiments/[expId]/fi
     const { GET } = await importFieldworkRoute();
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null });
 
+    // experiment lookup (includes workspace_id)
     mockSupabase.from.mockReturnValueOnce(
-      createMockChain({ data: { id: experimentId, project_id: projectId }, error: null })
+      createMockChain({ data: { id: experimentId, project_id: projectId, workspace_id: workspaceId }, error: null })
+    );
+    // workspace membership check
+    mockSupabase.from.mockReturnValueOnce(
+      createMockChain({ data: { role: "member" }, error: null })
     );
 
     const fieldworkChain = createMockChain({ data: [], error: null });
@@ -215,9 +225,15 @@ describe("Fieldwork API - GET /api/research/projects/[id]/experiments/[expId]/fi
     const { GET } = await importFieldworkRoute();
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null });
 
+    // experiment lookup (includes workspace_id)
     mockSupabase.from.mockReturnValueOnce(
-      createMockChain({ data: { id: experimentId, project_id: projectId }, error: null })
+      createMockChain({ data: { id: experimentId, project_id: projectId, workspace_id: workspaceId }, error: null })
     );
+    // workspace membership check
+    mockSupabase.from.mockReturnValueOnce(
+      createMockChain({ data: { role: "member" }, error: null })
+    );
+    // fieldwork query - empty
     mockSupabase.from.mockReturnValueOnce(
       createMockChain({ data: [], error: null })
     );
@@ -235,9 +251,15 @@ describe("Fieldwork API - GET /api/research/projects/[id]/experiments/[expId]/fi
     const { GET } = await importFieldworkRoute();
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null });
 
+    // experiment lookup (includes workspace_id)
     mockSupabase.from.mockReturnValueOnce(
-      createMockChain({ data: { id: experimentId, project_id: projectId }, error: null })
+      createMockChain({ data: { id: experimentId, project_id: projectId, workspace_id: workspaceId }, error: null })
     );
+    // workspace membership check
+    mockSupabase.from.mockReturnValueOnce(
+      createMockChain({ data: { role: "member" }, error: null })
+    );
+    // fieldwork query - database error
     mockSupabase.from.mockReturnValueOnce(
       createMockChain({ data: null, error: { message: "DB error" } })
     );

@@ -89,21 +89,7 @@ export async function PATCH(
       );
     }
 
-    // Verify ownership
-    const { data: existing, error: fetchError } = await supabase
-      .from("personnel")
-      .select("id, user_id")
-      .eq("id", id)
-      .single();
-
-    if (fetchError || !existing) {
-      return NextResponse.json({ error: "Personnel not found" }, { status: 404 });
-    }
-
-    if (existing.user_id !== user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
+    // Update with ownership check in single atomic query
     const { data, error } = await supabase
       .from("personnel")
       .update({
@@ -111,10 +97,14 @@ export async function PATCH(
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)
+      .eq("user_id", user.id)
       .select()
       .single();
 
     if (error) {
+      if (error.code === "PGRST116") {
+        return NextResponse.json({ error: "Personnel not found or access denied" }, { status: 404 });
+      }
       console.error("Error updating personnel:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -146,25 +136,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Verify ownership
-    const { data: existing, error: fetchError } = await supabase
-      .from("personnel")
-      .select("id, user_id")
-      .eq("id", id)
-      .single();
-
-    if (fetchError || !existing) {
-      return NextResponse.json({ error: "Personnel not found" }, { status: 404 });
-    }
-
-    if (existing.user_id !== user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
+    // Delete with ownership check in single atomic query
     const { error } = await supabase
       .from("personnel")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", user.id);
 
     if (error) {
       console.error("Error deleting personnel:", error);

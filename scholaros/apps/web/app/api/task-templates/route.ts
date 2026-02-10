@@ -200,7 +200,16 @@ export async function PATCH(request: Request) {
       );
     }
 
-    if (template.created_by !== user.id && !template.is_builtin) {
+    // Built-in templates cannot be modified by any user
+    if (template.is_builtin) {
+      return NextResponse.json(
+        { error: "Built-in templates cannot be modified" },
+        { status: 403 }
+      );
+    }
+
+    // Only the creator can update their own templates
+    if (template.created_by !== user.id) {
       return NextResponse.json(
         { error: "You don't have permission to update this template" },
         { status: 403 }

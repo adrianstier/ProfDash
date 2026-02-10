@@ -207,7 +207,7 @@ export function formatRelativeDate(
 
 export function isOverdue(date: Date | string | null | undefined): boolean {
   if (!date) return false;
-  const d = typeof date === "string" ? new Date(date) : date;
+  const d = new Date(typeof date === "string" ? date : date.getTime());
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   d.setHours(0, 0, 0, 0);

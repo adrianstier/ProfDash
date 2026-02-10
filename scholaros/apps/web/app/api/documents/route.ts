@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     dbQuery = dbQuery.eq("workspace_id", query.data.workspace_id);
   } else {
     // If no workspace specified, only return user's own documents
-    dbQuery = dbQuery.eq("uploaded_by", user.id);
+    dbQuery = dbQuery.eq("user_id", user.id);
   }
 
   const { data, error } = await dbQuery;

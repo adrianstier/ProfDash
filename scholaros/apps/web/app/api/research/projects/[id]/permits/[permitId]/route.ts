@@ -18,6 +18,32 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Verify project access
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id, workspace_id")
+    .eq("id", projectId)
+    .single();
+
+  if (projectError || !project) {
+    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  }
+
+  // Verify workspace membership
+  const { data: membership } = await supabase
+    .from("workspace_members")
+    .select("id")
+    .eq("workspace_id", project.workspace_id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!membership) {
+    return NextResponse.json(
+      { error: "Not a member of this workspace" },
+      { status: 403 }
+    );
+  }
+
   const { data: permit, error } = await supabase
     .from("permits")
     .select(

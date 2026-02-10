@@ -59,16 +59,16 @@ export function CategorySuggestion({
   onApplySubtask,
   onDismiss,
 }: CategorySuggestionProps) {
+  const handleApply = useCallback(() => {
+    if (patternMatch) onApplyCategory(patternMatch.category);
+  }, [onApplyCategory, patternMatch]);
+
   if (!patternMatch) return null;
 
   const display = getConfidenceDisplay(patternMatch.confidence);
   const categoryLabel =
     CATEGORY_LABELS[patternMatch.category as keyof typeof CATEGORY_LABELS] ??
     patternMatch.category;
-
-  const handleApply = useCallback(() => {
-    onApplyCategory(patternMatch.category);
-  }, [onApplyCategory, patternMatch.category]);
 
   const showSubtasks = patternMatch.suggestedSubtasks.length > 0 && onApplySubtask;
   const previewSubtasks = patternMatch.suggestedSubtasks.slice(0, 3);

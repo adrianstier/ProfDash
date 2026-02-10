@@ -761,7 +761,7 @@ describe("use-chat", () => {
   });
 
   describe("useMarkMultipleAsRead", () => {
-    it("sends PUT to /api/messages/read", async () => {
+    it("sends PUT to /api/messages/:firstId/read", async () => {
       mockFetch.mockReturnValueOnce(okResponse({ success: true }));
 
       const { wrapper } = createWrapper();
@@ -772,7 +772,7 @@ describe("use-chat", () => {
       });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(mockFetch).toHaveBeenCalledWith("/api/messages/read", {
+      expect(mockFetch).toHaveBeenCalledWith("/api/messages/m1/read", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: expect.any(String),

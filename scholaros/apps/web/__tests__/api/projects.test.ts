@@ -448,7 +448,7 @@ describe("Projects API - DELETE /api/projects/[id]", () => {
         // First call: select to check ownership
         const chain = createChainableMock();
         chain.single = vi.fn().mockResolvedValue({
-          data: { id: "proj-001", user_id: "user-123" },
+          data: { id: "proj-001", owner_id: "user-123" },
           error: null,
         });
         return chain;
@@ -505,7 +505,7 @@ describe("Projects API - DELETE /api/projects/[id]", () => {
     mockSupabase.from.mockImplementation(() => {
       const chain = createChainableMock();
       chain.single = vi.fn().mockResolvedValue({
-        data: { id: "proj-001", user_id: "other-user-999" },
+        data: { id: "proj-001", owner_id: "other-user-999" },
         error: null,
       });
       return chain;

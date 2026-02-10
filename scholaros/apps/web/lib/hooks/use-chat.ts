@@ -249,7 +249,10 @@ export function useMarkAsRead() {
 export function useMarkMultipleAsRead() {
   return useMutation({
     mutationFn: async (messageIds: string[]) => {
-      const response = await fetch("/api/messages/read", {
+      // The PUT handler for bulk mark-as-read is co-located at /api/messages/[id]/read
+      // Use the first message ID to satisfy the [id] route segment (PUT handler ignores it)
+      const firstId = messageIds[0] || "_";
+      const response = await fetch(`/api/messages/${firstId}/read`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message_ids: messageIds }),

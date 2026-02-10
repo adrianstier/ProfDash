@@ -117,10 +117,13 @@ export async function GET(request: Request) {
     // Return messages in chronological order (oldest first) for display
     const sortedMessages = (data || []).reverse();
 
+    // next_cursor should be the oldest message ID (last item before reverse,
+    // which is the item with the smallest created_at) for "load older" pagination.
+    // After reverse, the first element is the oldest.
     return NextResponse.json({
       data: sortedMessages,
       has_more: data && data.length === limit,
-      next_cursor: data && data.length > 0 ? data[data.length - 1].id : null,
+      next_cursor: data && data.length > 0 ? sortedMessages[0].id : null,
     });
   } catch (error) {
     console.error("Unexpected error:", error);

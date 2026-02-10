@@ -57,12 +57,17 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     const { completeThisOnly, stopRecurrence } = validationResult.data;
 
-    // Fetch the task
+    // Fetch the task - RLS enforces access, but we also check user_id for personal tasks
     const { data: task, error: fetchError } = await supabase
       .from("tasks")
       .select("*")
       .eq("id", id)
       .single();
+
+    // Verify ownership: for personal tasks (no workspace), the user must be the owner
+    if (task && !task.workspace_id && task.user_id !== user.id) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
 
     if (fetchError || !task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
@@ -284,14 +289,9 @@ function calculateNextOccurrence(
 
   const interval = rule.interval || 1;
   const exceptionsSet = new Set(exceptions);
-  let nextDate = new Date(currentDue);
+  const nextDate = new Date(currentDue);
   let iterations = 0;
   const maxIterations = 365; // Safety limit
-
-  // Day mapping for BYDAY
-  const dayToNumber: Record<string, number> = {
-    SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6
-  };
 
   while (iterations < maxIterations) {
     iterations++;
@@ -318,13 +318,25 @@ function calculateNextOccurrence(
         }
         break;
 
-      case "MONTHLY":
-        nextDate.setMonth(nextDate.getMonth() + interval);
+      case "MONTHLY": {
+        // Preserve the original day-of-month to avoid drift
+        // (e.g., Jan 31 + 1 month should be Feb 28, not Mar 3)
+        const originalDay = currentDue.getDate();
+        nextDate.setMonth(nextDate.getMonth() + interval, 1); // Set to 1st first to avoid overflow
+        const daysInTargetMonth = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
+        nextDate.setDate(Math.min(originalDay, daysInTargetMonth));
         break;
+      }
 
-      case "YEARLY":
-        nextDate.setFullYear(nextDate.getFullYear() + interval);
+      case "YEARLY": {
+        // Handle Feb 29 -> Feb 28 for non-leap years
+        const origMonth = currentDue.getMonth();
+        const origDay = currentDue.getDate();
+        nextDate.setFullYear(nextDate.getFullYear() + interval, origMonth, 1);
+        const daysInMonth = new Date(nextDate.getFullYear(), origMonth + 1, 0).getDate();
+        nextDate.setDate(Math.min(origDay, daysInMonth));
         break;
+      }
 
       default:
         return null;

@@ -175,7 +175,7 @@ describe("Grants Search API", () => {
       );
 
       expect(mockChain.gte).toHaveBeenCalledWith("award_ceiling", 100000);
-      expect(mockChain.lte).toHaveBeenCalledWith("award_floor", 500000);
+      expect(mockChain.lte).toHaveBeenCalledWith("award_ceiling", 500000);
     });
 
     it("passes deadline range filters", async () => {

@@ -528,6 +528,15 @@ describe("Permits API - GET /api/research/projects/[id]/permits/[permitId]", () 
     const { GET } = await importPermitByIdRoute();
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null });
 
+    // project lookup
+    mockSupabase.from.mockReturnValueOnce(
+      createMockChain({ data: { id: projectId, workspace_id: workspaceId }, error: null })
+    );
+    // workspace membership check
+    mockSupabase.from.mockReturnValueOnce(
+      createMockChain({ data: { id: "mem-1" }, error: null })
+    );
+    // permit query
     const permitData = { id: permitId, title: "IACUC Approval", permit_type: "IACUC", project_id: projectId };
     mockSupabase.from.mockReturnValueOnce(
       createMockChain({ data: permitData, error: null })

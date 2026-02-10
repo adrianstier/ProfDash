@@ -33,7 +33,6 @@ async function getUserProfile() {
 
 async function getTodayTasks() {
   const supabase = await createClient();
-  const today = new Date().toISOString().split("T")[0];
   // Fetch overdue + today + next 3 days for the "Coming Up" section
   const comingUpDate = new Date();
   comingUpDate.setDate(comingUpDate.getDate() + 3);

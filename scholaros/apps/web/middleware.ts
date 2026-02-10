@@ -67,6 +67,7 @@ export async function middleware(request: NextRequest) {
     "/personnel",
     "/teaching",
     "/settings",
+    "/analytics",
   ];
 
   const isProtectedPath = protectedPaths.some(

@@ -48,6 +48,24 @@ export async function GET(
     );
   }
 
+  // Verify ownership or workspace membership
+  if (data.user_id !== user.id) {
+    if (data.workspace_id) {
+      const { data: membership } = await supabase
+        .from("workspace_members")
+        .select("id")
+        .eq("workspace_id", data.workspace_id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (!membership) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    } else {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
   return NextResponse.json(data);
 }
 

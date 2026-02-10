@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
+import { signState } from "@/lib/oauth-state";
 
 const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID;
 const GOOGLE_REDIRECT_URI = env.GOOGLE_REDIRECT_URI || `${env.NEXT_PUBLIC_APP_URL}/api/auth/google/callback`;
@@ -26,11 +27,12 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Generate state token for CSRF protection
-    const state = Buffer.from(JSON.stringify({
+    // Generate state token for CSRF protection with HMAC signature
+    const statePayload = Buffer.from(JSON.stringify({
       userId: user.id,
       timestamp: Date.now(),
     })).toString("base64");
+    const state = signState(statePayload);
 
     // Build Google OAuth URL
     const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");

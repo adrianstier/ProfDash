@@ -150,6 +150,21 @@ export type ActivityAction =
   | "project_updated"
   | "project_stage_changed"
   | "project_milestone_completed"
+  // Phase actions
+  | "phase_created"
+  | "phase_started"
+  | "phase_completed"
+  | "phase_blocked"
+  // Workstream actions
+  | "workstream_created"
+  | "workstream_updated"
+  // Deliverable actions
+  | "deliverable_created"
+  | "deliverable_completed"
+  // Role actions
+  | "role_assigned"
+  // Template actions
+  | "template_applied"
   // Chat actions
   | "message_sent"
   | "message_pinned"
@@ -179,6 +194,16 @@ export const ACTIVITY_ACTION_CONFIG: Record<
   project_updated: { label: "updated a project", icon: "Folder", color: "text-blue-500" },
   project_stage_changed: { label: "moved project stage", icon: "ArrowRight", color: "text-purple-500" },
   project_milestone_completed: { label: "completed a milestone", icon: "Flag", color: "text-green-500" },
+  phase_created: { label: "created a phase", icon: "Layers", color: "text-blue-500" },
+  phase_started: { label: "started a phase", icon: "Play", color: "text-green-500" },
+  phase_completed: { label: "completed a phase", icon: "CheckCircle", color: "text-green-500" },
+  phase_blocked: { label: "blocked a phase", icon: "AlertTriangle", color: "text-red-500" },
+  workstream_created: { label: "created a workstream", icon: "GitBranch", color: "text-blue-500" },
+  workstream_updated: { label: "updated a workstream", icon: "GitBranch", color: "text-blue-500" },
+  deliverable_created: { label: "created a deliverable", icon: "Package", color: "text-blue-500" },
+  deliverable_completed: { label: "completed a deliverable", icon: "PackageCheck", color: "text-green-500" },
+  role_assigned: { label: "assigned a role", icon: "UserCheck", color: "text-purple-500" },
+  template_applied: { label: "applied a template", icon: "Copy", color: "text-indigo-500" },
   message_sent: { label: "sent a message", icon: "MessageSquare", color: "text-blue-500" },
   message_pinned: { label: "pinned a message", icon: "Pin", color: "text-yellow-500" },
   ai_tasks_extracted: { label: "extracted tasks with AI", icon: "Sparkles", color: "text-purple-500" },

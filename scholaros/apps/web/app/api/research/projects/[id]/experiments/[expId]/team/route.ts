@@ -18,16 +18,31 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Verify experiment belongs to project
+  // Verify experiment belongs to project and get workspace_id
   const { data: experiment, error: expError } = await supabase
     .from("experiments")
-    .select("id, project_id")
+    .select("id, project_id, workspace_id")
     .eq("id", experimentId)
     .eq("project_id", projectId)
     .single();
 
   if (expError || !experiment) {
     return NextResponse.json({ error: "Experiment not found" }, { status: 404 });
+  }
+
+  // Verify user is a member of the workspace
+  const { data: membership } = await supabase
+    .from("workspace_members")
+    .select("role")
+    .eq("workspace_id", experiment.workspace_id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!membership) {
+    return NextResponse.json(
+      { error: "You are not a member of this workspace" },
+      { status: 403 }
+    );
   }
 
   // Fetch team assignments with personnel details

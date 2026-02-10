@@ -53,11 +53,13 @@ export async function GET(request: Request) {
     }
 
     // Filter by amount range
+    // award_ceiling >= amountMin means the grant could fund at least the minimum
     if (amountMin) {
       query = query.gte("award_ceiling", parseFloat(amountMin));
     }
+    // award_ceiling <= amountMax means the grant's max doesn't exceed user's budget
     if (amountMax) {
-      query = query.lte("award_floor", parseFloat(amountMax));
+      query = query.lte("award_ceiling", parseFloat(amountMax));
     }
 
     // Filter by deadline range

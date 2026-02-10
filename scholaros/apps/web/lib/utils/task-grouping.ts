@@ -26,14 +26,28 @@ function startOfDay(date: Date): Date {
   return d;
 }
 
+/**
+ * Parse a date-only string (YYYY-MM-DD) as local midnight.
+ * new Date("2026-02-09") is parsed as UTC, which can shift the day
+ * in negative-UTC-offset timezones. By appending "T00:00:00" we
+ * force local-time interpretation.
+ */
+function parseLocalDate(dateStr: string): Date {
+  // If it's a date-only string (YYYY-MM-DD), parse as local time
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return new Date(dateStr + "T00:00:00");
+  }
+  return new Date(dateStr);
+}
+
 function isToday(dateStr: string): boolean {
-  const date = startOfDay(new Date(dateStr));
+  const date = startOfDay(parseLocalDate(dateStr));
   const today = startOfDay(new Date());
   return date.getTime() === today.getTime();
 }
 
 function isTomorrow(dateStr: string): boolean {
-  const date = startOfDay(new Date(dateStr));
+  const date = startOfDay(parseLocalDate(dateStr));
   const tomorrow = startOfDay(new Date());
   tomorrow.setDate(tomorrow.getDate() + 1);
   return date.getTime() === tomorrow.getTime();
@@ -41,13 +55,13 @@ function isTomorrow(dateStr: string): boolean {
 
 function isOverdue(dateStr: string, status?: string): boolean {
   if (status === "done") return false;
-  const date = startOfDay(new Date(dateStr));
+  const date = startOfDay(parseLocalDate(dateStr));
   const today = startOfDay(new Date());
   return date < today;
 }
 
 function isThisWeek(dateStr: string): boolean {
-  const date = startOfDay(new Date(dateStr));
+  const date = startOfDay(parseLocalDate(dateStr));
   const today = startOfDay(new Date());
   // "This week" means after tomorrow but within 7 days from today
   const weekEnd = new Date(today);
@@ -58,7 +72,7 @@ function isThisWeek(dateStr: string): boolean {
 }
 
 function isNextWeek(dateStr: string): boolean {
-  const date = startOfDay(new Date(dateStr));
+  const date = startOfDay(parseLocalDate(dateStr));
   const today = startOfDay(new Date());
   const weekEnd = new Date(today);
   weekEnd.setDate(weekEnd.getDate() + 7);
@@ -68,7 +82,7 @@ function isNextWeek(dateStr: string): boolean {
 }
 
 function isWithinDays(dateStr: string, days: number): boolean {
-  const date = startOfDay(new Date(dateStr));
+  const date = startOfDay(parseLocalDate(dateStr));
   const today = startOfDay(new Date());
   const futureDate = new Date(today);
   futureDate.setDate(futureDate.getDate() + days);

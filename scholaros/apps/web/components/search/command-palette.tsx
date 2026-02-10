@@ -129,13 +129,11 @@ export function CommandPalette({ onOpenChange }: CommandPaletteProps) {
 
   // Analytics
   const {
-    openSearchSession,
     closeSearchSession,
     recordSearchQuery,
     recordSearchSelection,
   } = useAnalyticsStore();
   const {
-    trackSearchOpened,
     trackSearchQueryEntered,
     trackSearchResultSelected,
     trackSearchClosed,
@@ -181,18 +179,13 @@ export function CommandPalette({ onOpenChange }: CommandPaletteProps) {
   // Show recent searches when no query
   const recentSearches = historyData?.searches || [];
 
-  // Handle open/close
-  const handleOpen = useCallback((trigger: "keyboard_shortcut" | "click" | "programmatic") => {
-    setIsOpen(true);
-    setQuery("");
-    setSelectedIndex(0);
-    openSearchSession(trigger);
-    trackSearchOpened(trigger);
-    onOpenChange?.(true);
-    // Focus input after render
-    setTimeout(() => inputRef.current?.focus(), 50);
-  }, [openSearchSession, trackSearchOpened, onOpenChange]);
+  // Focus input when palette opens
+  useEffect(() => {
+    const timer = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(timer);
+  }, []);
 
+  // Handle close
   const handleClose = useCallback((trigger: "escape" | "click_outside" | "selection" | "navigation") => {
     const session = closeSearchSession();
     const duration = session.openedAt ? Date.now() - session.openedAt : 0;
@@ -208,19 +201,11 @@ export function CommandPalette({ onOpenChange }: CommandPaletteProps) {
     onOpenChange?.(false);
   }, [closeSearchSession, trackSearchClosed, onOpenChange]);
 
-  // Keyboard shortcut: Cmd+K / Ctrl+K
+  // Keyboard shortcut: Escape to close
+  // Note: Cmd+K / Ctrl+K is handled by CommandPaletteProvider to avoid
+  // duplicate handlers when both are mounted.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        if (isOpen) {
-          handleClose("escape");
-        } else {
-          handleOpen("keyboard_shortcut");
-        }
-      }
-
-      // Escape to close
       if (e.key === "Escape" && isOpen) {
         handleClose("escape");
       }
@@ -228,7 +213,7 @@ export function CommandPalette({ onOpenChange }: CommandPaletteProps) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, handleOpen, handleClose]);
+  }, [isOpen, handleClose]);
 
   // Track query changes
   useEffect(() => {

@@ -105,8 +105,8 @@ export async function PATCH(
       );
     }
 
-    // Separate authors from publication data
-    const { authors } = body;
+    // Separate authors from publication data (not part of publication schema, validated separately)
+    const rawAuthors = Array.isArray(body.authors) ? body.authors : undefined;
 
     // Update publication
     const { error } = await supabase
@@ -126,7 +126,20 @@ export async function PATCH(
     }
 
     // Update authors if provided
-    if (authors && Array.isArray(authors)) {
+    if (rawAuthors !== undefined) {
+      // Validate each author entry
+      const validatedAuthors = rawAuthors
+        .filter((a: unknown): a is Record<string, unknown> => typeof a === 'object' && a !== null && typeof (a as Record<string, unknown>).name === 'string' && ((a as Record<string, unknown>).name as string).trim().length > 0)
+        .map((a: Record<string, unknown>, index: number) => ({
+          name: String(a.name).trim(),
+          email: typeof a.email === 'string' ? a.email : undefined,
+          affiliation: typeof a.affiliation === 'string' ? a.affiliation : undefined,
+          orcid: typeof a.orcid === 'string' ? a.orcid : undefined,
+          author_role: typeof a.author_role === 'string' ? a.author_role : 'middle',
+          is_corresponding: typeof a.is_corresponding === 'boolean' ? a.is_corresponding : false,
+          author_order: typeof a.author_order === 'number' ? a.author_order : index + 1,
+        }));
+
       // Delete existing authors
       await supabase
         .from("publication_authors")
@@ -134,8 +147,8 @@ export async function PATCH(
         .eq("publication_id", id);
 
       // Insert new authors
-      if (authors.length > 0) {
-        const authorsWithPublicationId = authors.map((author: { name: string; author_order?: number }, index: number) => ({
+      if (validatedAuthors.length > 0) {
+        const authorsWithPublicationId = validatedAuthors.map((author: { name: string; author_order?: number }, index: number) => ({
           ...author,
           publication_id: id,
           author_order: author.author_order || index + 1,

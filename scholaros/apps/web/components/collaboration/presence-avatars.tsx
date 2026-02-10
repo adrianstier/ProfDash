@@ -99,7 +99,7 @@ interface PresenceAvatarProps {
 }
 
 export function PresenceAvatar({
-  userId,
+  userId: _userId,
   name,
   avatarUrl,
   status,

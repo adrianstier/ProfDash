@@ -210,9 +210,13 @@ export function useAnalyticsEvents(
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden" && eventQueue.length > 0) {
-        // Use sendBeacon for reliability during page unload
-        const data = JSON.stringify({ events: [...eventQueue] });
-        navigator.sendBeacon?.(configRef.current.apiEndpoint, data);
+        // Use sendBeacon for reliability during page unload.
+        // Wrap in a Blob with Content-Type so the API route can parse JSON.
+        const blob = new Blob(
+          [JSON.stringify({ events: [...eventQueue] })],
+          { type: "application/json" }
+        );
+        navigator.sendBeacon?.(configRef.current.apiEndpoint, blob);
         eventQueue.length = 0;
       }
     };

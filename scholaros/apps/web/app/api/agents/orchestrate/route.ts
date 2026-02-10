@@ -91,6 +91,20 @@ export async function POST(request: NextRequest) {
 
     const { workflow, input } = validationResult.data;
 
+    // Verify user has at least one workspace membership
+    const { data: workspaces } = await supabase
+      .from("workspace_members")
+      .select("workspace_id")
+      .eq("user_id", user.id)
+      .limit(1);
+
+    if (!workspaces || workspaces.length === 0) {
+      return NextResponse.json(
+        { error: "No workspace membership found" },
+        { status: 403 }
+      );
+    }
+
     // Transform to snake_case for Python service
     const transformedWorkflow = {
       id: workflow.id,

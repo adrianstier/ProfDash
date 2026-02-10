@@ -121,9 +121,13 @@ describe("Team API - GET /api/research/projects/[id]/experiments/[expId]/team", 
     const { GET } = await importTeamRoute();
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null });
 
-    // experiment lookup
+    // experiment lookup (now includes workspace_id)
     mockSupabase.from.mockReturnValueOnce(
-      createMockChain({ data: { id: experimentId, project_id: projectId }, error: null })
+      createMockChain({ data: { id: experimentId, project_id: projectId, workspace_id: workspaceId }, error: null })
+    );
+    // workspace membership check
+    mockSupabase.from.mockReturnValueOnce(
+      createMockChain({ data: { role: "member" }, error: null })
     );
     // team assignments query
     const assignments = [
@@ -163,9 +167,15 @@ describe("Team API - GET /api/research/projects/[id]/experiments/[expId]/team", 
     const { GET } = await importTeamRoute();
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null });
 
+    // experiment lookup (includes workspace_id)
     mockSupabase.from.mockReturnValueOnce(
-      createMockChain({ data: { id: experimentId, project_id: projectId }, error: null })
+      createMockChain({ data: { id: experimentId, project_id: projectId, workspace_id: workspaceId }, error: null })
     );
+    // workspace membership check
+    mockSupabase.from.mockReturnValueOnce(
+      createMockChain({ data: { role: "member" }, error: null })
+    );
+    // team assignments query - empty
     mockSupabase.from.mockReturnValueOnce(
       createMockChain({ data: [], error: null })
     );
@@ -183,9 +193,15 @@ describe("Team API - GET /api/research/projects/[id]/experiments/[expId]/team", 
     const { GET } = await importTeamRoute();
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null });
 
+    // experiment lookup (includes workspace_id)
     mockSupabase.from.mockReturnValueOnce(
-      createMockChain({ data: { id: experimentId, project_id: projectId }, error: null })
+      createMockChain({ data: { id: experimentId, project_id: projectId, workspace_id: workspaceId }, error: null })
     );
+    // workspace membership check
+    mockSupabase.from.mockReturnValueOnce(
+      createMockChain({ data: { role: "member" }, error: null })
+    );
+    // team assignments query - database error
     mockSupabase.from.mockReturnValueOnce(
       createMockChain({ data: null, error: { message: "DB error" } })
     );
